@@ -84,7 +84,7 @@ else
   HOST_CC=gcc
   CC=$(CROSS_PREFIX)gcc
   CFLAGS=-g -Wall -MMD -MF $(OBJDIR)/$(@F).d
-  CFLAGS += -Wno-array-bounds -Wno-format-truncation
+  CFLAGS += -Wno-array-bounds
   ifdef CONFIG_LTO
     AR=$(CROSS_PREFIX)gcc-ar
   else

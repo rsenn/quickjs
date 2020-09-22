@@ -126,7 +126,7 @@ static inline JS_BOOL JS_VALUE_IS_NAN(JSValue v)
 {
     return 0;
 }
-    
+
 #elif defined(JS_NAN_BOXING)
 
 typedef uint64_t JSValue;
@@ -191,7 +191,7 @@ static inline JS_BOOL JS_VALUE_IS_NAN(JSValue v)
     tag = JS_VALUE_GET_TAG(v);
     return tag == (JS_NAN >> 32);
 }
-    
+
 #else /* !JS_NAN_BOXING */
 
 typedef union JSValueUnion {
@@ -213,7 +213,8 @@ typedef struct JSValue {
 #define JS_VALUE_GET_INT(v) ((v).u.int32)
 #define JS_VALUE_GET_BOOL(v) ((v).u.int32)
 #define JS_VALUE_GET_FLOAT64(v) ((v).u.float64)
-#define JS_VALUE_GET_PTR(v) ((v).u.ptr)
+//#define JS_VALUE_GET_PTR(v) ((v).u.ptr)
+static inline void* JS_VALUE_GET_PTR(JSValue v) { return v.u.ptr; }
 
 #define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag }
 #define JS_MKPTR(tag, p) (JSValue){ (JSValueUnion){ .ptr = p }, tag }
@@ -948,7 +949,7 @@ static inline JSValue JS_NewCFunctionMagic(JSContext *ctx, JSCFunctionMagic *fun
 {
     return JS_NewCFunction2(ctx, (JSCFunction *)func, name, length, cproto, magic);
 }
-void JS_SetConstructor(JSContext *ctx, JSValueConst func_obj, 
+void JS_SetConstructor(JSContext *ctx, JSValueConst func_obj,
                        JSValueConst proto);
 
 /* C property definition */

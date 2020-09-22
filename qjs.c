@@ -41,6 +41,12 @@
 #include "cutils.h"
 #include "quickjs-libc.h"
 
+#ifdef HAVE_MALLOC_USABLE_SIZE
+#ifndef HAVE_MALLOC_USABLE_SIZE_DEFINITION
+extern size_t malloc_usable_size();
+#endif
+#endif
+
 extern const uint8_t qjsc_repl[];
 extern const uint32_t qjsc_repl_size;
 #ifdef CONFIG_BIGNUM
@@ -146,9 +152,9 @@ static inline size_t js_trace_malloc_usable_size(void *ptr)
     return malloc_size(ptr);
 #elif defined(_WIN32)
     return _msize(ptr);
-#elif defined(EMSCRIPTEN)
+#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE)
     return 0;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(HAVE_MALLOC_USABLE_SIZE)
     return malloc_usable_size(ptr);
 #else
     /* change this to `return 0;` if compilation fails */
@@ -262,9 +268,9 @@ static const JSMallocFunctions trace_mf = {
     malloc_size,
 #elif defined(_WIN32)
     (size_t (*)(const void *))_msize,
-#elif defined(EMSCRIPTEN)
-    NULL,
-#elif defined(__linux__)
+#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE_DEFINITION)
+    NULL, 
+#elif defined(__linux__) || defined(HAVE_MALLOC_USABLE_SIZE)
     (size_t (*)(const void *))malloc_usable_size,
 #else
     /* change this to `NULL,` if compilation fails */

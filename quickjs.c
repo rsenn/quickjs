@@ -46,6 +46,12 @@
 #include "libbf.h"
 #endif
 
+#ifdef HAVE_MALLOC_USABLE_SIZE
+#ifndef HAVE_MALLOC_USABLE_SIZE_DEFINITION
+extern size_t malloc_usable_size();
+#endif
+#endif
+
 #define OPTIMIZE         1
 #define SHORT_OPCODES    1
 #if defined(EMSCRIPTEN)
@@ -109,7 +115,9 @@
 
 #ifdef CONFIG_ATOMICS
 #include <pthread.h>
+#ifndef NO_STDATOMIC_H
 #include <stdatomic.h>
+#endif
 #include <errno.h>
 #endif
 
@@ -1661,7 +1669,7 @@ static inline size_t js_def_malloc_usable_size(void *ptr)
     return malloc_size(ptr);
 #elif defined(_WIN32)
     return _msize(ptr);
-#elif defined(EMSCRIPTEN)
+#elif defined(EMSCRIPTEN) || defined(__dietlibc__)
     return 0;
 #elif defined(__linux__)
     return malloc_usable_size(ptr);
@@ -1735,9 +1743,9 @@ static const JSMallocFunctions def_malloc_funcs = {
     malloc_size,
 #elif defined(_WIN32)
     (size_t (*)(const void *))_msize,
-#elif defined(EMSCRIPTEN)
+#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE)
     NULL,
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(HAVE_MALLOC_USABLE_SIZE)
     (size_t (*)(const void *))malloc_usable_size,
 #else
     /* change this to `NULL,` if compilation fails */
