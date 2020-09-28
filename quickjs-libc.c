@@ -462,6 +462,9 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
     return NULL;
 }
 #else
+
+char* js_find_module(JSContext* ctx, const char* module_name);
+
 static JSModuleDef *js_module_loader_so(JSContext *ctx,
                                         const char *module_name)
 {
@@ -469,6 +472,8 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
     void *hd;
     JSInitModuleFunc *init;
     char *filename;
+
+    filename = js_find_module(ctx, module_name);
     
     if (!strchr(module_name, '/')) {
         /* must add a '/' so that the DLL is not searched in the

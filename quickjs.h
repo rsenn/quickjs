@@ -1,3 +1,4 @@
+
 /*
  * QuickJS Javascript Engine
  *
@@ -413,6 +414,7 @@ void JS_ComputeMemoryUsage(JSRuntime *rt, JSMemoryUsage *s);
 void JS_DumpMemoryUsage(FILE *fp, const JSMemoryUsage *s, JSRuntime *rt);
 
 /* atom support */
+#undef JS_ATOM_NULL
 #define JS_ATOM_NULL 0
 
 JSAtom JS_NewAtomLen(JSContext *ctx, const char *str, size_t len);

@@ -41,7 +41,7 @@ if(HAVE_LIBDL)
 endif(HAVE_LIBDL)
 
 # link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
-
+ 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
@@ -347,6 +347,7 @@ add_executable(
   cutils.c
   quickjs-libc.c
   quickjs-libc.h
+  quickjs-find-module.c
   libbf.c
   ${CMAKE_CURRENT_BINARY_DIR}/repl.c
   ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
@@ -369,6 +370,7 @@ add_executable(
   cutils.c
   quickjs-libc.c
   quickjs-libc.h
+   quickjs-find-module.c
   libbf.c)
 target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD})
 
