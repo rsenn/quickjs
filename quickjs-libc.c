@@ -475,9 +475,8 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
 
     filename = js_find_module(ctx, module_name);
     
-    if (!strchr(module_name, '/')) {
-        /* must add a '/' so that the DLL is not searched in the
-           system library paths */
+   /* if (!strchr(module_name, '/')) {
+        // must add a '/' so that the DLL is not searched in the system library paths
         filename = js_malloc(ctx, strlen(module_name) + 2 + 1);
         if (!filename)
             return NULL;
@@ -485,7 +484,7 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
         strcpy(filename + 2, module_name);
     } else {
         filename = (char *)module_name;
-    }
+    }*/
     
     /* C module */
     hd = dlopen(filename, RTLD_NOW | RTLD_LOCAL);
