@@ -1,6 +1,9 @@
 cfg() {
   : ${build:=`gcc -dumpmachine`}
   : ${VERBOSE:=OFF}
+  : ${PKG_CONFIG_PATH="/opt/opencv4/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig"}
+
+  export PKG_CONFIG_PATH
 
   if [ -n "$TOOLCHAIN" ]; then
     toolchain=`basename "$TOOLCHAIN" .cmake`
