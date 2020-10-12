@@ -4,6 +4,13 @@ project(quickjs)
 
 set(DISABLE_WERROR TRUE)
 
+if(WIN32)
+  set(TRANSPORT_PLATFORM win)
+  set(LIBWS2_32 ws2_32)
+else(WIN32)
+  set(TRANSPORT_PLATFORM unix)
+endif(WIN32)
+
 set(quickjs_version "2020-07-05")
 set(quickjs_soversion 1)
 set(quickjs_url https://bellard.org/quickjs/quickjs-${quickjs_version}.tar.xz)
@@ -12,7 +19,13 @@ set(quickjs_extras_url https://bellard.org/quickjs/quickjs-extras-${quickjs_vers
 set(quickjs_extras_sha1 211e43a5638668c80c8d438a3065660ab3af96df)
 set(quickjs_extract_dir ${CMAKE_CURRENT_BINARY_DIR}/sources)
 set(quickjs_sources_root ${CMAKE_CURRENT_SOURCE_DIR})
-set(quickjs_sources ${quickjs_sources_root}/cutils.c ${quickjs_sources_root}/libbf.c ${quickjs_sources_root}/libregexp.c ${quickjs_sources_root}/libunicode.c ${quickjs_sources_root}/quickjs.c ${quickjs_sources_root}/quickjs-libc.c ${quickjs_sources_root}/quickjs-debugger.c)
+set(quickjs_sources 
+  ${quickjs_sources_root}/cutils.c
+  ${quickjs_sources_root}/libbf.c
+  ${quickjs_sources_root}/libregexp.c ${quickjs_sources_root}/libunicode.c ${quickjs_sources_root}/quickjs.c ${quickjs_sources_root}/quickjs-libc.c
+  ${quickjs_sources_root}/quickjs-debugger.c
+  ${quickjs_sources_root}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
+)
 set(quickjs_includes
     cutils.h
     libbf.h
@@ -326,7 +339,7 @@ set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
   set_target_properties(${A_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 endif(NOT BUILD_SHARED_LIBS)
-target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD})
+target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 # message("target_link_libraries ${A_NAME} PRIVATE ${LIBDL} ${LIBM} ${LIBPTHREAD}")
 
 if(BUILD_SHARED_LIBS)
@@ -334,7 +347,7 @@ if(BUILD_SHARED_LIBS)
   target_compile_definitions(${SO_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}" CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM)
   target_include_directories(${SO_NAME} PUBLIC ${quickjs_sources_root})
   set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${quickjs_soversion}" OUTPUT_NAME ${PROJECT_NAME})
-  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD})
+  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
 endif(BUILD_SHARED_LIBS)
 install(
@@ -360,11 +373,11 @@ add_executable(
   ${CMAKE_CURRENT_BINARY_DIR}/repl.c
   ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c
   quickjs-debugger.c
-  quickjs-debugger-transport-unix.c
+  quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
 )
 
 # target_link_libraries(qjs ${QUICKJS_LIBRARY})
-target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL})
+target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
 target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1 CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
@@ -382,9 +395,9 @@ add_executable(
   quickjs-find-module.c
   libbf.c
   quickjs-debugger.c
-  quickjs-debugger-transport-unix.c
+  quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
 )
-target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD})
+target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
 target_compile_definitions(
   qjsc

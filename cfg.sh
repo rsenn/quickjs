@@ -189,9 +189,15 @@ cfg-mingw() {
   : ${host=${build%%-*}-w64-mingw32}
   : ${prefix=/usr/$host/sys-root/mingw}
 
-  test -s /usr/x86_64-w64-mingw32/sys-root/toolchain-mingw64.cmake &&
-  TOOLCHAIN=/usr/x86_64-w64-mingw32/sys-root/toolchain-mingw64.cmake
+  case "$host" in
+    x86_64-*) : ${TOOLCHAIN=/opt/cmake-toolchains/mingw64.cmake} ;;
+    *) : ${TOOLCHAIN=/opt/cmake-toolchains/mingw32.cmake} ;;
+  esac
 
+  : ${PKG_CONFIG_PATH=/usr/${host}/sys-root/mingw/lib/pkgconfig}
+
+  export TOOLCHAIN PKG_CONFIG_PATH
+  
   builddir=build/$host \
   bindir=$prefix/bin \
   libdir=$prefix/lib \
