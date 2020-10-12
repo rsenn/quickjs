@@ -1669,7 +1669,7 @@ static inline size_t js_def_malloc_usable_size(void *ptr)
     return malloc_size(ptr);
 #elif defined(_WIN32)
     return _msize(ptr);
-#elif defined(EMSCRIPTEN) || defined(__dietlibc__)
+#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(__MSYS__)
     return 0;
 #elif defined(__linux__)
     return malloc_usable_size(ptr);
@@ -1743,7 +1743,7 @@ static const JSMallocFunctions def_malloc_funcs = {
     malloc_size,
 #elif defined(_WIN32)
     (size_t (*)(const void *))_msize,
-#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE)
+#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE) || defined(__MSYS__)
     NULL,
 #elif defined(__linux__) || defined(HAVE_MALLOC_USABLE_SIZE)
     (size_t (*)(const void *))malloc_usable_size,
@@ -50392,10 +50392,15 @@ static const char * const native_error_name[JS_NATIVE_ERROR_COUNT] = {
    error messages. No JSAtom should be allocated by this function. */
 static void JS_AddIntrinsicBasicObjects(JSContext *ctx)
 {
-    JSValue proto;
+    JSValue proto = JS_NULL;
     int i;
 
-    ctx->class_proto[JS_CLASS_OBJECT] = JS_NewObjectProto(ctx, JS_NULL);
+    ctx->class_proto[JS_CLASS_OBJECT] = JS_NewObjectProto(ctx, proto);
+    if(*(int64_t*)&ctx->class_proto[JS_CLASS_OBJECT] == -1LL) {
+        ctx->class_proto[JS_CLASS_OBJECT] = JS_NewObject(ctx);    
+        if(*(int64_t*)&ctx->class_proto[JS_CLASS_OBJECT] == -1LL)
+            ctx->class_proto[JS_CLASS_OBJECT] = proto;
+    }
     ctx->function_proto = JS_NewCFunction3(ctx, js_function_proto, "", 0,
                                            JS_CFUNC_generic, 0,
                                            ctx->class_proto[JS_CLASS_OBJECT]);

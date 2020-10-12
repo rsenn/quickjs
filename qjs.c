@@ -152,7 +152,7 @@ static inline size_t js_trace_malloc_usable_size(void *ptr)
     return malloc_size(ptr);
 #elif defined(_WIN32)
     return _msize(ptr);
-#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE)
+#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(__MSYS__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE)
     return 0;
 #elif defined(__linux__) || defined(HAVE_MALLOC_USABLE_SIZE)
     return malloc_usable_size(ptr);
@@ -268,7 +268,7 @@ static const JSMallocFunctions trace_mf = {
     malloc_size,
 #elif defined(_WIN32)
     (size_t (*)(const void *))_msize,
-#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE_DEFINITION)
+#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(__MSYS__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE_DEFINITION)
     NULL, 
 #elif defined(__linux__) || defined(HAVE_MALLOC_USABLE_SIZE)
     (size_t (*)(const void *))malloc_usable_size,
@@ -303,6 +303,8 @@ void help(void)
            "-q  --quit         just instantiate the interpreter and quit\n");
     exit(1);
 }
+
+JSModuleDef* js_module_loader_path(JSContext* ctx, const char* module_name, void* opaque);
 
 int main(int argc, char **argv)
 {
@@ -480,7 +482,7 @@ int main(int argc, char **argv)
     }
 
     /* loader for ES6 modules */
-    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
+    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader_path, NULL);
 
     if (dump_unhandled_promise_rejection) {
         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,

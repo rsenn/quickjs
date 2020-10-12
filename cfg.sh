@@ -275,7 +275,7 @@ cfg-musl32() {
 cfg-msys() {
  (build=$(gcc -dumpmachine)
   : ${host=${build%%-*}-pc-msys}
-  : ${prefix=/usr/$host/sys-root/msys}
+  : ${prefix=/usr/$host/sysroot/usr}
 
   builddir=build/$host \
   bindir=$prefix/bin \
@@ -339,7 +339,7 @@ cfg-msys32() {
 cfg-msys() {
  (build=$(gcc -dumpmachine)
   : ${host=${build%%-*}-pc-msys}
-  : ${prefix=/usr/$host/sys-root/msys}
+  : ${prefix=/usr/$host/sysroot/usr}
 
   builddir=build/$host \
   bindir=$prefix/bin \
