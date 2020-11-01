@@ -4,13 +4,10 @@ project(quickjs)
 
 set(DISABLE_WERROR TRUE)
 
-if(WIN32)
-  set(TRANSPORT_PLATFORM win)
+if(WIN32 OR MINGW)
   set(LIBWS2_32 ws2_32)
-  set(BUILD_SHARED_LIBS ON)
-else(WIN32)
-  set(TRANSPORT_PLATFORM unix)
-endif(WIN32)
+  set(BUILD_SHARED_LIBS ON) 
+endif(WIN32 OR MINGW)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/defs.cmake)
 include(FindThreads)
