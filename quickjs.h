@@ -998,20 +998,20 @@ typedef struct JSCFunctionListEntry {
 #define JS_DEF_ALIAS          9
 
 /* Note: c++ does not like nested designators */
-#define JS_CFUNC_DEF(prop_name, length, func1) \ { \ .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = 0, .u = {.func = {length, JS_CFUNC_generic, {.generic = func1}} } \ }
-#define JS_CFUNC_MAGIC_DEF(prop_name, length, func1, magic_num) \ { \ .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = magic_num, .u = {.func = {length, JS_CFUNC_generic_magic, {.generic_magic = func1}} } \ }
-#define JS_CFUNC_SPECIAL_DEF(prop_name, length, cproto, func1) \ { \ .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = 0, .u = {.func = {length, JS_CFUNC_##cproto, {.cproto = func1}} } \ }
-#define JS_ITERATOR_NEXT_DEF(prop_name, length, func1, magic_num) \ { \ .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = magic_num, .u = {.func = {length, JS_CFUNC_iterator_next, {.iterator_next = func1}} } \ }
-#define JS_CGETSET_DEF(prop_name, fgetter, fsetter) \ { \ .name = prop_name, .prop_flags = JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CGETSET, .magic = 0, .u = {.getset = {.get = {.getter = fgetter}, .set = {.setter = fsetter}} } \ }
-#define JS_CGETSET_MAGIC_DEF(prop_name, fgetter, fsetter, magic_num) \ { \ .name = prop_name, .prop_flags = JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CGETSET_MAGIC, .magic = magic_num, .u = { \ .getset = {.get = {.getter_magic = fgetter}, .set = {.setter_magic = fsetter}} \ } \ }
-#define JS_PROP_STRING_DEF(prop_name, cstr, flags) \ { \ .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_PROP_STRING, .magic = 0, .u = {.str = cstr } \ }
-#define JS_PROP_INT32_DEF(prop_name, val, flags) \ { \ .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_PROP_INT32, .magic = 0, .u = {.i32 = val } \ }
-#define JS_PROP_INT64_DEF(prop_name, val, flags) \ { \ .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_PROP_INT64, .magic = 0, .u = {.i64 = val } \ }
-#define JS_PROP_DOUBLE_DEF(prop_name, val, flags) \ { \ .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_PROP_DOUBLE, .magic = 0, .u = {.f64 = val } \ }
-#define JS_PROP_UNDEFINED_DEF(prop_name, flags) \ { \ .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_PROP_UNDEFINED, .magic = 0, .u = {.i32 = 0 } \ }
-#define JS_OBJECT_DEF(prop_name, tab, len, flags) \ { \ .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_OBJECT, .magic = 0, .u = {.prop_list = {tab, len} } \ }
-#define JS_ALIAS_DEF(prop_name, from) \ { \ .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_ALIAS, .magic = 0, .u = {.alias = {from, -1} } \ }
-#define JS_ALIAS_BASE_DEF(prop_name, from, base) \ { \ .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_ALIAS, .magic = 0, .u = {.alias = {from, base} } \ }
+#define JS_CFUNC_DEF(prop_name, length, func1) { .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = 0, .u = {.func = {length, JS_CFUNC_generic, {.generic = func1}} } }
+#define JS_CFUNC_MAGIC_DEF(prop_name, length, func1, magic_num) { .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = magic_num, .u = {.func = {length, JS_CFUNC_generic_magic, {.generic_magic = func1}} } }
+#define JS_CFUNC_SPECIAL_DEF(prop_name, length, cproto, func1) { .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = 0, .u = {.func = {length, JS_CFUNC_##cproto, {.cproto = func1}} } }
+#define JS_ITERATOR_NEXT_DEF(prop_name, length, func1, magic_num) { .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = magic_num, .u = {.func = {length, JS_CFUNC_iterator_next, {.iterator_next = func1}} } }
+#define JS_CGETSET_DEF(prop_name, fgetter, fsetter) { .name = prop_name, .prop_flags = JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CGETSET, .magic = 0, .u = {.getset = {.get = {.getter = fgetter}, .set = {.setter = fsetter}} } }
+#define JS_CGETSET_MAGIC_DEF(prop_name, fgetter, fsetter, magic_num) { .name = prop_name, .prop_flags = JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CGETSET_MAGIC, .magic = magic_num, .u = { .getset = {.get = {.getter_magic = fgetter}, .set = {.setter_magic = fsetter}} } }
+#define JS_PROP_STRING_DEF(prop_name, cstr, flags) { .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_PROP_STRING, .magic = 0, .u = {.str = cstr } }
+#define JS_PROP_INT32_DEF(prop_name, val, flags) { .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_PROP_INT32, .magic = 0, .u = {.i32 = val } }
+#define JS_PROP_INT64_DEF(prop_name, val, flags) { .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_PROP_INT64, .magic = 0, .u = {.i64 = val } }
+#define JS_PROP_DOUBLE_DEF(prop_name, val, flags) { .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_PROP_DOUBLE, .magic = 0, .u = {.f64 = val } }
+#define JS_PROP_UNDEFINED_DEF(prop_name, flags) { .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_PROP_UNDEFINED, .magic = 0, .u = {.i32 = 0 } }
+#define JS_OBJECT_DEF(prop_name, tab, len, flags) { .name = prop_name, .prop_flags = flags, .def_type = JS_DEF_OBJECT, .magic = 0, .u = {.prop_list = {tab, len} } }
+#define JS_ALIAS_DEF(prop_name, from) { .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_ALIAS, .magic = 0, .u = {.alias = {from, -1} } }
+#define JS_ALIAS_BASE_DEF(prop_name, from, base) { .name = prop_name, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_ALIAS, .magic = 0, .u = {.alias = {from, base} } }
 
 void JS_SetPropertyFunctionList(JSContext* ctx, JSValueConst obj, const JSCFunctionListEntry* tab, int len);
 
