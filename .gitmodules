@@ -1,4 +1,0 @@
-[submodule "net"]
-	path = net
-	url = https://github.com/rsenn/minnet-quickjs.git
-	branch = master
