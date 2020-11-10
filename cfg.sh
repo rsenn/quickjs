@@ -111,9 +111,8 @@ cfg() {
   : ${relsrcdir=`realpath --relative-to "$builddir" .`}
   set -x
   cd $builddir
-  ${CMAKE:-cmake} -Wno-dev \
+  ${CMAKE_WRAPPER} ${CMAKE:-cmake} -Wno-dev \
     -G "$generator" \
-    ${SHARED:+-DBUILD_SHARED_LIBS=$SHARED} \
     ${VERBOSE:+-DCMAKE_VERBOSE_MAKEFILE=$VERBOSE} \
     -DCMAKE_BUILD_TYPE="${TYPE}" \
     ${CC:+-DCMAKE_C_COMPILER="$CC"} \
@@ -128,248 +127,203 @@ cfg() {
     $relsrcdir 2>&1 ) |tee "${builddir##*/}.log")
 }
 
-cfg-android ()
-{
+cfg-android() {
   (: ${builddir=build/android}
-    cfg \
-  -DCMAKE_INSTALL_PREFIX=/opt/arm-linux-androideabi/sysroot/usr \
-  -DCMAKE_VERBOSE_MAKEFILE=TRUE \
-  -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN:-/opt/android-cmake/android.cmake} \
-  -DANDROID_NATIVE_API_LEVEL=21 \
-  -DPKG_CONFIG_EXECUTABLE=arm-linux-androideabi-pkg-config \
-  -DCMAKE_PREFIX_PATH=/opt/arm-linux-androideabi/sysroot/usr \
-  -DCMAKE_MAKE_PROGRAM=/usr/bin/make \
-   -DCMAKE_MODULE_PATH="/opt/OpenCV-3.4.1-android-sdk/sdk/native/jni/abi-armeabi-v7a" \
-   -DOpenCV_DIR="/opt/OpenCV-3.4.1-android-sdk/sdk/native/jni/abi-armeabi-v7a" \
-   "$@"
-    )
+  cfg -DCMAKE_INSTALL_PREFIX=/opt/arm-linux-androideabi/sysroot/usr \
+    -DCMAKE_VERBOSE_MAKEFILE=TRUE -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN:-/opt/android-cmake/android.cmake} -DANDROID_NATIVE_API_LEVEL=21 \
+    -DPKG_CONFIG_EXECUTABLE=arm-linux-androideabi-pkg-config \
+    -DCMAKE_PREFIX_PATH=/opt/arm-linux-androideabi/sysroot/usr \
+    -DCMAKE_MAKE_PROGRAM=/usr/bin/make \
+    -DCMAKE_MODULE_PATH="/opt/OpenCV-3.4.1-android-sdk/sdk/native/jni/abi-armeabi-v7a" \
+    -DOpenCV_DIR="/opt/OpenCV-3.4.1-android-sdk/sdk/native/jni/abi-armeabi-v7a" \
+    "$@")
 }
 
 cfg-diet() {
- (: ${build=$(${CC:-gcc} -dumpmachine)}
-  : ${host=${build/-gnu/-diet}}
+  (: ${build=$(${CC:-gcc} -dumpmachine)}
+  : ${host=${build-/-gnu/-diet}}
   : ${prefix=/opt/diet}
   : ${libdir=/opt/diet/lib-${host%%-*}}
   : ${bindir=/opt/diet/bin-${host%%-*}}
-
   : ${CC="diet-gcc"}
   export CC
-
   builddir=build/${host%-*}-diet \
-  PKG_CONFIG="PKG_CONFIG_PATH=$libdir/pkgconfig pkg-config" \
-  cfg \
-    -DCMAKE_INSTALL_PREFIX="$prefix" \
+    PKG_CONFIG="PKG_CONFIG_PATH=$libdir/pkgconfig pkg-config" cfg -DCMAKE_INSTALL_PREFIX="${prefix}" \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
-      ${launcher:+-DCMAKE_C_COMPILER_LAUNCHER="$launcher"} \
+    ${launcher:+-DCMAKE_C_COMPILER_LAUNCHER="${launcher}"} \
     "$@")
 }
 
 cfg-diet64() {
- (build=$(gcc -dumpmachine)
+  (build=$(gcc -dumpmachine)
   host=${build%%-*}-linux-diet
   host=x86_64-${host#*-}
-
-  builddir=build/$host \
-  CC="diet-gcc" \
-  cfg-diet \
-  "$@")
+  builddir=build/$host CC="diet-gcc" cfg-diet "$@")
 }
 
 cfg-diet32() {
- (build=$(gcc -dumpmachine)
+  (build=$(gcc -dumpmachine)
   host=${build%%-*}-linux-diet
   host=i686-${host#*-}
-
-  builddir=build/$host \
-  CFLAGS="-m32" \
-  launcher="/opt/diet/bin-i386/diet" \
-  cfg-diet \
-  "$@")
+  builddir=build/$host CFLAGS="-m32" launcher="/opt/diet/bin-i386/diet" cfg-diet \
+    "$@")
 }
 
 cfg-mingw() {
- (build=$(gcc -dumpmachine)
+  (build=$(gcc -dumpmachine)
   : ${host=${build%%-*}-w64-mingw32}
   : ${prefix=/usr/$host/sys-root/mingw}
-
-  case "$host" in
+  case "${host}" in
     x86_64-*) : ${TOOLCHAIN=/opt/cmake-toolchains/mingw64.cmake} ;;
     *) : ${TOOLCHAIN=/opt/cmake-toolchains/mingw32.cmake} ;;
   esac
-
-  : ${PKG_CONFIG_PATH=/usr/${host}/sys-root/mingw/lib/pkgconfig}
-
+  : ${PKG_CONFIG_PATH=/usr/$host/sys-root/mingw/lib/pkgconfig}
   export TOOLCHAIN PKG_CONFIG_PATH
-  
-  builddir=build/$host \
-  bindir=$prefix/bin \
-  libdir=$prefix/lib \
-  cfg \
-    "$@")
+  builddir=build/$host bindir=$prefix/bin libdir=$prefix/lib cfg "$@")
 }
 cfg-emscripten() {
- (build=$(${CC:-emcc} -dumpmachine)
-  host=${build/-gnu/-emscriptenlibc}
+  (build=$(${CC:-emcc} -dumpmachine)
+  host=${build-/-gnu/-emscriptenlibc}
   : ${builddir=build/${host%-*}-emscripten}
   : ${prefix=/opt/emsdk/emscripten/incoming/system}
   : ${libdir=/opt/emsdk/emscripten/incoming/system/lib}
   : ${bindir=/opt/emsdk/emscripten/incoming/system/bin}
-
-  CC="emcc" \
-  PKG_CONFIG="PKG_CONFIG_PATH=$libdir/pkgconfig pkg-config" \
-  cfg \
-    -DCMAKE_INSTALL_PREFIX="$prefix" \
+  CC="emcc" PKG_CONFIG="PKG_CONFIG_PATH=$libdir/pkgconfig pkg-config" cfg \
+    -DCMAKE_INSTALL_PREFIX="${prefix}" \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     "$@")
 }
 
 cfg-tcc() {
- (build=$(cc -dumpmachine)
-  host=${build/-gnu/-tcc}
+  (build=$(cc -dumpmachine)
+  host=${build-/-gnu/-tcc}
   builddir=build/$host
   prefix=/usr
   includedir=/usr/lib/$build/tcc/include
   libdir=/usr/lib/$build/tcc/
   bindir=/usr/bin
-
-  CC=${TCC:-tcc} \
-  cfg \
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
-    "$@")
+  CC=${TCC:-tcc} cfg -DCMAKE_VERBOSE_MAKEFILE=ON "$@")
 }
 
 cfg-musl() {
- (: ${build=$(${CC:-gcc} -dumpmachine)}
-  : ${host=${build/-gnu/-musl}}
-
- : ${prefix:=/opt/musl}
- : ${includedir=/usr/include/$host}
- : ${libdir=/usr/lib/$host}
- : ${bindir=/usr/bin/$host}
-
- export prefix
-
-  builddir=build/$host \
-  CC=musl-gcc \
-  PKG_CONFIG=musl-pkg-config \
-  cfg \
+  (: ${build=$(${CC:-gcc} -dumpmachine)}
+  : ${host=${build-/-gnu/-musl}}
+  : ${prefix:=/opt/musl}
+  : ${includedir=/usr/include/$host}
+  : ${libdir=/usr/lib/$host}
+  : ${bindir=/usr/bin/$host}
+  export prefix
+  builddir=build/$host CC=musl-gcc PKG_CONFIG=musl-pkg-config cfg \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     "$@")
 }
 
 
 cfg-musl64() {
- (build=$(gcc -dumpmachine)
+  (build=$(gcc -dumpmachine)
   host=${build%%-*}-linux-musl
   host=x86_64-${host#*-}
-
-  builddir=build/$host \
-  CFLAGS="-m64" \
-  cfg-musl \
-  -DCMAKE_C_COMPILER="musl-gcc" \
-  "$@")
+  builddir=build/$host CFLAGS="-m64" cfg-musl -DCMAKE_C_COMPILER="musl-gcc" "$@")
 }
 
 cfg-musl32() {
- (build=$(gcc -dumpmachine)
-  host=$(echo "$build" | sed "s|x86_64|i686| ; s|-gnu|-musl|")
-
-  builddir=build/$host \
-  CFLAGS="-m32" \
-  cfg-musl \
-  -DCMAKE_C_COMPILER="musl-gcc" \
-  "$@")
+  (build=$(gcc -dumpmachine)
+  host=$(echo "${build}" | sed "s|x86_64|i686| ; s|-gnu|-musl|")
+  builddir=build/$host CFLAGS="-m32" cfg-musl -DCMAKE_C_COMPILER="musl-gcc" "$@")
 }
 
 cfg-msys() {
- (build=$(gcc -dumpmachine)
+  (build=$(gcc -dumpmachine)
   : ${host=${build%%-*}-pc-msys}
   : ${prefix=/usr/$host/sysroot/usr}
-
-  builddir=build/$host \
-  bindir=$prefix/bin \
-  libdir=$prefix/lib \
-  CC="$host-gcc" \
-  cfg \
+  builddir=build/$host bindir=$prefix/bin libdir=$prefix/lib CC="${host-gcc}" \
+    cfg \
     -DCMAKE_CROSSCOMPILING=TRUE \
     "$@")
 }
 
 cfg-msys32() {
- (build=$(gcc -dumpmachine)
+  (build=$(gcc -dumpmachine)
   host=${build%%-*}-pc-msys
   host=i686-${host#*-}
   cfg-msys "$@")
 }
 
-cfg-termux()
-{
+cfg-termux() {
   (builddir=build/termux
-    cfg \
-  -DCMAKE_INSTALL_PREFIX=/data/data/com.termux/files/usr \
-  -DCMAKE_VERBOSE_MAKEFILE=TRUE \
-  -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN:-/opt/android-cmake/android.cmake} \
-  -DANDROID_NATIVE_API_LEVEL=21 \
-  -DPKG_CONFIG_EXECUTABLE=arm-linux-androideabi-pkg-config \
-  -DCMAKE_PREFIX_PATH=/data/data/com.termux/files/usr \
-  -DCMAKE_MAKE_PROGRAM=/usr/bin/make \
-   -DCMAKE_MODULE_PATH="/data/data/com.termux/files/usr/lib/cmake" \
-   "$@"
-    )
+  cfg -DCMAKE_INSTALL_PREFIX=/data/data/com.termux/files/usr \
+    -DCMAKE_VERBOSE_MAKEFILE=TRUE -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN:-/opt/android-cmake/android.cmake} -DANDROID_NATIVE_API_LEVEL=21 \
+    -DPKG_CONFIG_EXECUTABLE=arm-linux-androideabi-pkg-config \
+    -DCMAKE_PREFIX_PATH=/data/data/com.termux/files/usr \
+    -DCMAKE_MAKE_PROGRAM=/usr/bin/make \
+    -DCMAKE_MODULE_PATH="/data/data/com.termux/files/usr/lib/cmake" \
+    "$@")
 }
 cfg-wasm() {
-  export VERBOSE
- (EMCC=$(which emcc)
-  EMSCRIPTEN=$(dirname "$EMCC");
-  EMSCRIPTEN=${EMSCRIPTEN%%/bin*};
-  test -f /opt/cmake-toolchains/generic/Emscripten-wasm.cmake && TOOLCHAIN=/opt/cmake-toolchains/generic/Emscripten-wasm.cmake
-  test '!' -f "$TOOLCHAIN" && TOOLCHAIN=$(find "$EMSCRIPTEN" -iname emscripten.cmake);
-  test -f "$TOOLCHAIN" || unset TOOLCHAIN;
-  : ${prefix:="$EMSCRIPTEN"}
-  builddir=build/emscripten-wasm \
-  CC="$EMCC" \
-  cfg \
-    -DEMSCRIPTEN_PREFIX="$EMSCRIPTEN" \
-    ${TOOLCHAIN:+-DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN"} \
+  export VERBOSE; (EMCC=$(which emcc)
+  EMSCRIPTEN=$(dirname "${EMCC}")
+  EMSCRIPTEN=${EMSCRIPTEN%%/bin*}
+  test -f /opt/cmake-toolchains/generic/Emscripten-wasm.cmake && \
+TOOLCHAIN=/opt/cmake-toolchains/generic/Emscripten-wasm.cmake
+  test '!' -f "${TOOLCHAIN}" && \
+TOOLCHAIN=$(find "${EMSCRIPTEN}" -iname emscripten.cmake)
+  test -f "${TOOLCHAIN}" || unset TOOLCHAIN
+  : ${prefix:="${EMSCRIPTEN}"}
+  builddir=build/emscripten-wasm CC="${EMCC}" cfg \
+    -DEMSCRIPTEN_PREFIX="${EMSCRIPTEN}" ${TOOLCHAIN:+-DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN}"} \
     -DCMAKE_EXE_LINKER_FLAGS="-s WASM=1" \
     -DCMAKE_EXECUTABLE_SUFFIX=".html" \
     -DCMAKE_EXECUTABLE_SUFFIX_INIT=".html" \
     -DUSE_{ZLIB,BZIP,LZMA,SSL}=OFF \
-  "$@")
+    "$@")
 }
 
 cfg-msys32() {
- (build=$(gcc -dumpmachine)
+  (build=$(gcc -dumpmachine)
   host=${build%%-*}-pc-msys
   host=i686-${host#*-}
   cfg-msys "$@")
 }
 
 cfg-msys() {
- (build=$(gcc -dumpmachine)
+  (build=$(gcc -dumpmachine)
   : ${host=${build%%-*}-pc-msys}
   : ${prefix=/usr/$host/sysroot/usr}
-
-  builddir=build/$host \
-  bindir=$prefix/bin \
-  libdir=$prefix/lib \
-  CC="$host-gcc" \
-  cfg \
+  builddir=build/$host bindir=$prefix/bin libdir=$prefix/lib CC="${host-gcc}" \
+    cfg \
     -DCMAKE_CROSSCOMPILING=TRUE \
     "$@")
 }
 
 cfg-tcc() {
- (build=$(cc -dumpmachine)
-  host=${build/-gnu/-tcc}
+  (build=$(cc -dumpmachine)
+  host=${build-/-gnu/-tcc}
   builddir=build/$host
   prefix=/usr
   includedir=/usr/lib/$build/tcc/include
   libdir=/usr/lib/$build/tcc/
   bindir=/usr/bin
+  CC=${TCC:-tcc} cfg -DCMAKE_VERBOSE_MAKEFILE=ON "$@")
+}
 
-  CC=${TCC:-tcc} \
-  cfg \
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
+cfg-emscripten() {
+  (build=$(cc -dumpmachine | sed 's|-pc-|-|g')
+  host=$(emcc -dumpmachine)
+  : ${builddir=build/${host%-*}-emscripten}
+  : ${prefix=$EMSCRIPTEN/system}
+  : ${libdir=$prefix/lib}
+  : ${bindir=$prefix/bin}
+  : ${EMSCRIPTEN=$EMSDK/upstream/emscripten}
+  export TOOLCHAIN="${EMSCRIPTEN}/cmake/Modules/Platform/Emscripten.cmake"
+  PKG_CONFIG_PATH="$(set -- /opt/*-wasm/lib/pkgconfig; IFS=":"; echo "$*")${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+  PKG_CONFIG_PATH="${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}${EMSCRIPTEN}/system/lib/pkgconfig"
+  export PKG_CONFIG_PATH
+  echo PKG_CONFIG_PATH="${PKG_CONFIG_PATH}"
+  CC="emcc" CXX="em++" TYPE="Release" VERBOSE="TRUE" \
+    CFLAGS='-s WASM=1 -s USE_PTHREADS=0 -s LLD_REPORT_UNDEFINED' CXXFLAGS='-s WASM=1 -s USE_PTHREADS=0 -s LLD_REPORT_UNDEFINED' \
+    CMAKE_WRAPPER="emcmake" \
+    prefix=/opt/${PWD##*/}-wasm \
+    cfg \
+    -DENABLE_PIC=FALSE \
     "$@")
 }
