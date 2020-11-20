@@ -1,3 +1,5 @@
+#undef NDEBUG
+
 #include "quickjs-debugger.h"
 
 #include <sys/socket.h>
@@ -130,7 +132,6 @@ void js_debugger_connect(JSContext *ctx, const char *address) {
 
 void js_debugger_wait_connection(JSContext *ctx, const char* address) {
     struct sockaddr_in addr = js_debugger_parse_sockaddr(address);
-
     int server = socket(AF_INET, SOCK_STREAM, 0);
     assert(server >= 0);
 
@@ -147,8 +148,22 @@ void js_debugger_wait_connection(JSContext *ctx, const char* address) {
     close(server);
     assert(client >= 0);
 
+    {
+      char str[INET6_ADDRSTRLEN];
+      struct sockaddr_in remote;
+      socklen_t remote_len = sizeof(remote);
+
+      memset(&remote, 0, sizeof(remote));
+      getpeername(client, &remote, &remote_len);
+
+      inet_ntop(AF_INET, &remote.sin_addr, str, sizeof(str));
+
+      fprintf(stderr,"new connection from %s:%u\n",str, remote.sin_port);
+    }
+
     struct js_transport_data *data = (struct js_transport_data *)malloc(sizeof(struct js_transport_data));
     memset(data, 0, sizeof(js_transport_data));
     data->handle = client;
     js_debugger_attach(ctx, js_transport_read, js_transport_write, js_transport_peek, js_transport_close, data);
 }
+

@@ -1,3 +1,5 @@
+#undef NDEBUG
+
 #include "quickjs-debugger.h"
 #include <time.h>
 #include <math.h>
@@ -81,7 +83,7 @@ static int js_transport_send_response(JSDebuggerInfo *info, JSValue request, JSV
     JSContext *ctx = info->ctx;
     JSValue envelope = js_transport_new_envelope(info, "response");
     JS_SetPropertyStr(ctx, envelope, "body", body);
-    JS_SetPropertyStr(ctx, envelope, "request_seq", JS_GetPropertyStr(ctx, request, "request_seq"));
+    JS_SetPropertyStr(ctx, envelope, "request_seq",  JS_GetPropertyStr(ctx, request, "seq"));
     return js_transport_write_value(info, envelope);
 }
 
@@ -415,6 +417,7 @@ static int js_process_debugger_messages(JSDebuggerInfo *info, const uint8_t *cur
     state.cur_pc = cur_pc;
     int ret = 0;
     char message_length_buf[10];
+    int message_length;
 
     do {
         fflush(stdout);
@@ -426,7 +429,7 @@ static int js_process_debugger_messages(JSDebuggerInfo *info, const uint8_t *cur
             goto done;
 
         message_length_buf[8] = '\0';
-        int message_length = strtol(message_length_buf, NULL, 16);
+        message_length = strtol(message_length_buf, NULL, 16);
         assert(message_length > 0);
         if (message_length > info->message_buffer_length) {
             if (info->message_buffer) {
@@ -444,10 +447,12 @@ static int js_process_debugger_messages(JSDebuggerInfo *info, const uint8_t *cur
         
         info->message_buffer[message_length] = '\0';
 
+        fprintf(stderr, "client message: %s\n", info->message_buffer);
+
         JSValue message = JS_ParseJSON(ctx, info->message_buffer, message_length, "<debugger>");
         const char *type = JS_ToCString(ctx, JS_GetPropertyStr(ctx, message, "type"));
         if (strcmp("request", type) == 0) {
-            js_process_request(info, &state, JS_GetPropertyStr(ctx, message, "request"));
+            js_process_request(info, &state, message);
             // done_processing = 1;
         }
         else if (strcmp("continue", type) == 0) {
