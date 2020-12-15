@@ -205,7 +205,7 @@ if(ENABLE_LTO)
 endif(ENABLE_LTO)
 
 # check_flags("-Wall;-Wchar-subscripts;-Wextra;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wundef;-Wuninitialized;-Wwrite-strings" CMAKE_C_FLAGS)
-check_flags("-Wall;-Wchar-subscripts;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation;-Wundef;-Wuninitialized;-Wwrite-strings" CMAKE_C_FLAGS)
+check_flags("-Wall;-Wchar-subscripts;-Wno-implicit-int-float-conversion;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation;-Wundef;-Wuninitialized;-Wwrite-strings" CMAKE_C_FLAGS)
 
 message("CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
