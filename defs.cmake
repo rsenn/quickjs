@@ -23,7 +23,8 @@ set(quickjs_sources
     ${quickjs_sources_root}/quickjs.c
     ${quickjs_sources_root}/quickjs-libc.c
     ${quickjs_sources_root}/quickjs-debugger.c
-    ${quickjs_sources_root}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+    ${quickjs_sources_root}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
+    ${quickjs_sources_root}/quickjs-find-module.c)
 set(quickjs_includes
     cutils.h
     libbf.h

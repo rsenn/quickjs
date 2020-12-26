@@ -21,8 +21,8 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
     module_path = js_default_module_path;
 
   for(p = module_path; *p; p = q) {
-    q = strchr(p, ':');
-    if(q == NULL)
+
+    if((q = strchr(p, ':')) == NULL)
       q = p + strlen(p);
 
     n = q - p;
@@ -54,8 +54,7 @@ js_find_module(JSContext* ctx, const char* module_name) {
   char* ret = NULL;
   size_t len;
 
-  while(!strncmp(module_name, "./", 2))
-    module_name += 2;
+  while(!strncmp(module_name, "./", 2)) module_name += 2;
   len = strlen(module_name);
 
   if(strchr(module_name, '/') == NULL || (len >= 3 && !strcmp(&module_name[len - 3], ".so")))

@@ -249,7 +249,7 @@ JSModuleDef *jsc_module_loader(JSContext *ctx,
     } else if (has_suffix(filename ? filename : module_name, ".so")) {
         fprintf(stderr, "Warning: binary module '%s' will be dynamically loaded\n", filename ? filename : module_name);
         /* create a dummy module */
-        m = JS_NewCModule(ctx, module_name, js_module_dummy_init);
+        m = JS_NewCModule(ctx, filename ? filename : module_name, js_module_dummy_init);
         /* the resulting executable will export its symbols for the
            dynamic library */
         dynamic_export = TRUE;
@@ -750,7 +750,7 @@ int main(int argc, char **argv)
         
         /* add the module loader if necessary */
         if (feature_bitmap & (1 << FE_MODULE_LOADER)) {
-            fprintf(fo, "  JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);\n");
+            fprintf(fo, "  JS_SetModuleLoaderFunc(rt, NULL, js_module_loader_path, NULL);\n");
         }
         
         fprintf(fo,
