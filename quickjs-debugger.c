@@ -14,6 +14,10 @@ typedef struct DebuggerSuspendedState {
     const uint8_t *cur_pc;
 } DebuggerSuspendedState;
 
+JSValue js_debugger_json_stringify(JSContext *ctx, JSValueConst value) {
+    return JS_JSONStringify(ctx, value, JS_UNDEFINED, JS_UNDEFINED);
+}
+
 static int js_transport_read_fully(JSDebuggerInfo *info, char *buffer, size_t length) {
     int offset = 0;
     while (offset < length) {
@@ -236,7 +240,7 @@ static void js_process_request(JSDebuggerInfo *info, struct DebuggerSuspendedSta
         js_transport_send_response(info, request, JS_UNDEFINED);
         info->is_paused = 0;
     }
-    if (strcmp("pause", command) == 0) {
+    else if (strcmp("pause", command) == 0) {
         js_transport_send_response(info, request, JS_UNDEFINED);
         js_send_stopped_event(info, "pause");
         info->is_paused = 1;

@@ -80,15 +80,11 @@ if(BUILD_SHARED_LIBS)
   set(SO_NAME ${PROJECT_NAME})
   set(LIB_TARGETS ${A_NAME} ${SO_NAME})
   set(QUICKJS_LIBRARY ${SO_NAME})
-  set(LWS_WITH_SHARED TRUE)
-  set(LWS_WITH_STATIC FALSE)
 else(BUILD_SHARED_LIBS)
   set(A_NAME ${PROJECT_NAME})
   set(SO_NAME ${PROJECT_NAME}-shared)
   set(LIB_TARGETS ${A_NAME})
   set(QUICKJS_LIBRARY ${A_NAME})
-  set(LWS_WITH_SHARED FALSE)
-  set(LWS_WITH_STATIC TRUE)
 endif(BUILD_SHARED_LIBS)
 
 set(get_quickjs_cmake_in ${CMAKE_CURRENT_LIST_DIR}/get_quickjs.cmake.in)
@@ -254,7 +250,8 @@ endif(CMAKE_CROSSCOMPILING)
 
 add_custom_command(OUTPUT repl.c COMMAND ${QJSC} -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from repl.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
 
-add_custom_command(OUTPUT qjscalc.c COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
+add_custom_command(OUTPUT qjscalc.c COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js DEPENDS ${QJSC_DEPS}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
 
 add_custom_target(hello.c COMMAND ${CMAKE_CURRENT_BINARY_DIR}/qjsc -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from hello.js using qjs compiler" SOURCES examples/hello.js)
 
@@ -297,6 +294,7 @@ target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 target_compile_definitions(qjsc PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}" CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
 
 install(TARGETS qjs qjsc DESTINATION bin)
+install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)")
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 

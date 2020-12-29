@@ -24,13 +24,14 @@
 "use strict";
 "use math";
 
-var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunction, Series, Matrix;
+//var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunction, Series, Matrix;
 
 (function(global) {
-    global.Integer = global.BigInt;
-    global.Float = global.BigFloat;
-    global.algebraicMode = true;
+    let Integer = global.Integer = global.BigInt;
+    let Float = global.Float = global.BigFloat;
     
+    global.algebraicMode = true;
+
     /* add non enumerable properties */
     function add_props(obj, props) {
         var i, val, prop, tab, desc;
@@ -372,7 +373,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
 
     /* Fraction */
 
-    Fraction = function Fraction(a, b)
+    let Fraction = globalThis.Fraction = function Fraction(a, b)
     {
         var d, r, obj;
 
@@ -703,7 +704,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
        
     /* Complex */
     
-    Complex = function Complex(re, im)
+    let Complex = globalThis.Complex = function Complex(re, im)
     {
         var obj;
         if (new.target)
@@ -829,7 +830,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
 
     /* Mod */
 
-    Mod = function Mod(a, m) {
+    let Mod = globalThis.Mod = function Mod(a, m) {
         var obj, t;
         if (new.target)
             throw TypeError("not a constructor");
@@ -948,7 +949,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
         return false;
     }
     
-    Polynomial = function Polynomial(a)
+    let Polynomial = globalThis.Polynomial = function Polynomial(a)
     {
         if (new.target)
             throw TypeError("not a constructor");
@@ -1340,7 +1341,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
 
     /* Polynomial Modulo Q */
 
-    PolyMod = function PolyMod(a, m) {
+    let PolyMod = globalThis.PolyMod = function PolyMod(a, m) {
         var obj, t;
         if (new.target)
             throw TypeError("not a constructor");
@@ -1438,7 +1439,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
 
     /* Rational function */
     
-    RationalFunction = function RationalFunction(a, b)
+    let RationalFunction = globalThis.RationalFunction = function RationalFunction(a, b)
     {
         var t, r, d, obj;
         if (new.target)
@@ -1576,7 +1577,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     }
     
     /* n is the maximum number of terms if 'a' is not a serie */
-    Series = function Series(a, n) {
+    let Series = globalThis.Series = function Series(a, n) {
         var emin, r, i;
         
         if (a instanceof Series) {
@@ -1900,7 +1901,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     
     /* Array (Matrix) */
 
-    Matrix = function Matrix(h, w) {
+    let Matrix = globalThis.Matrix = function Matrix(h, w) {
         var i, j, r, rl;
         if (typeof w === "undefined")
             w = h;
@@ -2374,14 +2375,16 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
         norm2: Polynomial.prototype.norm2,
     });
 
-})(this);
+})(globalThis);
+
+const { Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunction, Series, Matrix } = globalThis;
 
 /* global definitions */
 var I = Complex(0, 1);
 var X = Polynomial([0, 1]);
 var O = Series.O;
 
-Object.defineProperty(this, "PI", { get: function () { return Float.PI } });
+Object.defineProperty(globalThis, "PI", { get: function () { return Float.PI } });
 
 /* put frequently used functions in the global context */
 var gcd = Integer.gcd;
@@ -2623,6 +2626,17 @@ function atanh(a)
 {
     var x = Float(a);
     return 0.5 * log((1 + x) / (1 - x));
+}
+
+function sigmoid(x)
+{
+    x = Float(x);
+    return 1 / (1 + exp(-x));
+}
+
+function lerp(a, b, t)
+{
+    return a + (b - a) * t;
 }
 
 var idn = Matrix.idn;

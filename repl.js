@@ -22,7 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-"use strip";
+//"use strip";
 
 import * as std from "std";
 import * as os from "os";

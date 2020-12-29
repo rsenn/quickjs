@@ -53634,15 +53634,6 @@ JSDebuggerLocation js_debugger_current_location(JSContext *ctx, const uint8_t *c
     return location;
 }
 
-JSValue js_debugger_json_stringify(JSContext *ctx, JSValueConst value) {
-    JSValueConst args[] = {
-        value,
-        JS_UNDEFINED,
-        JS_UNDEFINED,
-    };
-    return js_json_stringify(ctx, JS_UNDEFINED, 1, args);
-}
-
 JSDebuggerInfo *js_debugger_info(JSContext *ctx) {
     return &ctx->debugger_info;
 }
