@@ -58,8 +58,10 @@ static int js_transport_write_value(JSDebuggerInfo *info, JSValue value) {
     size_t len;
     const char* str = JS_ToCStringLen(info->ctx, &len, stringified);
     int ret = 0;
-    if (len)
+    if (len) {
+        fprintf(stderr, "Write message: %s\n", str);
         ret = js_transport_write_message_newline(info, str, len);
+    }
     // else send error somewhere?
     JS_FreeCString(info->ctx, str);
     JS_FreeValue(info->ctx, stringified);
