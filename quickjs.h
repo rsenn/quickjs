@@ -1,4 +1,3 @@
-
 /*
  * QuickJS Javascript Engine
  *
@@ -127,7 +126,7 @@ static inline JS_BOOL JS_VALUE_IS_NAN(JSValue v)
 {
     return 0;
 }
-
+    
 #elif defined(JS_NAN_BOXING)
 
 typedef uint64_t JSValue;
@@ -192,7 +191,7 @@ static inline JS_BOOL JS_VALUE_IS_NAN(JSValue v)
     tag = JS_VALUE_GET_TAG(v);
     return tag == (JS_NAN >> 32);
 }
-
+    
 #else /* !JS_NAN_BOXING */
 
 typedef union JSValueUnion {
@@ -214,8 +213,7 @@ typedef struct JSValue {
 #define JS_VALUE_GET_INT(v) ((v).u.int32)
 #define JS_VALUE_GET_BOOL(v) ((v).u.int32)
 #define JS_VALUE_GET_FLOAT64(v) ((v).u.float64)
-//#define JS_VALUE_GET_PTR(v) ((v).u.ptr)
-static inline void* JS_VALUE_GET_PTR(JSValue v) { return v.u.ptr; }
+#define JS_VALUE_GET_PTR(v) ((v).u.ptr)
 
 #define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag }
 #define JS_MKPTR(tag, p) (JSValue){ (JSValueUnion){ .ptr = p }, tag }
@@ -414,7 +412,6 @@ void JS_ComputeMemoryUsage(JSRuntime *rt, JSMemoryUsage *s);
 void JS_DumpMemoryUsage(FILE *fp, const JSMemoryUsage *s, JSRuntime *rt);
 
 /* atom support */
-#undef JS_ATOM_NULL
 #define JS_ATOM_NULL 0
 
 JSAtom JS_NewAtomLen(JSContext *ctx, const char *str, size_t len);
@@ -779,7 +776,10 @@ JS_BOOL JS_DetectModule(const char *input, size_t input_len);
 /* 'input' must be zero terminated i.e. input[input_len] = '\0'. */
 JSValue JS_Eval(JSContext *ctx, const char *input, size_t input_len,
                 const char *filename, int eval_flags);
-JSValue JS_EvalFunction(JSContext *ctx, JSValue fun_obj);
+/* same as JS_Eval() but with an explicit 'this_obj' parameter */
+JSValue JS_EvalThis(JSContext *ctx, JSValueConst this_obj,
+                    const char *input, size_t input_len,
+                    const char *filename, int eval_flags);
 JSValue JS_GetGlobalObject(JSContext *ctx);
 int JS_IsInstanceOf(JSContext *ctx, JSValueConst val, JSValueConst obj);
 int JS_DefineProperty(JSContext *ctx, JSValueConst this_obj,
@@ -888,7 +888,9 @@ uint8_t *JS_WriteObject2(JSContext *ctx, size_t *psize, JSValueConst obj,
 #define JS_READ_OBJ_REFERENCE (1 << 3) /* allow object references */
 JSValue JS_ReadObject(JSContext *ctx, const uint8_t *buf, size_t buf_len,
                       int flags);
-
+/* instantiate and evaluate a bytecode function. Only used when
+   reading a script or module with JS_ReadObject() */
+JSValue JS_EvalFunction(JSContext *ctx, JSValue fun_obj);
 /* load the dependencies of the module 'obj'. Useful when JS_ReadObject()
    returns a module. */
 int JS_ResolveModule(JSContext *ctx, JSValueConst obj);
@@ -951,7 +953,7 @@ static inline JSValue JS_NewCFunctionMagic(JSContext *ctx, JSCFunctionMagic *fun
 {
     return JS_NewCFunction2(ctx, (JSCFunction *)func, name, length, cproto, magic);
 }
-void JS_SetConstructor(JSContext *ctx, JSValueConst func_obj,
+void JS_SetConstructor(JSContext *ctx, JSValueConst func_obj, 
                        JSValueConst proto);
 
 /* C property definition */
