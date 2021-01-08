@@ -1,4 +1,4 @@
-[submodule "net"]
-	path = net
-	url = https://github.com/rsenn/minnet-quickjs.git
-	branch = cmake
+[submodule "ffi"]
+	path = ffi
+	url = http√s://github.com/rsenn/qjs-ffi.git
+	branch = topointer-2
