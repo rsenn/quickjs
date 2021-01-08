@@ -1,4 +1,0 @@
-[submodule "ffi"]
-	path = ffi
-	url = http√s://github.com/rsenn/qjs-ffi.git
-	branch = topointer-2
