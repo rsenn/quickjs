@@ -5,4 +5,4 @@
 [submodule "ffi"]
 	path = ffi
 	url = https://github.com/rsenn/qjs-ffi.git
-	branch = cmake
+	branch = topointer-2
