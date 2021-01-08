@@ -58,7 +58,7 @@ cfg() {
 #    fi
   fi
   case "$generator" in
-    *" - "*) break ;;
+    *" - "*) ;;
     *)
   if type codelite 2>/dev/null; then
     generator="Sublime Text 2 - $generator"
