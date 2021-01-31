@@ -57,7 +57,7 @@ typedef sig_t sighandler_t;
 
 #endif
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(__TINYC__)
 /* enable the os.Worker API. IT relies on POSIX threads */
 #define USE_WORKER
 #endif
@@ -70,6 +70,10 @@ typedef sig_t sighandler_t;
 #include "cutils.h"
 #include "list.h"
 #include "quickjs-libc.h"
+
+#ifdef REQUIRE_DSO_HANDLE
+void *__dso_handle = NULL;
+#endif
 
 /* TODO:
    - add socket calls
@@ -453,7 +457,7 @@ typedef JSModuleDef *(JSInitModuleFunc)(JSContext *ctx,
                                         const char *module_name);
 
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(NO_MODULES)
 static JSModuleDef *js_module_loader_so(JSContext *ctx,
                                         const char *module_name)
 {
@@ -486,8 +490,8 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
     if (filename != module_name)
         js_free(ctx, filename);
     if (!hd) {
-        JS_ThrowReferenceError(ctx, "could not load module filename '%s' as shared library",
-                               module_name);
+        JS_ThrowReferenceError(ctx, "could not load module filename '%s' as shared library: %s",
+                               module_name, dlerror());
         goto fail;
     }
 

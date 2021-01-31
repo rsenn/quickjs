@@ -114,25 +114,57 @@ static inline int64_t min_int64(int64_t a, int64_t b)
 /* WARNING: undefined if a = 0 */
 static inline int clz32(unsigned int a)
 {
+#ifndef __GNUC__
+    int c;
+    for(c = 0; c < 32; c++)
+        if((a >> (31-c)) & 1)
+            break;
+    return c;
+#else
     return __builtin_clz(a);
+#endif
 }
 
 /* WARNING: undefined if a = 0 */
 static inline int clz64(uint64_t a)
 {
+#ifndef __GNUC__
+    int c;
+    for(c = 0; c < 64; c++)
+        if((a >> (63ll-c)) & 1)
+            break;
+    return c;
+#else
     return __builtin_clzll(a);
+#endif
 }
 
 /* WARNING: undefined if a = 0 */
 static inline int ctz32(unsigned int a)
 {
+#ifndef __GNUC__
+    int c;
+    for(c = 0; c < 32; c++)
+        if((a >> c) & 1)
+            break;
+    return c;
+#else
     return __builtin_ctz(a);
+#endif
 }
 
 /* WARNING: undefined if a = 0 */
 static inline int ctz64(uint64_t a)
 {
+#ifndef __GNUC__
+    int c;
+    for(c = 0; c < 64; c++)
+        if((a >> c) & 1)
+            break;
+    return c;
+#else
     return __builtin_ctzll(a);
+#endif
 }
 
 struct __attribute__((packed)) packed_u64 {

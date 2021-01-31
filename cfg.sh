@@ -32,8 +32,8 @@ cfg() {
       *diet*) host="$host" prefix=/opt/diet ;;
       x86_64-w64-mingw32) host="$host" prefix=/mingw64 ;;
       i686-w64-mingw32) host="$host" prefix=/mingw32 ;;
-      x86_64-pc-*) host="$host" prefix=/usr ;;
-      i686-pc-*) host="$host" prefix=/usr ;;
+      x86_64-pc-*) host="$host"; : ${prefix=/usr} ;;
+      i686-pc-*) host="$host"; : ${prefix=/usr} ;;
     esac
   fi
   : ${prefix:=/usr/local}
@@ -110,6 +110,7 @@ cfg() {
   cd $builddir
   ${CMAKE:-cmake} -Wno-dev \
     -G "$generator" \
+    ${prefix:+-DCMAKE_INSTALL_PREFIX=$prefix} \
     ${SHARED:+-DBUILD_SHARED_LIBS=$SHARED} \
     ${VERBOSE:+-DCMAKE_VERBOSE_MAKEFILE=$VERBOSE} \
     -DCMAKE_BUILD_TYPE="${TYPE}" \
@@ -214,14 +215,28 @@ cfg-emscripten() {
     "$@")
 }
 
+cfg-clang() {
+ (build=$(clang -dumpmachine)
+  host=${build/-gnu/-tcc}
+  : ${builddir=build/$host}
+  : ${prefix=/usr/local}
+
+  CC=${CLANG:-clang} \
+  CXX=${CLANGXX:-clang++} \
+  cfg \
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
+    "$@")
+}
+
+
 cfg-tcc() {
  (build=$(cc -dumpmachine)
   host=${build/-gnu/-tcc}
-  builddir=build/$host
-  prefix=/usr
+  : ${builddir=build/$host}
+  : ${prefix=/usr/local}
   includedir=/usr/lib/$build/tcc/include
   libdir=/usr/lib/$build/tcc/
-  bindir=/usr/bin
+  bindir=/usr/local/bin
 
   CC=${TCC:-tcc} \
   cfg \
@@ -350,17 +365,3 @@ cfg-msys() {
     "$@")
 }
 
-cfg-tcc() {
- (build=$(cc -dumpmachine)
-  host=${build/-gnu/-tcc}
-  builddir=build/$host
-  prefix=/usr
-  includedir=/usr/lib/$build/tcc/include
-  libdir=/usr/lib/$build/tcc/
-  bindir=/usr/bin
-
-  CC=${TCC:-tcc} \
-  cfg \
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
-    "$@")
-}

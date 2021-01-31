@@ -19,6 +19,14 @@ include(CheckLibraryExists)
 include(CheckTypeSize)
 include(CheckCCompilerFlag)
 
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "TinyCC")
+  set(TINYC TRUE)
+endif("${CMAKE_C_COMPILER_ID}" STREQUAL "TinyCC")
+
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+  set(GCC TRUE)
+endif("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+
 check_library_exists(pthread pthread_create /usr/lib HAVE_LIBPTHREAD)
 if(HAVE_LIBPTHREAD)
   set(LIBPTHREAD pthread)
@@ -27,12 +35,26 @@ endif(HAVE_LIBPTHREAD)
 check_library_exists(m atan2 /usr/lib HAVE_LIBM)
 if(HAVE_LIBM)
   set(LIBM m)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIBM})
 endif(HAVE_LIBM)
 
-check_library_exists(dl dlopen /usr/lib HAVE_LIBDL)
-if(HAVE_LIBDL)
-  set(LIBDL dl)
-endif(HAVE_LIBDL)
+if(NOT GCC)
+  # check_function_exists(nanf HAVE_NANF)
+  check_function_exists(nan HAVE_NAN)
+  # check_function_exists(nanl HAVE_NANL) check_function_exists(isnan HAVE_ISNAN)
+
+  # check_function_exists(__builtin_clz HAVE_BUILTIN_CLZ) check_function_exists(__builtin_clzll HAVE_BUILTIN_CLZLL) check_function_exists(__builtin_ctz HAVE_BUILTIN_CTZ)
+
+  if(HAVE_NAN)
+    add_definitions("-DNAN=nan(\"\")")
+  endif(HAVE_NAN)
+endif(NOT GCC)
+
+check_function_exists(__dso_handle HAVE_DSO_HANDLE)
+
+if(NOT HAVE_DSO_HANDLE)
+  add_definitions(-DREQUIRE_DSO_HANDLE)
+endif(NOT HAVE_DSO_HANDLE)
 
 # link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
 
@@ -153,9 +175,29 @@ check_include(unistd.h)
 check_include(stdlib.h)
 check_include(stdatomic.h)
 
-if(NOT HAVE_STDATOMIC_H)
-  add_definitions(-DNO_STDATOMIC_H=1)
-endif(NOT HAVE_STDATOMIC_H)
+if(HAVE_STDATOMIC_H)
+  # add_definitions(-DCONFIG_ATOMICS)
+else(HAVE_STDATOMIC_H)
+  # add_definitions(-DEMSCRIPTEN)
+endif(HAVE_STDATOMIC_H)
+
+check_include(dlfcn.h)
+
+check_library_exists(dl dlopen /usr/lib HAVE_LIBDL)
+if(HAVE_LIBDL)
+  set(LIBDL dl)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIBDL})
+endif(HAVE_LIBDL)
+
+# if(TINYC) set(NO_MODULES TRUE) endif(TINYC)
+if(NOT HAVE_DLFCN_H OR NOT HAVE_LIBDL)
+  set(NO_MODULES TRUE)
+endif(NOT HAVE_DLFCN_H OR NOT HAVE_LIBDL)
+
+if(NO_MODULES)
+  add_definitions(-DNO_MODULES)
+  set(LIBDL)
+endif(NO_MODULES)
 
 list(JOIN CMAKE_EXTRA_INCLUDE_FILES " " EXTRA_INCLUDE_FILES)
 
@@ -291,6 +333,13 @@ add_executable(qjsc qjsc.c quickjs.c quickjs.h libregexp.c libunicode.c cutils.c
 target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
 target_compile_definitions(qjsc PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}" CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
+
+add_library(bjson MODULE tests/bjson.c)
+add_library(fib MODULE examples/fib.c)
+set_target_properties(bjson PROPERTIES PREFIX "" COMPILE_DEFINITIONS JS_SHARED_LIBRARY)
+set_target_properties(fib PROPERTIES PREFIX "" COMPILE_DEFINITIONS JS_SHARED_LIBRARY)
+
+install(TARGETS bjson fib DESTINATION ${quickjs_libdir}/quickjs)
 
 install(TARGETS qjs qjsc DESTINATION ${quickjs_bindir})
 install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs \$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${quickjs_bindir}/qjscalc)")
