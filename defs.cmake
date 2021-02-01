@@ -4,7 +4,7 @@ else(WIN32 OR MINGW)
   set(TRANSPORT_PLATFORM unix)
 endif(WIN32 OR MINGW)
 
-set(quickjs_version "2020-07-05")
+set(quickjs_version "2020-11-08")
 set(quickjs_soversion 1)
 set(quickjs_url https://bellard.org/quickjs/quickjs-${quickjs_version}.tar.xz)
 set(quickjs_sha1 371eae0896cc9e9f50864cb34f37d9481d843ce1)
