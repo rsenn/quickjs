@@ -420,7 +420,7 @@ static int output_executable(const char *out_filename, const char *cfilename,
         pstrcpy(lib_dir, sizeof(lib_dir), exe_dir);
     } else {
         snprintf(inc_dir, sizeof(inc_dir), "%s/include/quickjs", CONFIG_PREFIX);
-        snprintf(lib_dir, sizeof(lib_dir), "%s/lib/quickjs", CONFIG_PREFIX);
+        snprintf(lib_dir, sizeof(lib_dir), "%s/lib", CONFIG_PREFIX);
     }
     
     lto_suffix = "";
