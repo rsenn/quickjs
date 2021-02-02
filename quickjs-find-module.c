@@ -50,6 +50,21 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
 }
 
 char*
+js_find_module_package(JSContext* ctx, const char* package_name) {
+  char* filename = js_malloc(ctx, 13 + strlen(package_name) + 13 + 1);
+  struct stat st;
+
+  strcpy(filename, "node_modules/");
+  strcat(filename, package_name);
+
+  if(!stat(filename, &st) && S_ISDIR(st.st_mode)) {
+      return filename;
+  }
+
+  return NULL;
+}
+
+char*
 js_find_module(JSContext* ctx, const char* module_name) {
   char* ret = NULL;
   size_t len;
@@ -57,8 +72,12 @@ js_find_module(JSContext* ctx, const char* module_name) {
   while(!strncmp(module_name, "./", 2)) module_name += 2;
   len = strlen(module_name);
 
-  if(strchr(module_name, '/') == NULL || (len >= 3 && !strcmp(&module_name[len - 3], ".so")))
-    ret = js_find_module_ext(ctx, module_name, ".so");
+  if(strchr(module_name, '/') == NULL) {
+    if(len >= 3 && !strcmp(&module_name[len - 3], ".so"))
+      ret = js_find_module_ext(ctx, module_name, ".so");
+    else
+      ret = js_find_module_package(ctx, module_name);
+  }
 
   if(ret == NULL)
     ret = js_find_module_ext(ctx, module_name, ".js");
