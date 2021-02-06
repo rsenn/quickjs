@@ -38,3 +38,23 @@ set(quickjs_includes
     quickjs-opcode.h
     quickjs.h
     unicode_gen_def.h)
+
+execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${SYSTEM_NAME}")
+  string(REGEX REPLACE i686 i386 quickjs_cross_arch "${SYSTEM_NAME}")
+  #set(quickjs_cross_arch ${SYSTEM_NAME})
+  # endif(CMAKE_CROSSCOMPILING)
+  message("quickjs_cross_arch = ${quickjs_cross_arch}")
+endif()
+
+if(quickjs_cross_arch)
+  set(quickjs_libdir lib/${quickjs_cross_arch})
+  set(quickjs_bindir bin/${quickjs_cross_arch})
+  set(quickjs_includedir include/${quickjs_cross_arch})
+else(quickjs_cross_arch)
+  set(quickjs_libdir lib)
+  set(quickjs_bindir bin)
+  set(quickjs_includedir include)
+endif(quickjs_cross_arch)

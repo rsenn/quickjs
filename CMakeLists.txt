@@ -336,7 +336,7 @@ install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION ${quickjs_libdir} LIBRARY DES
 
 install(FILES ${quickjs_includes} DESTINATION ${quickjs_includedir}/quickjs)
 
-add_executable(qjs qjs.c quickjs.c quickjs.h libregexp.c libunicode.c cutils.c quickjs-libc.c quickjs-libc.h quickjs-find-module.c libbf.c ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
+add_executable(qjs qjs.c quickjs.c quickjs.h libregexp.c libunicode.c cutils.c quickjs-libc.c quickjs-libc.h quickjs-find-module.c libbf.c ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c quickjs-debugger.c quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
 
 # target_link_libraries(qjs ${QUICKJS_LIBRARY})
 target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
@@ -344,7 +344,7 @@ set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
 target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1 CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
 
-add_executable(qjsc qjsc.c quickjs.c quickjs.h libregexp.c libunicode.c cutils.c quickjs-libc.c quickjs-libc.h quickjs-find-module.c libbf.c)
+add_executable(qjsc qjsc.c quickjs.c quickjs.h libregexp.c libunicode.c cutils.c quickjs-libc.c quickjs-libc.h quickjs-find-module.c libbf.c quickjs-debugger.c quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
 target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
 target_compile_definitions(qjsc PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}" CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
