@@ -1173,6 +1173,7 @@ static JSValue js_typed_array_constructor(JSContext *ctx,
 static BOOL typed_array_is_detached(JSContext *ctx, JSObject *p);
 static uint32_t typed_array_get_length(JSContext *ctx, JSObject *p);
 static JSValue JS_ThrowTypeErrorDetachedArrayBuffer(JSContext *ctx);
+static JSValue JS_ThrowPropertyError(JSContext *ctx, const char *fmt, JSAtom prop);
 static JSVarRef *get_var_ref(JSContext *ctx, JSStackFrame *sf, int var_idx,
                              BOOL is_arg);
 static JSValue js_generator_function_call(JSContext *ctx, JSValueConst func_obj,
@@ -7049,6 +7050,21 @@ static int JS_AutoInitProperty(JSContext *ctx, JSObject *p, JSAtom prop,
     return 0;
 }
 
+static JSValue JS_ThrowPropertyError(JSContext *ctx, const char *fmt, JSAtom prop)
+{
+    const char *cstring;
+    JSValue exc;
+
+    cstring = JS_AtomToCString(ctx, prop);
+    if (!cstring) {
+        return JS_ThrowTypeErrorAtom(ctx, fmt, "<unknown>");
+    }
+
+    exc = JS_ThrowTypeErrorAtom(ctx, fmt, cstring);
+    JS_FreeCString(ctx, cstring);
+    return exc;
+}
+
 JSValue JS_GetPropertyInternal(JSContext *ctx, JSValueConst obj,
                                JSAtom prop, JSValueConst this_obj,
                                BOOL throw_ref_error)
@@ -7062,9 +7078,9 @@ JSValue JS_GetPropertyInternal(JSContext *ctx, JSValueConst obj,
     if (unlikely(tag != JS_TAG_OBJECT)) {
         switch(tag) {
         case JS_TAG_NULL:
-            return JS_ThrowTypeErrorAtom(ctx, "cannot read property '%s' of null", prop);
+            return JS_ThrowPropertyError(ctx, "Cannot read property '%s' of null", prop);
         case JS_TAG_UNDEFINED:
-            return JS_ThrowTypeErrorAtom(ctx, "cannot read property '%s' of undefined", prop);
+            return JS_ThrowPropertyError(ctx, "Cannot read property '%s' of undefined", prop);
         case JS_TAG_EXCEPTION:
             return JS_EXCEPTION;
         case JS_TAG_STRING:
@@ -8391,11 +8407,12 @@ int JS_SetPropertyInternal(JSContext *ctx, JSValueConst this_obj,
         switch(tag) {
         case JS_TAG_NULL:
             JS_FreeValue(ctx, val);
-            JS_ThrowTypeErrorAtom(ctx, "cannot set property '%s' of null", prop);
+            JS_ThrowPropertyError(ctx, "Cannot set property '%s' of null", prop);
+
             return -1;
         case JS_TAG_UNDEFINED:
             JS_FreeValue(ctx, val);
-            JS_ThrowTypeErrorAtom(ctx, "cannot set property '%s' of undefined", prop);
+            JS_ThrowPropertyError(ctx, "Cannot set property '%s' of undefined", prop);
             return -1;
         default:
             /* even on a primitive type we can have setters on the prototype */

@@ -662,6 +662,24 @@ function test_generator()
     assert(v.value === undefined && v.done === true);
 }
 
+function test_undefined_access() {
+    const obj = undefined;
+
+    function getError(fn) {
+        try {
+            fn();
+        } catch (err) {
+            return err.message;
+        }
+        throw new Error('Call should have failed');
+    }
+
+    assert(getError(() => obj.message.hello), `Cannot read property 'message' of undefined`);
+    assert(getError(() => null.message), `Cannot read property 'message' of null`);
+    assert(getError(() => { obj.message = 'test' }), `Cannot set property 'message' of undefined`);
+    assert(getError(() => { null.message = 'test' }), `Cannot set property 'message' of null`);
+}
+
 test();
 test_function();
 test_enum();
@@ -678,3 +696,4 @@ test_symbol();
 test_map();
 test_weak_map();
 test_generator();
+test_undefined_access();
