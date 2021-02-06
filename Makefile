@@ -106,6 +106,10 @@ endif
 ifdef CONFIG_WIN32
 DEFINES+=-D__USE_MINGW_ANSI_STDIO # for standard snprintf behavior
 endif
+ifdef CONFIG_AESHASH
+DEFINES+=-DCONFIG_AESHASH
+CFLAGS+=-march=native -msse2 -maes
+endif
 
 CFLAGS+=$(DEFINES)
 CFLAGS_DEBUG=$(CFLAGS) -O0

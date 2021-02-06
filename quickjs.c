@@ -46,6 +46,12 @@
 #include "libbf.h"
 #endif
 
+#ifdef CONFIG_AESHASH
+#include "quickjs-aeshash.h"
+#define hash_string8 aeshash8
+#define hash_string16 aeshash16
+#endif
+
 #define OPTIMIZE         1
 #define SHORT_OPCODES    1
 #if defined(EMSCRIPTEN)
@@ -2436,6 +2442,8 @@ static inline BOOL is_num_string(uint32_t *pval, const JSString *p)
     }
 }
 
+#ifndef CONFIG_AESHASH
+
 /* XXX: could use faster version ? */
 static inline uint32_t hash_string8(const uint8_t *str, size_t len, uint32_t h)
 {
@@ -2455,6 +2463,8 @@ static inline uint32_t hash_string16(const uint16_t *str,
         h = h * 263 + str[i];
     return h;
 }
+#endif
+
 
 static uint32_t hash_string(const JSString *str, uint32_t h)
 {

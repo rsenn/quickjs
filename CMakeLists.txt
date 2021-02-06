@@ -4,6 +4,8 @@ project(quickjs)
 
 set(DISABLE_WERROR TRUE)
 
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel RelWithDebInfo)
+
 if(WIN32 OR MINGW)
   set(LIBWS2_32 ws2_32)
   set(BUILD_SHARED_LIBS ON)
@@ -26,6 +28,19 @@ endif("${CMAKE_C_COMPILER_ID}" STREQUAL "TinyCC")
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
   set(GCC TRUE)
 endif("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+
+check_c_compiler_flag("-march=native" M_ARCH_NATIVE)
+check_c_compiler_flag("-maes" M_AES)
+check_c_compiler_flag("-msse2" M_SSE2)
+if(M_ARCH_NATIVE AND M_AES AND M_SSE2)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native -maes -msse2")
+
+  option(CONFIG_AESHASH "Enable AES-NI hashing" OFF)
+
+  if(CONFIG_AESHASH)
+    add_definitions(-DCONFIG_AESHASH)
+  endif(CONFIG_AESHASH)
+endif(M_ARCH_NATIVE AND M_AES AND M_SSE2)
 
 check_library_exists(pthread pthread_create /usr/lib HAVE_LIBPTHREAD)
 if(HAVE_LIBPTHREAD)
