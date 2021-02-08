@@ -298,6 +298,8 @@ void help(void)
     exit(1);
 }
 
+JSModuleDef* js_module_loader_path(JSContext* ctx, const char* module_name, void* opaque);
+
 int main(int argc, char **argv)
 {
     JSRuntime *rt;
@@ -474,7 +476,7 @@ int main(int argc, char **argv)
     }
 
     /* loader for ES6 modules */
-    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
+    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader_path, NULL);
 
     if (dump_unhandled_promise_rejection) {
         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,
