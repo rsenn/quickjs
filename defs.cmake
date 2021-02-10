@@ -42,12 +42,15 @@ set(quickjs_includes
 execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 
+string(REGEX REPLACE "-pc-" "-" SYSTEM_NAME "${SYSTEM_NAME}")
 if(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${SYSTEM_NAME}")
   string(REGEX REPLACE i686 i386 quickjs_cross_arch "${SYSTEM_NAME}")
   #set(quickjs_cross_arch ${SYSTEM_NAME})
   # endif(CMAKE_CROSSCOMPILING)
-  message("quickjs_cross_arch = ${quickjs_cross_arch}")
 endif()
+  message("quickjs_cross_arch = ${quickjs_cross_arch}")
+  message("HOST_SYSTEM_NAME = ${HOST_SYSTEM_NAME}")
+  message("SYSTEM_NAME = ${SYSTEM_NAME}")
 
 if(quickjs_cross_arch)
   set(quickjs_libdir lib/${quickjs_cross_arch})
