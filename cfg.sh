@@ -1,5 +1,5 @@
 cfg() {
-  if type gcc 2>/dev/null >/dev/null && type g++ 2>/dev/null >/dev/null; then
+ { (if type gcc 2>/dev/null >/dev/null && type g++ 2>/dev/null >/dev/null; then
     : ${CC:=gcc} ${CXX:=g++}
   elif type clang 2>/dev/null >/dev/null && type clang++ 2>/dev/null >/dev/null; then
     : ${CC:=clang} ${CXX:=clang++}
@@ -61,8 +61,9 @@ cfg() {
   esac
   : ${generator:="CodeLite - Unix Makefiles"}
 
- (mkdir -p $builddir
+  mkdir -p $builddir
   : ${relsrcdir=`realpath --relative-to "$builddir" .`}
+  echo "Entering directory '$builddir'" 1>&2
   : set -x
   cd "${builddir:-.}"
   IFS="$IFS "
@@ -81,8 +82,8 @@ cfg() {
     ${MAKE:+-DCMAKE_MAKE_PROGRAM="$MAKE"} \
     "$@" \
     $relsrcdir 
-  eval "${CMAKE:-cmake} \"\$@\""
- ) 2>&1 |tee "${builddir##*/}.log"
+     eval "${CMAKE:-cmake} \"\$@\"" 
+ ) 2>&1 && echo "Configured in '$builddir'" 1>&2; } |tee "${builddir##*/}.log"
 }
 
 cfg-android ()
@@ -222,6 +223,18 @@ cfg-emscripten() {
     -DENABLE_SHARED=OFF \
     -DSHARED_LIBS=OFF \
     -DBUILD_SHARED_LIBS=OFF \
+    "$@")
+}
+
+cfg-clang() {
+ (build=$(cc -dumpmachine | sed 's|-pc-|-|g')
+  build=${build/-gnu/-clang}
+  : ${host=$build}
+  : ${builddir=build/$host}
+  : ${prefix=/usr/local}
+
+  CC=clang CXX=clang++ \
+  cfg \
     "$@")
 }
 
