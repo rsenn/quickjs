@@ -57,9 +57,8 @@ js_find_module_package(JSContext* ctx, const char* package_name) {
   strcpy(filename, "node_modules/");
   strcat(filename, package_name);
 
-  if(!stat(filename, &st) && S_ISDIR(st.st_mode)) {
+  if(!stat(filename, &st) && S_ISDIR(st.st_mode))
       return filename;
-  }
 
   return NULL;
 }
