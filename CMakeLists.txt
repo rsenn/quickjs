@@ -361,13 +361,11 @@ install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs \$E
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/net/CMakeLists.txt)
-  add_subdirectory(net)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/net/CMakeLists.txt)
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/ffi/CMakeLists.txt)
-  add_subdirectory(ffi)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/ffi/CMakeLists.txt)
+foreach(SUBDIR net ffi modules)
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}/CMakeLists.txt)
+    add_subdirectory(${SUBDIR})
+  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}/CMakeLists.txt)
+endforeach(SUBDIR net ffi modules)
 
 configure_file(quickjs.pc.cmake ${CMAKE_BINARY_DIR}/quickjs.pc @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/quickjs.pc DESTINATION ${quickjs_libdir}/pkgconfig)
