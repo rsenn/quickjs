@@ -174,6 +174,14 @@ else
 QJS_LIB_OBJS+=$(OBJDIR)/quickjs-debugger-transport-win.o
 endif
 
+# debugger
+QJS_LIB_OBJS+=$(OBJDIR)/quickjs-debugger.o
+ifndef CONFIG_WIN32
+QJS_LIB_OBJS+=$(OBJDIR)/quickjs-debugger-transport-unix.o
+else
+QJS_LIB_OBJS+=$(OBJDIR)/quickjs-debugger-transport-win.o
+endif
+
 QJS_OBJS=$(OBJDIR)/qjs.o $(OBJDIR)/repl.o $(QJS_LIB_OBJS)
 ifdef CONFIG_BIGNUM
 QJS_LIB_OBJS+=$(OBJDIR)/libbf.o 
