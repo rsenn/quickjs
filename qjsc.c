@@ -60,7 +60,9 @@ static uint64_t feature_bitmap;
 static FILE *outfile;
 static BOOL byte_swap;
 static BOOL dynamic_export;
+static BOOL save_temp;
 static const char *c_ident_prefix = "qjsc_";
+
 
 #define FE_ALL (-1)
 
@@ -228,11 +230,14 @@ static void find_unique_cname(char *cname, size_t cname_size)
     pstrcpy(cname, cname_size, cname1);
 }
 
+char* js_find_module(JSContext* ctx, const char* module_name);
+
 JSModuleDef *jsc_module_loader(JSContext *ctx,
                               const char *module_name, void *opaque)
 {
     JSModuleDef *m;
     namelist_entry_t *e;
+    char *filename = js_find_module(ctx, module_name);
 
     /* check if it is a declared C or system module */
     e = namelist_find(&cmodule_list, module_name);
@@ -241,10 +246,10 @@ JSModuleDef *jsc_module_loader(JSContext *ctx,
         namelist_add(&init_module_list, e->name, e->short_name, 0);
         /* create a dummy module */
         m = JS_NewCModule(ctx, module_name, js_module_dummy_init);
-    } else if (has_suffix(module_name, ".so")) {
-        fprintf(stderr, "Warning: binary module '%s' will be dynamically loaded\n", module_name);
+    } else if (has_suffix(filename ? filename : module_name, ".so")) {
+        fprintf(stderr, "Warning: binary module '%s' will be dynamically loaded\n", filename ? filename : module_name);
         /* create a dummy module */
-        m = JS_NewCModule(ctx, module_name, js_module_dummy_init);
+        m = JS_NewCModule(ctx, filename ? filename : module_name, js_module_dummy_init);
         /* the resulting executable will export its symbols for the
            dynamic library */
         dynamic_export = TRUE;
@@ -254,20 +259,20 @@ JSModuleDef *jsc_module_loader(JSContext *ctx,
         JSValue func_val;
         char cname[1024];
         
-        buf = js_load_file(ctx, &buf_len, module_name);
+        buf = js_load_file(ctx, &buf_len, filename ? filename : module_name);
         if (!buf) {
             JS_ThrowReferenceError(ctx, "could not load module filename '%s'",
-                                   module_name);
+                                   filename ? filename : module_name);
             return NULL;
         }
         
         /* compile the module */
-        func_val = JS_Eval(ctx, (char *)buf, buf_len, module_name,
+        func_val = JS_Eval(ctx, (char *)buf, buf_len,   module_name,
                            JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
         js_free(ctx, buf);
         if (JS_IsException(func_val))
             return NULL;
-        get_c_name(cname, sizeof(cname), module_name);
+        get_c_name(cname, sizeof(cname), filename ? filename : module_name);
         if (namelist_find(&cname_list, cname)) {
             find_unique_cname(cname, sizeof(cname));
         }
@@ -277,6 +282,8 @@ JSModuleDef *jsc_module_loader(JSContext *ctx,
         m = JS_VALUE_GET_PTR(func_val);
         JS_FreeValue(ctx, func_val);
     }
+    if(filename)
+        js_free(ctx, filename);
     return m;
 }
 
@@ -345,6 +352,7 @@ void help(void)
            "usage: " PROG_NAME " [options] [files]\n"
            "\n"
            "options are:\n"
+           "-v          add verbosity\n"
            "-c          only output bytecode in a C file\n"
            "-e          output main() and bytecode in a C file (default = executable output)\n"
            "-o output   set the output filename\n"
@@ -420,7 +428,7 @@ static int output_executable(const char *out_filename, const char *cfilename,
         pstrcpy(lib_dir, sizeof(lib_dir), exe_dir);
     } else {
         snprintf(inc_dir, sizeof(inc_dir), "%s/include/quickjs", CONFIG_PREFIX);
-        snprintf(lib_dir, sizeof(lib_dir), "%s/lib/quickjs", CONFIG_PREFIX);
+        snprintf(lib_dir, sizeof(lib_dir), "%s/lib", CONFIG_PREFIX);
     }
     
     lto_suffix = "";
@@ -446,9 +454,16 @@ static int output_executable(const char *out_filename, const char *cfilename,
     if (dynamic_export)
         *arg++ = "-rdynamic";
     *arg++ = cfilename;
-    snprintf(libjsname, sizeof(libjsname), "%s/libquickjs%s%s.a",
-             lib_dir, bn_suffix, lto_suffix);
-    *arg++ = libjsname;
+
+    if(1) {
+        snprintf(libjsname, sizeof(libjsname), "-L%s", lib_dir);
+        *arg++ = libjsname;
+        *arg++ = "-lquickjs";
+    } else {
+        snprintf(libjsname, sizeof(libjsname), "%s/libquickjs%s%s.a",
+                 lib_dir, bn_suffix, lto_suffix);
+        *arg++ = libjsname;
+    }
     *arg++ = "-lm";
     *arg++ = "-ldl";
     *arg++ = "-lpthread";
@@ -461,7 +476,8 @@ static int output_executable(const char *out_filename, const char *cfilename,
     }
     
     ret = exec_cmd((char **)argv);
-    unlink(cfilename);
+    if(!save_temp)
+        unlink(cfilename);
     return ret;
 }
 #else
@@ -514,7 +530,7 @@ int main(int argc, char **argv)
     namelist_add(&cmodule_list, "os", "os", 0);
 
     for(;;) {
-        c = getopt(argc, argv, "ho:cN:f:mxevM:p:S:D:");
+        c = getopt(argc, argv, "ho:cN:f:mxevM:p:S:D:s");
         if (c == -1)
             break;
         switch(c) {
@@ -528,6 +544,9 @@ int main(int argc, char **argv)
             break;
         case 'e':
             output_type = OUTPUT_C_MAIN;
+            break;
+        case 's':
+            save_temp = TRUE;
             break;
         case 'N':
             cname = optarg;
@@ -611,7 +630,7 @@ int main(int argc, char **argv)
         }
     }
 
-    if (output_type == OUTPUT_EXECUTABLE) {
+    if (output_type == OUTPUT_EXECUTABLE && !save_temp) {
 #if defined(_WIN32) || defined(__ANDROID__)
         /* XXX: find a /tmp directory ? */
         snprintf(cfilename, sizeof(cfilename), "out%d.c", getpid());
@@ -620,6 +639,8 @@ int main(int argc, char **argv)
 #endif
     } else {
         pstrcpy(cfilename, sizeof(cfilename), out_filename);
+        if(output_type == OUTPUT_EXECUTABLE)
+            pstrcat(cfilename, sizeof(cfilename), ".c");
     }
     
     fo = fopen(cfilename, "w");
@@ -729,7 +750,7 @@ int main(int argc, char **argv)
         
         /* add the module loader if necessary */
         if (feature_bitmap & (1 << FE_MODULE_LOADER)) {
-            fprintf(fo, "  JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);\n");
+            fprintf(fo, "  JS_SetModuleLoaderFunc(rt, NULL, js_module_loader_path, NULL);\n");
         }
         
         fprintf(fo,

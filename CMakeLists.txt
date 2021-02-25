@@ -190,15 +190,31 @@ if(MSYS OR CYGWIN)
   add_definitions(-DDONT_HAVE_MALLOC_USABLE_SIZE=1)
 endif()
 
-if(NOT QUICKJS_NODEBUG)
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    check_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
-  endif(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+# if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
-  endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-endif(NOT QUICKJS_NODEBUG)
+message("!!!!DEBUG MODE!!!")
+# option(USE_EFENCE "Enable electric fence" OFF)
+set(DEBUG_OUTPUT TRUE CACHE BOOL "Debug output" FORCE)
+set(DEBUG_MAT FALSE CACHE BOOL "Debug cv::Mat" FORCE)
+list(APPEND PLOTCV_DEFS DEBUG=1)
+
+# add_definitions(-DDEBUG=1)
+
+check_c_compiler_flag("-O0" OPT_C_OPT_NONE)
+if(OPT_C_OPT_NONE)
+  if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O0")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0" CACHE STRING "C compiler options" FORCE)
+  endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O0")
+endif(OPT_C_OPT_NONE)
+
+check_c_compiler_flag("-ggdb" OPT_C_G_GDB)
+if(OPT_C_G_GDB)
+  if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-ggdb")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb" CACHE STRING "C compiler options" FORCE)
+  endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-ggdb")
+endif(OPT_C_G_GDB)
+
+# endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
 check_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
@@ -250,10 +266,10 @@ endif(CMAKE_CROSSCOMPILING)
 
 add_custom_command(OUTPUT repl.c COMMAND ${QJSC} -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from repl.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
 
-add_custom_command(OUTPUT qjscalc.c COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js DEPENDS ${QJSC_DEPS}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
+add_custom_command(OUTPUT qjscalc.c COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
 
-add_custom_target(hello.c COMMAND ${CMAKE_CURRENT_BINARY_DIR}/qjsc -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from hello.js using qjs compiler" SOURCES examples/hello.js)
+add_custom_target(hello.c COMMAND ${CMAKE_CURRENT_BINARY_DIR}/qjsc -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from hello.js using qjs compiler"
+                  SOURCES examples/hello.js)
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 # add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )

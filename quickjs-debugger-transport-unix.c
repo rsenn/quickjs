@@ -93,14 +93,15 @@ static void js_transport_close(JSRuntime* rt, void *udata) {
 // todo: fixup asserts to return errors.
 static struct sockaddr_in js_debugger_parse_sockaddr(const char* address) {
     char* port_string = strstr(address, ":");
-    assert(port_string);
-
-    int port = atoi(port_string + 1);
-    assert(port);
-
+    int port = 9229;
     char host_string[256];
     strcpy(host_string, address);
-    host_string[port_string - address] = 0;
+   //assert(port_string);
+    if(port_string) {
+        port = atoi(port_string + 1);
+        assert(port);
+        host_string[port_string - address] = 0;
+    }
 
     struct hostent *host = gethostbyname(host_string);
     assert(host);
