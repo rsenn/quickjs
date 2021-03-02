@@ -38,6 +38,10 @@
 #include <malloc.h>
 #endif
 
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
 #include "cutils.h"
 #include "quickjs-libc.h"
 

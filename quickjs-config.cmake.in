@@ -1,0 +1,93 @@
+/* CONFIG_AGENT - */
+#cmakedefine CONFIG_AGENT 1
+
+/* CONFIG_ALL_UNICODE - */
+#cmakedefine CONFIG_ALL_UNICODE 1
+
+/* CONFIG_ATOMICS - */
+#cmakedefine CONFIG_ATOMICS 1
+
+/* CONFIG_BIGNUM - */
+#cmakedefine CONFIG_BIGNUM 1
+
+/* CONFIG_CHECK_JSVALUE - */
+#cmakedefine CONFIG_CHECK_JSVALUE 1
+
+/* CONFIG_LTO - */
+#cmakedefine CONFIG_LTO 1
+
+/* CONFIG_PREFIX - */
+#cmakedefine CONFIG_PREFIX 1
+
+/* CONFIG_PRINTF_RNDN - */
+#cmakedefine CONFIG_PRINTF_RNDN 1
+
+/* DUMP_ATOMS - */
+#cmakedefine DUMP_ATOMS 1
+
+/* DUMP_BYTECODE - */
+#cmakedefine DUMP_BYTECODE 1
+
+/* DUMP_CASE_CONV_TABLE - */
+#cmakedefine DUMP_CASE_CONV_TABLE 1
+
+/* DUMP_CC_TABLE - */
+#cmakedefine DUMP_CC_TABLE 1
+
+/* DUMP_DECOMP_TABLE - */
+#cmakedefine DUMP_DECOMP_TABLE 1
+
+/* DUMP_FREE - */
+#cmakedefine DUMP_FREE 1
+
+/* DUMP_GC - */
+#cmakedefine DUMP_GC 1
+
+/* DUMP_GC_FREE - */
+#cmakedefine DUMP_GC_FREE 1
+
+/* DUMP_LEAKS - */
+#cmakedefine DUMP_LEAKS 1
+
+/* DUMP_MEM - */
+#cmakedefine DUMP_MEM 1
+
+/* DUMP_MODULE_RESOLVE - */
+#cmakedefine DUMP_MODULE_RESOLVE 1
+
+/* DUMP_OBJECTS - */
+#cmakedefine DUMP_OBJECTS 1
+
+/* DUMP_PROMISE - */
+#cmakedefine DUMP_PROMISE 1
+
+/* DUMP_READ_OBJECT - */
+#cmakedefine DUMP_READ_OBJECT 1
+
+/* DUMP_REOP - */
+#cmakedefine DUMP_REOP 1
+
+/* DUMP_SHAPES - */
+#cmakedefine DUMP_SHAPES 1
+
+/* DUMP_TABLE_SIZE - */
+#cmakedefine DUMP_TABLE_SIZE 1
+
+/* HAVE_MALLOC_USABLE_SIZE - */
+#cmakedefine HAVE_MALLOC_USABLE_SIZE 1
+
+/* PROFILE - */
+#cmakedefine PROFILE 1
+
+/* USE_BF_DEC - */
+#cmakedefine USE_BF_DEC 1
+
+/* USE_FFT_MUL - */
+#cmakedefine USE_FFT_MUL 1
+
+/* USE_TEST - */
+#cmakedefine USE_TEST 1
+
+/* USE_WORKER - */
+#cmakedefine USE_WORKER 1
+

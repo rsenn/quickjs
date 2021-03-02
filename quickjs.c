@@ -38,6 +38,10 @@
 #include <malloc.h>
 #endif
 
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
 #include "cutils.h"
 #include "list.h"
 #include "quickjs.h"
@@ -68,11 +72,11 @@
 
 /* define to include Atomics.* operations which depend on the OS
    threads */
-#if !defined(EMSCRIPTEN)
+#if !defined(EMSCRIPTEN) && !defined(CONFIG_ATOMICS)
 #define CONFIG_ATOMICS
 #endif
 
-#if !defined(EMSCRIPTEN)
+#if !defined(EMSCRIPTEN) && !defined(CONFIG_STACK_CHECK)
 /* enable stack limitation */
 #define CONFIG_STACK_CHECK
 #endif
