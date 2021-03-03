@@ -62,6 +62,7 @@ option(CONFIG_ATOMICS "Enable atomics extension" ON)
 option(CONFIG_BIGNUM "Enable bignum extension" ON)
 option(CONFIG_CHECK_JSVALUE "Enable check jsvalue" OFF)
 option(CONFIG_PRINTF_RNDN "Enable printf rndn" OFF)
+option(USE_WORKER "Enable support for worker-threads" ON)
 
 option(DUMP_GC "Enable dump GC" ${DUMP})
 option(DUMP_MEM "Enable dump MEM" ${DUMP})
@@ -78,7 +79,7 @@ option(DUMP_BYTECODE "Enable dump BYTECODE" OFF)
 option(DUMP_LEAKS "Enable dump LEAKS" ${DUMP})
 option(DUMP_ATOMS "Enable dump atoms" ${DUMP})
 
-foreach(
+#[[foreach(
   DEF
   DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE
   DUMP_PROMISE DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT
@@ -86,10 +87,7 @@ foreach(
   if(${${DEF}})
     add_definitions(-D${DEF}=1)
   endif(${${DEF}})
-endforeach(
-  DEF DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE
-  DUMP_PROMISE DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT
-  DUMP_BYTECODE DUMP_LEAKS)
+endforeach()]]
 
 if(BUILD_SHARED_LIBS)
   set(A_NAME ${PROJECT_NAME}-static)
@@ -416,10 +414,9 @@ install(
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/net/CMakeLists.txt)
-  add_subdirectory(net)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/net/CMakeLists.txt)
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/ffi/CMakeLists.txt)
-  add_subdirectory(ffi)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/ffi/CMakeLists.txt)
+set(SUBDIRECTORIES net ffi modules)
+foreach(SUBDIR ${SUBDIRECTORIES})
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}/CMakeLists.txt)
+    add_subdirectory(${SUBDIR})
+  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}/CMakeLists.txt)
+endforeach(SUBDIR ${SUBDIRECTORIES})
