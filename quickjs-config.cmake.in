@@ -19,6 +19,9 @@
 /* USE_WORKER - Define this if you want to add support for a worker thread */
 #cmakedefine USE_WORKER
 
+/* USE_BIGNUM - Enable BigFloat, BigDecimal by default */
+#cmakedefine USE_BIGNUM
+
 /* DUMP_ATOMS - Define this if you want to dump atoms when freeing context */
 #cmakedefine DUMP_ATOMS
 

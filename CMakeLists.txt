@@ -62,7 +62,9 @@ option(CONFIG_ATOMICS "Enable atomics extension" ON)
 option(CONFIG_BIGNUM "Enable bignum extension" ON)
 option(CONFIG_CHECK_JSVALUE "Enable check jsvalue" OFF)
 option(CONFIG_PRINTF_RNDN "Enable printf rndn" OFF)
+
 option(USE_WORKER "Enable support for worker-threads" ON)
+option(USE_BIGNUM "Enable BigFloat, BigDecimal by default " OFF)
 
 option(DUMP_GC "Enable dump GC" ${DUMP})
 option(DUMP_MEM "Enable dump MEM" ${DUMP})
@@ -78,6 +80,8 @@ option(DUMP_READ_OBJECT "Enable dump READ_OBJECT" OFF)
 option(DUMP_BYTECODE "Enable dump BYTECODE" OFF)
 option(DUMP_LEAKS "Enable dump LEAKS" ${DUMP})
 option(DUMP_ATOMS "Enable dump atoms" ${DUMP})
+
+
 
 #[[foreach(
   DEF
@@ -410,6 +414,9 @@ target_compile_definitions(
 install(TARGETS qjs qjsc DESTINATION bin)
 install(
   CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)"
+)
+install(
+  CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjsbignum)"
 )
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
