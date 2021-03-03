@@ -412,12 +412,13 @@ target_compile_definitions(
           CONFIG_BIGNUM=1)
 
 install(TARGETS qjs qjsc DESTINATION bin)
-install(
-  CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)"
-)
-install(
-  CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjsbignum)"
-)
+
+function(symbolic_link TARGET DEST)
+  install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${TARGET} ${DEST})\nmessage(STATUS \"Sym-linked: ${DEST} => ${TARGET}\")")
+ endfunction(symbolic_link TARGET DEST)
+
+symbolic_link(qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)
+symbolic_link(qjs ${CMAKE_INSTALL_PREFIX}/bin/qjsbignum)
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
