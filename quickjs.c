@@ -6834,7 +6834,8 @@ JS_GetPropertyInternal(
   tag = JS_VALUE_GET_TAG(obj);
   if(unlikely(tag != JS_TAG_OBJECT)) {
     switch(tag) {
-      case JS_TAG_NULL: return JS_ThrowTypeErrorAtom(ctx, "cannot read property '%s' of null", prop);
+      case JS_TAG_NULL: 
+      return JS_ThrowTypeErrorAtom(ctx, "cannot read property '%s' of null", prop);
       case JS_TAG_UNDEFINED:
         return JS_ThrowTypeErrorAtom(ctx, "cannot read property '%s' of undefined", prop);
       case JS_TAG_EXCEPTION: return JS_EXCEPTION;

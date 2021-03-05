@@ -325,7 +325,7 @@ configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/quickjs-config.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
-
+add_definitions(-DHAVE_QUICKJS_CONFIG_H)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake}
@@ -336,7 +336,7 @@ add_library(${A_NAME} STATIC ${quickjs_sources})
 target_compile_definitions(
   ${A_NAME}
   PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
-          CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" HAVE_QUICKJS_CONFIG_H=1)
+          CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" )
 target_include_directories(${A_NAME} PUBLIC ${quickjs_sources_root})
 
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
@@ -354,7 +354,9 @@ if(BUILD_SHARED_LIBS)
     ${SO_NAME}
     PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
             CONFIG_SOVERSION="${quickjs_soversion}"
-            CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM)
+            CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" 
+            #CONFIG_BIGNUM
+            )
   target_include_directories(${SO_NAME} PUBLIC ${quickjs_sources_root})
   set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${quickjs_soversion}"
                                               OUTPUT_NAME ${PROJECT_NAME})
@@ -392,7 +394,8 @@ set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
 target_compile_definitions(
   qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1
-              CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
+              CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" #CONFIG_BIGNUM=1
+              )
 
 add_executable(
   qjsc
@@ -409,7 +412,8 @@ target_compile_definitions(
           CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
           CONFIG_CC="${CMAKE_C_COMPILER}"
           CONFIG_LTO=1
-          CONFIG_BIGNUM=1)
+          #CONFIG_BIGNUM=1
+          )
 
 install(TARGETS qjs qjsc DESTINATION bin)
 
