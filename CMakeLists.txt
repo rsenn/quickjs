@@ -424,7 +424,7 @@ symbolic_link(qjs ${CMAKE_INSTALL_PREFIX}/bin/qjsbignum)
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(SUBDIRECTORIES net ffi modules)
+set(SUBDIRECTORIES net ffi modules qjs-nanovg qjs-glfw)
 foreach(SUBDIR ${SUBDIRECTORIES})
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}/CMakeLists.txt)
     add_subdirectory(${SUBDIR})
