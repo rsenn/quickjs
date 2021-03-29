@@ -14,3 +14,7 @@
 	path = qjs-nanovg
 	url = https://github.com/rsenn/nanovg-qjs.git
 	branch = master
+[submodule "ffi"]
+	path = ffi
+	url = https://github.com/rsenn/qjs-ffi.git
+	branch = master-rsenn
