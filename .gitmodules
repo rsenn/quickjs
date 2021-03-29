@@ -1,7 +1,3 @@
-[submodule "modules"]
-	path = modules
-	url = https://github.com/rsenn/quickjs-modules.git
-	branch = master
 [submodule "net"]
 	path = net
 	url = https://github.com/rsenn/minnet-quickjs.git
