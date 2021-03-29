@@ -13,6 +13,8 @@
 [submodule "qjs-glfw"]
 	path = qjs-glfw
 	url = https://github.com/rsenn/qjs-glfw.git
+	branch = master
 [submodule "qjs-nanovg"]
 	path = qjs-nanovg
 	url = https://github.com/rsenn/nanovg-qjs.git
+	branch = master
