@@ -2,10 +2,6 @@
 	path = modules
 	url = https://github.com/rsenn/quickjs-modules.git
 	branch = master
-[submodule "ffi"]
-	path = ffi
-	url = https://github.com/rsenn/qjs-ffi.git
-	branch = master-rsenn
 [submodule "net"]
 	path = net
 	url = https://github.com/rsenn/minnet-quickjs.git
