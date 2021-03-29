@@ -415,6 +415,8 @@ install(
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
+set(QUICKJS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 set(MODULE_SUBDIRS "ffi;net;modules")
 
 option(MODULE_GLFW "Enable GLFW module" OFF)
