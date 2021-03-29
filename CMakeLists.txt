@@ -69,11 +69,39 @@ option(DUMP_READ_OBJECT "Enable dump READ_OBJECT" OFF)
 option(DUMP_BYTECODE "Enable dump BYTECODE" OFF)
 option(DUMP_LEAKS "Enable dump LEAKS" ${DUMP})
 
-foreach(DEF DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE DUMP_PROMISE DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT DUMP_BYTECODE DUMP_LEAKS)
+foreach(
+  DEF
+  DUMP_GC
+  DUMP_MEM
+  DUMP_OBJECTS
+  DUMP_SHAPES
+  DUMP_CC_TABLE
+  DUMP_GC_FREE
+  DUMP_PROMISE
+  DUMP_REOP
+  DUMP_TABLE_SIZE
+  DUMP_MODULE_RESOLVE
+  DUMP_READ_OBJECT
+  DUMP_BYTECODE
+  DUMP_LEAKS)
   if(${${DEF}})
     add_definitions(-D${DEF}=1)
   endif(${${DEF}})
-endforeach(DEF DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE DUMP_PROMISE DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT DUMP_BYTECODE DUMP_LEAKS)
+endforeach(
+  DEF
+  DUMP_GC
+  DUMP_MEM
+  DUMP_OBJECTS
+  DUMP_SHAPES
+  DUMP_CC_TABLE
+  DUMP_GC_FREE
+  DUMP_PROMISE
+  DUMP_REOP
+  DUMP_TABLE_SIZE
+  DUMP_MODULE_RESOLVE
+  DUMP_READ_OBJECT
+  DUMP_BYTECODE
+  DUMP_LEAKS)
 
 if(BUILD_SHARED_LIBS)
   set(A_NAME ${PROJECT_NAME}-static)
@@ -103,7 +131,9 @@ macro(append_vars STR)
     endif(NOT LIST MATCHES ".*${STR}.*")
     string(REPLACE ";" " " LIST "${LIST}")
     # message("New value for ${L}: ${LIST}")
-    set("${L}" "${LIST}" PARENT_SCOPE)
+    set("${L}"
+        "${LIST}"
+        PARENT_SCOPE)
   endforeach(L ${ARGN})
 endmacro(append_vars STR)
 
@@ -112,7 +142,6 @@ function(check_flag FLAG VAR)
     string(TOUPPER "${FLAG}" TMP)
     string(REGEX REPLACE "[^0-9A-Za-z]" _ VAR "${TMP}")
   endif(NOT VAR OR VAR STREQUAL "")
-  message(STATUS "Checking for compiler flag: ${FLAG}")
   set(CMAKE_REQUIRED_QUIET ON)
   check_c_compiler_flag("${FLAG}" "${VAR}")
   set(CMAKE_REQUIRED_QUIET OFF)
@@ -120,12 +149,13 @@ function(check_flag FLAG VAR)
   set(RESULT "${${VAR}}")
   if(RESULT)
     append_vars(${FLAG} ${ARGN})
-    message(STATUS "supported")
+    message(STATUS "Compiler flag ${FLAG} ... supported")
     # message("append_vars(${FLAG} ${ARGN})")
-  else(RESULT)
-    message(STATUS "fail")
   endif(RESULT)
-endfunction(check_flag FLAG VAR)
+endfunction(
+  check_flag
+  FLAG
+  VAR)
 
 macro(check_flags FLAGS)
   message("Checking flags ${FLAGS} ${ARGN}")
@@ -248,12 +278,27 @@ else(CMAKE_CROSSCOMPILING)
   set(QJSC_DEPS qjsc)
 endif(CMAKE_CROSSCOMPILING)
 
-add_custom_command(OUTPUT repl.c COMMAND ${QJSC} -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from repl.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
+add_custom_command(
+  OUTPUT repl.c
+  COMMAND ${QJSC} -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js
+  DEPENDS ${QJSC_DEPS}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generate from repl.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
 
-add_custom_command(OUTPUT qjscalc.c COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js DEPENDS ${QJSC_DEPS}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
+add_custom_command(
+  OUTPUT qjscalc.c
+  COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
+  DEPENDS ${QJSC_DEPS}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
 
-add_custom_target(hello.c COMMAND ${CMAKE_CURRENT_BINARY_DIR}/qjsc -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from hello.js using qjs compiler" SOURCES examples/hello.js)
+add_custom_target(
+  hello.c
+  COMMAND ${CMAKE_CURRENT_BINARY_DIR}/qjsc -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js
+  DEPENDS ${QJSC_DEPS}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generate from hello.js using qjs compiler"
+  SOURCES examples/hello.js)
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 # add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
@@ -276,11 +321,30 @@ if(BUILD_SHARED_LIBS)
   target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
 endif(BUILD_SHARED_LIBS)
-install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
+install(
+  TARGETS ${LIB_TARGETS}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin)
 
 install(FILES ${quickjs_includes} DESTINATION include/quickjs)
 
-add_executable(qjs qjs.c quickjs.c quickjs.h libregexp.c libunicode.c cutils.c quickjs-libc.c quickjs-libc.h quickjs-find-module.c libbf.c ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c quickjs-debugger.c quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+add_executable(
+  qjs
+  qjs.c
+  quickjs.c
+  quickjs.h
+  libregexp.c
+  libunicode.c
+  cutils.c
+  quickjs-libc.c
+  quickjs-libc.h
+  quickjs-find-module.c
+  libbf.c
+  ${CMAKE_CURRENT_BINARY_DIR}/repl.c
+  ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c
+  quickjs-debugger.c
+  quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
 
 # target_link_libraries(qjs ${QUICKJS_LIBRARY})
 target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
@@ -288,20 +352,51 @@ set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
 target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1 CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
 
-add_executable(qjsc qjsc.c quickjs.c quickjs.h libregexp.c libunicode.c cutils.c quickjs-libc.c quickjs-libc.h quickjs-find-module.c libbf.c quickjs-debugger.c quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+add_executable(
+  qjsc
+  qjsc.c
+  quickjs.c
+  quickjs.h
+  libregexp.c
+  libunicode.c
+  cutils.c
+  quickjs-libc.c
+  quickjs-libc.h
+  quickjs-find-module.c
+  libbf.c
+  quickjs-debugger.c
+  quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
 target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
-target_compile_definitions(qjsc PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}" CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
+target_compile_definitions(
+  qjsc
+  PRIVATE _GNU_SOURCE=1
+          CONFIG_VERSION="${quickjs_version}"
+          CONFIG_SOVERSION="${quickjs_soversion}"
+          CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
+          CONFIG_CC="${CMAKE_C_COMPILER}"
+          CONFIG_LTO=1
+          CONFIG_BIGNUM=1)
 
 install(TARGETS qjs qjsc DESTINATION bin)
 install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)")
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/net/CMakeLists.txt)
-  add_subdirectory(net)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/net/CMakeLists.txt)
+set(MODULE_SUBDIRS "ffi;net;modules")
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/ffi/CMakeLists.txt)
-  add_subdirectory(ffi)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/ffi/CMakeLists.txt)
+option(MODULE_GLFW "Enable GLFW module" OFF)
+option(MODULE_NANOVG "Enable NanoVG module" OFF)
+
+if(MODULE_GLFW)
+  list(APPEND MODULE_SUBDIRS qjs-glfw)
+endif(MODULE_GLFW)
+if(MODULE_NANOVG)
+  list(APPEND MODULE_SUBDIRS qjs-nanovg)
+endif(MODULE_NANOVG)
+
+foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
+    add_subdirectory(${MODULE_SUBDIR})
+  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
+endforeach(MODULE_SUBDIR ${MODULE_SUBDIRS})
