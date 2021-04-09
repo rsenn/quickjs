@@ -10,6 +10,9 @@ if(WIN32 OR MINGW)
   set(BUILD_SHARED_LIBS ON)
 endif(WIN32 OR MINGW)
 
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel RelWithDebInfo)
+
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/defs.cmake)
 include(FindThreads)
 
@@ -18,7 +21,7 @@ include(CheckFunctionExists)
 include(CheckSymbolExists)
 include(CheckLibraryExists)
 include(CheckTypeSize)
-include(CheckCCompilerFlag)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-flags.cmake)
 
 check_library_exists(pthread pthread_create /usr/lib HAVE_LIBPTHREAD)
 if(HAVE_LIBPTHREAD)
@@ -119,51 +122,6 @@ endif(BUILD_SHARED_LIBS)
 set(get_quickjs_cmake_in ${CMAKE_CURRENT_LIST_DIR}/get_quickjs.cmake.in)
 set(get_quickjs_cmake ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake)
 
-macro(append_vars STR)
-  foreach(L ${ARGN})
-    set(LIST "${${L}}")
-    if(NOT LIST MATCHES ".*${STR}.*")
-      if("${LIST}" STREQUAL "")
-        set(LIST "${STR}")
-      else("${LIST}" STREQUAL "")
-        set(LIST "${LIST} ${STR}")
-      endif("${LIST}" STREQUAL "")
-
-    endif(NOT LIST MATCHES ".*${STR}.*")
-    string(REPLACE ";" " " LIST "${LIST}")
-    # message("New value for ${L}: ${LIST}")
-    set("${L}"
-        "${LIST}"
-        PARENT_SCOPE)
-  endforeach(L ${ARGN})
-endmacro(append_vars STR)
-
-function(check_flag FLAG VAR)
-  if(NOT VAR OR VAR STREQUAL "")
-    string(TOUPPER "${FLAG}" TMP)
-    string(REGEX REPLACE "[^0-9A-Za-z]" _ VAR "${TMP}")
-  endif(NOT VAR OR VAR STREQUAL "")
-  set(CMAKE_REQUIRED_QUIET ON)
-  check_c_compiler_flag("${FLAG}" "${VAR}")
-  set(CMAKE_REQUIRED_QUIET OFF)
-
-  set(RESULT "${${VAR}}")
-  if(RESULT)
-    append_vars(${FLAG} ${ARGN})
-    message(STATUS "Compiler flag ${FLAG} ... supported")
-    # message("append_vars(${FLAG} ${ARGN})")
-  endif(RESULT)
-endfunction(
-  check_flag
-  FLAG
-  VAR)
-
-macro(check_flags FLAGS)
-  message("Checking flags ${FLAGS} ${ARGN}")
-  foreach(FLAG ${FLAGS})
-    check_flag(${FLAG} "" ${ARGN})
-  endforeach(FLAG ${FLAGS})
-endmacro(check_flags FLAGS)
 
 macro(check_include NAME)
   string(TOUPPER "${NAME}" TMP)

@@ -38,3 +38,35 @@ set(quickjs_includes
     quickjs-opcode.h
     quickjs.h
     unicode_gen_def.h)
+
+
+execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+string(REGEX REPLACE "-pc-" "-" quickjs_host_arch "${SYSTEM_NAME}")
+
+if(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${quickjs_host_arch}")
+  string(REGEX REPLACE i686 i386 quickjs_cross_arch "${quickjs_host_arch}")
+  # set(quickjs_cross_arch ${SYSTEM_NAME}) endif(CMAKE_CROSSCOMPILING)
+else(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${SYSTEM_NAME}")
+  set(quickjs_cross_arch "")
+endif(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${SYSTEM_NAME}")
+
+message("HOST_SYSTEM_NAME = ${HOST_SYSTEM_NAME}")
+message("SYSTEM_NAME = ${SYSTEM_NAME}")
+message("quickjs_cross_arch = ${quickjs_cross_arch}")
+
+if(quickjs_cross_arch)
+  set(quickjs_libdir lib/${quickjs_cross_arch})
+  set(quickjs_bindir bin/${quickjs_cross_arch})
+  set(quickjs_includedir include/${quickjs_cross_arch})
+else(quickjs_cross_arch)
+  set(quickjs_libdir lib)
+  set(quickjs_bindir bin)
+  set(quickjs_includedir include)
+endif(quickjs_cross_arch)
+
+message("libdir = ${quickjs_libdir}")
+message("bindir = ${quickjs_bindir}")
+message("includedir = ${quickjs_includedir}")
+

@@ -10,6 +10,9 @@
 /* CONFIG_PRINTF_RNDN - define it if printf uses the RNDN rounding mode instead of RNDNA */
 #cmakedefine CONFIG_PRINTF_RNDN
 
+/* CONFIG_CHECK_JSVALUE - define it if printf uses the RNDN rounding mode instead of RNDNA */
+#cmakedefine CONFIG_PRINTF_RNDN
+
 /* HAVE_MALLOC_USABLE_SIZE - Define this if you have a working malloc_usable_size() function */
 #cmakedefine HAVE_MALLOC_USABLE_SIZE
 

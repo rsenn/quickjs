@@ -2492,7 +2492,7 @@ void*
 lre_realloc(void* opaque, void* ptr, size_t size) {
   return realloc(ptr, size);
 }
-
+#if 0
 int
 main(int argc, char** argv) {
   int len, ret, i;
@@ -2532,4 +2532,5 @@ main(int argc, char** argv) {
   }
   return 0;
 }
+#endif
 #endif
