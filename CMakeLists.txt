@@ -10,6 +10,9 @@ if(WIN32 OR MINGW)
   set(BUILD_SHARED_LIBS ON)
 endif(WIN32 OR MINGW)
 
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel RelWithDebInfo)
+
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/defs.cmake)
 include(FindThreads)
 
@@ -18,7 +21,7 @@ include(CheckFunctionExists)
 include(CheckSymbolExists)
 include(CheckLibraryExists)
 include(CheckTypeSize)
-include(CheckCCompilerFlag)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-flags.cmake)
 
 check_library_exists(pthread pthread_create /usr/lib HAVE_LIBPTHREAD)
 if(HAVE_LIBPTHREAD)
@@ -56,14 +59,6 @@ string(REPLACE "-O3" "-O0" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
 
 set(DUMP OFF)
 
-option(CONFIG_AGENT "Enable agent" OFF)
-option(CONFIG_ALL_UNICODE "Enable all unicode" OFF)
-option(CONFIG_ATOMICS "Enable atomics extension" ON)
-option(CONFIG_BIGNUM "Enable bignum extension" ON)
-option(CONFIG_CHECK_JSVALUE "Enable check jsvalue" OFF)
-option(CONFIG_PRINTF_RNDN "Enable printf rndn" OFF)
-option(USE_WORKER "Enable support for worker-threads" ON)
-
 option(DUMP_GC "Enable dump GC" ${DUMP})
 option(DUMP_MEM "Enable dump MEM" ${DUMP})
 option(DUMP_OBJECTS "Enable dump OBJECTS" OFF)
@@ -77,17 +72,40 @@ option(DUMP_MODULE_RESOLVE "Enable dump MODULE_RESOLVE" OFF)
 option(DUMP_READ_OBJECT "Enable dump READ_OBJECT" OFF)
 option(DUMP_BYTECODE "Enable dump BYTECODE" OFF)
 option(DUMP_LEAKS "Enable dump LEAKS" ${DUMP})
-option(DUMP_ATOMS "Enable dump atoms" ${DUMP})
 
-#[[foreach(
+foreach(
   DEF
-  DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE
-  DUMP_PROMISE DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT
-  DUMP_BYTECODE DUMP_LEAKS)
+  DUMP_GC
+  DUMP_MEM
+  DUMP_OBJECTS
+  DUMP_SHAPES
+  DUMP_CC_TABLE
+  DUMP_GC_FREE
+  DUMP_PROMISE
+  DUMP_REOP
+  DUMP_TABLE_SIZE
+  DUMP_MODULE_RESOLVE
+  DUMP_READ_OBJECT
+  DUMP_BYTECODE
+  DUMP_LEAKS)
   if(${${DEF}})
     add_definitions(-D${DEF}=1)
   endif(${${DEF}})
-endforeach()]]
+endforeach(
+  DEF
+  DUMP_GC
+  DUMP_MEM
+  DUMP_OBJECTS
+  DUMP_SHAPES
+  DUMP_CC_TABLE
+  DUMP_GC_FREE
+  DUMP_PROMISE
+  DUMP_REOP
+  DUMP_TABLE_SIZE
+  DUMP_MODULE_RESOLVE
+  DUMP_READ_OBJECT
+  DUMP_BYTECODE
+  DUMP_LEAKS)
 
 if(BUILD_SHARED_LIBS)
   set(A_NAME ${PROJECT_NAME}-static)
@@ -104,49 +122,6 @@ endif(BUILD_SHARED_LIBS)
 set(get_quickjs_cmake_in ${CMAKE_CURRENT_LIST_DIR}/get_quickjs.cmake.in)
 set(get_quickjs_cmake ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake)
 
-macro(append_vars STR)
-  foreach(L ${ARGN})
-    set(LIST "${${L}}")
-    if(NOT LIST MATCHES ".*${STR}.*")
-      if("${LIST}" STREQUAL "")
-        set(LIST "${STR}")
-      else("${LIST}" STREQUAL "")
-        set(LIST "${LIST} ${STR}")
-      endif("${LIST}" STREQUAL "")
-
-    endif(NOT LIST MATCHES ".*${STR}.*")
-    string(REPLACE ";" " " LIST "${LIST}")
-    # message("New value for ${L}: ${LIST}")
-    set("${L}" "${LIST}" PARENT_SCOPE)
-  endforeach(L ${ARGN})
-endmacro(append_vars STR)
-
-function(check_flag FLAG VAR)
-  if(NOT VAR OR VAR STREQUAL "")
-    string(TOUPPER "${FLAG}" TMP)
-    string(REGEX REPLACE "[^0-9A-Za-z]" _ VAR "${TMP}")
-  endif(NOT VAR OR VAR STREQUAL "")
-  message(STATUS "Checking for compiler flag: ${FLAG}")
-  set(CMAKE_REQUIRED_QUIET ON)
-  check_c_compiler_flag("${FLAG}" "${VAR}")
-  set(CMAKE_REQUIRED_QUIET OFF)
-
-  set(RESULT "${${VAR}}")
-  if(RESULT)
-    append_vars(${FLAG} ${ARGN})
-    message(STATUS "supported")
-    # message("append_vars(${FLAG} ${ARGN})")
-  else(RESULT)
-    message(STATUS "fail")
-  endif(RESULT)
-endfunction(check_flag FLAG VAR)
-
-macro(check_flags FLAGS)
-  message("Checking flags ${FLAGS} ${ARGN}")
-  foreach(FLAG ${FLAGS})
-    check_flag(${FLAG} "" ${ARGN})
-  endforeach(FLAG ${FLAGS})
-endmacro(check_flags FLAGS)
 
 macro(check_include NAME)
   string(TOUPPER "${NAME}" TMP)
@@ -196,9 +171,7 @@ endif(NOT HAVE_MALLOC_USABLE_SIZE)
 
 if(HAVE_MALLOC_USABLE_SIZE OR HAVE_MALLOC_USABLE_SIZE_DEFINITION)
   # add_definitions(-DHAVE_MALLOC_USABLE_SIZE=1)
-  set(HAVE_MALLOC_USABLE_SIZE TRUE)
 else(HAVE_MALLOC_USABLE_SIZE OR HAVE_MALLOC_USABLE_SIZE_DEFINITION)
-  set(HAVE_MALLOC_USABLE_SIZE FALSE)
   add_definitions(-DDONT_HAVE_MALLOC_USABLE_SIZE=1)
 endif(HAVE_MALLOC_USABLE_SIZE OR HAVE_MALLOC_USABLE_SIZE_DEFINITION)
 
@@ -206,41 +179,25 @@ if(MSYS OR CYGWIN)
   add_definitions(-DDONT_HAVE_MALLOC_USABLE_SIZE=1)
 endif()
 
-# if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+if(NOT QUICKJS_NODEBUG)
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL
+                                          "RelWithDebInfo")
+    check_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
+  endif(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL
+                                             "RelWithDebInfo")
 
-message("!!!!DEBUG MODE!!!")
-# option(USE_EFENCE "Enable electric fence" OFF)
-set(DEBUG_OUTPUT TRUE CACHE BOOL "Debug output" FORCE)
-set(DEBUG_MAT FALSE CACHE BOOL "Debug cv::Mat" FORCE)
-list(APPEND PLOTCV_DEFS DEBUG=1)
-
-# add_definitions(-DDEBUG=1)
-
-check_c_compiler_flag("-O0" OPT_C_OPT_NONE)
-if(OPT_C_OPT_NONE)
-  if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O0")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0"
-        CACHE STRING "C compiler options" FORCE)
-  endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O0")
-endif(OPT_C_OPT_NONE)
-
-check_c_compiler_flag("-ggdb" OPT_C_G_GDB)
-if(OPT_C_G_GDB)
-  if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-ggdb")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb"
-        CACHE STRING "C compiler options" FORCE)
-  endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-ggdb")
-endif(OPT_C_G_GDB)
-
-# endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
+  endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+endif(NOT QUICKJS_NODEBUG)
 
 check_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
-  option(CONFIG_LTO "Enable link-time optimization" ON)
+  option(ENABLE_LTO "Enable link-time optimization" ON)
 endif(HAVE_LTO_FLAG)
-if(CONFIG_LTO)
+if(ENABLE_LTO)
   append_vars("-flto" CMAKE_C_FLAGS CMAKE_EXE_LINKER_FLAGS)
-endif(CONFIG_LTO)
+endif(ENABLE_LTO)
 
 # check_flags("-Wall;-Wchar-subscripts;-Wextra;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wundef;-Wuninitialized;-Wwrite-strings"
 # CMAKE_C_FLAGS)
@@ -318,23 +275,15 @@ add_custom_target(
   SOURCES examples/hello.js)
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/quickjs-config.cmake.in
-               ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 # add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake}
 # COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P
 # ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 
 add_library(${A_NAME} STATIC ${quickjs_sources})
 target_compile_definitions(
-  ${A_NAME}
-  PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
-          CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" HAVE_QUICKJS_CONFIG_H=1)
+  ${A_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
+                    CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${quickjs_sources_root})
-
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
   set_target_properties(${A_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
@@ -358,12 +307,13 @@ if(BUILD_SHARED_LIBS)
                                           ${LIBWS2_32})
 
 endif(BUILD_SHARED_LIBS)
-install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION lib LIBRARY DESTINATION lib
-        RUNTIME DESTINATION bin)
+install(
+  TARGETS ${LIB_TARGETS}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin)
 
 install(FILES ${quickjs_includes} DESTINATION include/quickjs)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
-        DESTINATION include/quickjs)
 
 add_executable(
   qjs
@@ -392,8 +342,17 @@ target_compile_definitions(
 
 add_executable(
   qjsc
-  qjsc.c quickjs.c quickjs.h libregexp.c libunicode.c cutils.c quickjs-libc.c
-  quickjs-libc.h quickjs-find-module.c libbf.c quickjs-debugger.c
+  qjsc.c
+  quickjs.c
+  quickjs.h
+  libregexp.c
+  libunicode.c
+  cutils.c
+  quickjs-libc.c
+  quickjs-libc.h
+  quickjs-find-module.c
+  libbf.c
+  quickjs-debugger.c
   quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
 target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
@@ -414,9 +373,22 @@ install(
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(SUBDIRECTORIES net ffi modules)
-foreach(SUBDIR ${SUBDIRECTORIES})
-  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}/CMakeLists.txt)
-    add_subdirectory(${SUBDIR})
-  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}/CMakeLists.txt)
-endforeach(SUBDIR ${SUBDIRECTORIES})
+set(QUICKJS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+set(MODULE_SUBDIRS "ffi;net;modules")
+
+option(MODULE_GLFW "Enable GLFW module" OFF)
+option(MODULE_NANOVG "Enable NanoVG module" OFF)
+
+if(MODULE_GLFW)
+  list(APPEND MODULE_SUBDIRS qjs-glfw)
+endif(MODULE_GLFW)
+if(MODULE_NANOVG)
+  list(APPEND MODULE_SUBDIRS qjs-nanovg)
+endif(MODULE_NANOVG)
+
+foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
+    add_subdirectory(${MODULE_SUBDIR})
+  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
+endforeach(MODULE_SUBDIR ${MODULE_SUBDIRS})

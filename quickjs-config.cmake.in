@@ -10,6 +10,9 @@
 /* CONFIG_PRINTF_RNDN - define it if printf uses the RNDN rounding mode instead of RNDNA */
 #cmakedefine CONFIG_PRINTF_RNDN
 
+/* CONFIG_CHECK_JSVALUE - define it if printf uses the RNDN rounding mode instead of RNDNA */
+#cmakedefine CONFIG_PRINTF_RNDN
+
 /* HAVE_MALLOC_USABLE_SIZE - Define this if you have a working malloc_usable_size() function */
 #cmakedefine HAVE_MALLOC_USABLE_SIZE
 
@@ -18,6 +21,9 @@
 
 /* USE_WORKER - Define this if you want to add support for a worker thread */
 #cmakedefine USE_WORKER
+
+/* USE_BIGNUM - Enable BigFloat, BigDecimal by default */
+#cmakedefine USE_BIGNUM
 
 /* DUMP_ATOMS - Define this if you want to dump atoms when freeing context */
 #cmakedefine DUMP_ATOMS
