@@ -1,4 +1,5 @@
 include(CheckCCompilerFlag)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/try-compiler.cmake)
 
 macro(append_vars STR)
   foreach(L ${ARGN})
@@ -24,8 +25,9 @@ function(check_flag FLAG VAR)
     string(TOUPPER "${FLAG}" TMP)
     string(REGEX REPLACE "[^0-9A-Za-z]" _ VAR "${TMP}")
   endif(NOT VAR OR VAR STREQUAL "")
-  set(CMAKE_REQUIRED_QUIET ON)
-  check_c_compiler_flag("${FLAG}" "${VAR}")
+  #set(CMAKE_REQUIRED_QUIET ON)
+  CMAKE_TRY_COMPILER_FLAG(C "${FLAG}" "${VAR}")
+  # check_c_compiler_flag("${FLAG}" "${VAR}")
   set(CMAKE_REQUIRED_QUIET OFF)
 
   set(RESULT "${${VAR}}")

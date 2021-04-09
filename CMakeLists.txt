@@ -1,5 +1,5 @@
-# Copyright (c) 2020 Kosaki Mezumona This cmake script is distributed under the
-# MIT License. See LICENSE for more details.
+# Copyright (c) 2020 Kosaki Mezumona This cmake script is distributed under the MIT License. See
+# LICENSE for more details.
 cmake_minimum_required(VERSION 3.1)
 project(quickjs)
 
@@ -11,7 +11,6 @@ if(WIN32 OR MINGW)
 endif(WIN32 OR MINGW)
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel RelWithDebInfo)
-
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/defs.cmake)
 include(FindThreads)
@@ -73,39 +72,13 @@ option(DUMP_READ_OBJECT "Enable dump READ_OBJECT" OFF)
 option(DUMP_BYTECODE "Enable dump BYTECODE" OFF)
 option(DUMP_LEAKS "Enable dump LEAKS" ${DUMP})
 
-foreach(
-  DEF
-  DUMP_GC
-  DUMP_MEM
-  DUMP_OBJECTS
-  DUMP_SHAPES
-  DUMP_CC_TABLE
-  DUMP_GC_FREE
-  DUMP_PROMISE
-  DUMP_REOP
-  DUMP_TABLE_SIZE
-  DUMP_MODULE_RESOLVE
-  DUMP_READ_OBJECT
-  DUMP_BYTECODE
-  DUMP_LEAKS)
+foreach(DEF DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE DUMP_PROMISE
+            DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT DUMP_BYTECODE DUMP_LEAKS)
   if(${${DEF}})
     add_definitions(-D${DEF}=1)
   endif(${${DEF}})
-endforeach(
-  DEF
-  DUMP_GC
-  DUMP_MEM
-  DUMP_OBJECTS
-  DUMP_SHAPES
-  DUMP_CC_TABLE
-  DUMP_GC_FREE
-  DUMP_PROMISE
-  DUMP_REOP
-  DUMP_TABLE_SIZE
-  DUMP_MODULE_RESOLVE
-  DUMP_READ_OBJECT
-  DUMP_BYTECODE
-  DUMP_LEAKS)
+endforeach(DEF DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE DUMP_PROMISE
+           DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT DUMP_BYTECODE DUMP_LEAKS)
 
 if(BUILD_SHARED_LIBS)
   set(A_NAME ${PROJECT_NAME}-static)
@@ -121,7 +94,6 @@ endif(BUILD_SHARED_LIBS)
 
 set(get_quickjs_cmake_in ${CMAKE_CURRENT_LIST_DIR}/get_quickjs.cmake.in)
 set(get_quickjs_cmake ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake)
-
 
 macro(check_include NAME)
   string(TOUPPER "${NAME}" TMP)
@@ -179,17 +151,23 @@ if(MSYS OR CYGWIN)
   add_definitions(-DDONT_HAVE_MALLOC_USABLE_SIZE=1)
 endif()
 
+check_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings" CMAKE_C_FLAGS)
+
+check_flags(
+  "-Wall;-Wno-implicit-int-float-conversion;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation"
+  CMAKE_C_FLAGS_DEBUG)
+
 if(NOT QUICKJS_NODEBUG)
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL
-                                          "RelWithDebInfo")
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     check_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
-  endif(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL
-                                             "RelWithDebInfo")
+  endif(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
   endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+
 endif(NOT QUICKJS_NODEBUG)
+message("CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
 check_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
@@ -198,14 +176,6 @@ endif(HAVE_LTO_FLAG)
 if(ENABLE_LTO)
   append_vars("-flto" CMAKE_C_FLAGS CMAKE_EXE_LINKER_FLAGS)
 endif(ENABLE_LTO)
-
-# check_flags("-Wall;-Wchar-subscripts;-Wextra;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wundef;-Wuninitialized;-Wwrite-strings"
-# CMAKE_C_FLAGS)
-check_flags(
-  "-Wchar-subscripts;-Wno-implicit-int-float-conversion;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation;-Wundef;-Wuninitialized;-Wwrite-strings"
-  CMAKE_C_FLAGS)
-
-message("CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
 check_type_size(sighandler_t SIZEOF_SIGHANDLER_T)
 if(HAVE_SIZEOF_SIGHANDLER_T)
@@ -218,16 +188,13 @@ else(HAVE_SIZEOF_SIGHANDLER_T)
   endif(HAVE_SIZEOF___SIGHANDLER_T)
 endif(HAVE_SIZEOF_SIGHANDLER_T)
 
-# if(CMAKE_BUILD_TYPE STREQUAL "Debug") option(USE_EFENCE "Enable electric
-# fence" OFF) check_library_exists(efence malloc /usr/lib HAVE_EFENCE)
-# endif(CMAKE_BUILD_TYPE STREQUAL "Debug") if(USE_EFENCE AND HAVE_EFENCE)
-# set(ELECTRICFENCE_LIBRARY efence) endif(USE_EFENCE AND HAVE_EFENCE)
+# if(CMAKE_BUILD_TYPE STREQUAL "Debug") option(USE_EFENCE "Enable electric fence" OFF)
+# check_library_exists(efence malloc /usr/lib HAVE_EFENCE) endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+# if(USE_EFENCE AND HAVE_EFENCE) set(ELECTRICFENCE_LIBRARY efence) endif(USE_EFENCE AND HAVE_EFENCE)
 
 string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
-string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELWITHDEBINFO
-               "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-string(REPLACE "-O3" "-Os" CMAKE_C_FLAGS_MINSIZEREL
-               "${CMAKE_C_FLAGS_MINSIZEREL}")
+string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+string(REPLACE "-O3" "-Os" CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL}")
 
 check_flag("-rdynamic" HAVE_LINK_RDYNAMIC_FLAG LINK_EXPORT)
 # message("LINK_EXPORT = ${LINK_EXPORT}")
@@ -240,25 +207,25 @@ check_flag("-Wno-format-truncation" HAVE_WARN_NO_FORMAT_TRUNCATION_FLAG CMAKE_C_
 check_flag("-Wno-discarded-qualifiers" HAVE_WARN_NO_DISCARDED_QUALIFIERS_FLAG CMAKE_C_FLAGS)
 ]]
 if(CMAKE_CROSSCOMPILING)
+  set(QJS "qjsc")
+  set(QJS_DEPS)
   set(QJSC "qjsc")
   set(QJSC_DEPS)
 else(CMAKE_CROSSCOMPILING)
-  set(QJSC "./qjsc")
+  set(QJS "${CMAKE_CURRENT_BINARY_DIR}/qjs")
+  set(QJS_DEPS qjs)
+  set(QJSC "${CMAKE_CURRENT_BINARY_DIR}/qjsc")
   set(QJSC_DEPS qjsc)
 endif(CMAKE_CROSSCOMPILING)
 
 add_custom_command(
-  OUTPUT repl.c
-  COMMAND ${QJSC} -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js
-  DEPENDS ${QJSC_DEPS}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT "Generate from repl.js using qjs compiler" SOURCES
-          ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
+  OUTPUT repl.c COMMAND ${QJSC} -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js
+  DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generate from repl.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
 
 add_custom_command(
   OUTPUT qjscalc.c
-  COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m
-          ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
+  COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
   DEPENDS ${QJSC_DEPS}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES
@@ -266,52 +233,43 @@ add_custom_command(
 
 add_custom_target(
   hello.c
-  COMMAND
-    ${CMAKE_CURRENT_BINARY_DIR}/qjsc -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c
-    -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js
+  COMMAND ${CMAKE_CURRENT_BINARY_DIR}/qjsc -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m
+          ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js
   DEPENDS ${QJSC_DEPS}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Generate from hello.js using qjs compiler"
   SOURCES examples/hello.js)
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
-# add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake}
-# COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P
-# ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
+# add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs
+# sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 
 add_library(${A_NAME} STATIC ${quickjs_sources})
-target_compile_definitions(
-  ${A_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
-                    CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM)
+target_compile_definitions(${A_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
+                                             CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${quickjs_sources_root})
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
   set_target_properties(${A_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 endif(NOT BUILD_SHARED_LIBS)
-target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD}
-                                       ${LIBWS2_32})
-# message("target_link_libraries ${A_NAME} PRIVATE ${LIBDL} ${LIBM}
-# ${LIBPTHREAD}")
+target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
+# message("target_link_libraries ${A_NAME} PRIVATE ${LIBDL} ${LIBM} ${LIBPTHREAD}")
 
 if(BUILD_SHARED_LIBS)
   add_library(${SO_NAME} SHARED ${quickjs_sources})
   target_compile_definitions(
     ${SO_NAME}
     PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
-            CONFIG_SOVERSION="${quickjs_soversion}"
-            CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM)
+            CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
+            CONFIG_BIGNUM)
   target_include_directories(${SO_NAME} PUBLIC ${quickjs_sources_root})
-  set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${quickjs_soversion}"
-                                              OUTPUT_NAME ${PROJECT_NAME})
-  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD}
-                                          ${LIBWS2_32})
+  set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${quickjs_soversion}" OUTPUT_NAME
+                                                                               ${PROJECT_NAME})
+  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
 endif(BUILD_SHARED_LIBS)
-install(
-  TARGETS ${LIB_TARGETS}
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin)
+install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION lib LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin)
 
 install(FILES ${quickjs_includes} DESTINATION include/quickjs)
 
@@ -336,34 +294,20 @@ add_executable(
 target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
-target_compile_definitions(
-  qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1
-              CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
+target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1
+                                       CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
 
 add_executable(
   qjsc
-  qjsc.c
-  quickjs.c
-  quickjs.h
-  libregexp.c
-  libunicode.c
-  cutils.c
-  quickjs-libc.c
-  quickjs-libc.h
-  quickjs-find-module.c
-  libbf.c
-  quickjs-debugger.c
+  qjsc.c quickjs.c quickjs.h libregexp.c libunicode.c cutils.c quickjs-libc.c quickjs-libc.h
+  quickjs-find-module.c libbf.c quickjs-debugger.c
   quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
 target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
 target_compile_definitions(
   qjsc
-  PRIVATE _GNU_SOURCE=1
-          CONFIG_VERSION="${quickjs_version}"
-          CONFIG_SOVERSION="${quickjs_soversion}"
-          CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
-          CONFIG_CC="${CMAKE_C_COMPILER}"
-          CONFIG_LTO=1
+  PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}" CONFIG_SOVERSION="${quickjs_soversion}"
+          CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1
           CONFIG_BIGNUM=1)
 
 install(TARGETS qjs qjsc DESTINATION bin)
@@ -392,3 +336,5 @@ foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
     add_subdirectory(${MODULE_SUBDIR})
   endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
 endforeach(MODULE_SUBDIR ${MODULE_SUBDIRS})
+
+message("BUILDSYSTEM_TARGETS = ${BUILDSYSTEM_TARGETS}")
