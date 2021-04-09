@@ -22,7 +22,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#define _XOPEN_SOURCE 800
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -454,7 +453,7 @@ typedef JSModuleDef *(JSInitModuleFunc)(JSContext *ctx,
                                         const char *module_name);
 
 
-#if defined(_WIN32) || defined(__dietlibc__)
+#if defined(_WIN32)
 static JSModuleDef *js_module_loader_so(JSContext *ctx,
                                         const char *module_name)
 {
@@ -487,8 +486,8 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
     if (filename != module_name)
         js_free(ctx, filename);
     if (!hd) {
-        JS_ThrowReferenceError(ctx, "could not load module filename '%s' as shared library: %s",
-                               module_name, dlerror());
+        JS_ThrowReferenceError(ctx, "could not load module filename '%s' as shared library",
+                               module_name);
         goto fail;
     }
 
@@ -2533,7 +2532,7 @@ static JSValue js_os_stat(JSContext *ctx, JSValueConst this_val,
                                   JS_NewInt64(ctx, st.st_blocks),
                                   JS_PROP_C_W_E);
 #endif
-#if defined(_WIN32) || defined(__dietlibc__)
+#if defined(_WIN32)
         JS_DefinePropertyValueStr(ctx, obj, "atime",
                                   JS_NewInt64(ctx, (int64_t)st.st_atime * 1000),
                                   JS_PROP_C_W_E);

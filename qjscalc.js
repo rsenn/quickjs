@@ -24,14 +24,13 @@
 "use strict";
 "use math";
 
-//var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunction, Series, Matrix;
+var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunction, Series, Matrix;
 
 (function(global) {
-    let Integer = global.Integer = global.BigInt;
-    let Float = global.Float = global.BigFloat;
-    
+    global.Integer = global.BigInt;
+    global.Float = global.BigFloat;
     global.algebraicMode = true;
-
+    
     /* add non enumerable properties */
     function add_props(obj, props) {
         var i, val, prop, tab, desc;
@@ -373,7 +372,7 @@
 
     /* Fraction */
 
-    let Fraction = globalThis.Fraction = function Fraction(a, b)
+    Fraction = function Fraction(a, b)
     {
         var d, r, obj;
 
@@ -704,7 +703,7 @@
        
     /* Complex */
     
-    let Complex = globalThis.Complex = function Complex(re, im)
+    Complex = function Complex(re, im)
     {
         var obj;
         if (new.target)
@@ -830,7 +829,7 @@
 
     /* Mod */
 
-    let Mod = globalThis.Mod = function Mod(a, m) {
+    Mod = function Mod(a, m) {
         var obj, t;
         if (new.target)
             throw TypeError("not a constructor");
@@ -949,7 +948,7 @@
         return false;
     }
     
-    let Polynomial = globalThis.Polynomial = function Polynomial(a)
+    Polynomial = function Polynomial(a)
     {
         if (new.target)
             throw TypeError("not a constructor");
@@ -1341,7 +1340,7 @@
 
     /* Polynomial Modulo Q */
 
-    let PolyMod = globalThis.PolyMod = function PolyMod(a, m) {
+    PolyMod = function PolyMod(a, m) {
         var obj, t;
         if (new.target)
             throw TypeError("not a constructor");
@@ -1439,7 +1438,7 @@
 
     /* Rational function */
     
-    let RationalFunction = globalThis.RationalFunction = function RationalFunction(a, b)
+    RationalFunction = function RationalFunction(a, b)
     {
         var t, r, d, obj;
         if (new.target)
@@ -1577,7 +1576,7 @@
     }
     
     /* n is the maximum number of terms if 'a' is not a serie */
-    let Series = globalThis.Series = function Series(a, n) {
+    Series = function Series(a, n) {
         var emin, r, i;
         
         if (a instanceof Series) {
@@ -1901,7 +1900,7 @@
     
     /* Array (Matrix) */
 
-    let Matrix = globalThis.Matrix = function Matrix(h, w) {
+    Matrix = function Matrix(h, w) {
         var i, j, r, rl;
         if (typeof w === "undefined")
             w = h;
@@ -2380,16 +2379,14 @@
         norm2: Polynomial.prototype.norm2,
     });
 
-})(globalThis);
-
-const { Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunction, Series, Matrix } = globalThis;
+})(this);
 
 /* global definitions */
 var I = Complex(0, 1);
 var X = Polynomial([0, 1]);
 var O = Series.O;
 
-Object.defineProperty(globalThis, "PI", { get: function () { return Float.PI } });
+Object.defineProperty(this, "PI", { get: function () { return Float.PI } });
 
 /* put frequently used functions in the global context */
 var gcd = Integer.gcd;
