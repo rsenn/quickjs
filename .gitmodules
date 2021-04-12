@@ -1,7 +1,7 @@
 [submodule "ffi"]
 	path = ffi
 	url = https://github.com/rsenn/qjs-ffi.git
-	branch = master-rsenn
+	branch = master
 [submodule "modules"]
 	path = modules
 	url = https://github.com/rsenn/quickjs-modules.git
