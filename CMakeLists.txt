@@ -198,10 +198,18 @@ else(HAVE_SIZEOF_SIGHANDLER_T)
   endif(HAVE_SIZEOF___SIGHANDLER_T)
 endif(HAVE_SIZEOF_SIGHANDLER_T)
 
-# if(CMAKE_BUILD_TYPE STREQUAL "Debug") option(USE_EFENCE "Enable electric
-# fence" OFF) check_library_exists(efence malloc /usr/lib HAVE_EFENCE)
-# endif(CMAKE_BUILD_TYPE STREQUAL "Debug") if(USE_EFENCE AND HAVE_EFENCE)
-# set(ELECTRICFENCE_LIBRARY efence) endif(USE_EFENCE AND HAVE_EFENCE)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  option(USE_EFENCE "Enable electric fence" OFF)
+  if(USE_EFENCE)
+  check_library_exists(efence malloc /usr/lib HAVE_EFENCE)
+  endif(USE_EFENCE)
+endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+
+if(HAVE_EFENCE)
+  set(ELECTRICFENCE_LIBRARY efence)
+else(HAVE_EFENCE)
+  set(ELECTRICFENCE_LIBRARY )
+endif(HAVE_EFENCE)
 
 string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELWITHDEBINFO
