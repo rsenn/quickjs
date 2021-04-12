@@ -358,6 +358,7 @@ endif(MODULE_GLFW)
 if(MODULE_NANOVG)
   list(APPEND MODULE_SUBDIRS qjs-nanovg)
 endif(MODULE_NANOVG)
+message("Module subdirectories: ${MODULE_SUBDIRS}")
 
 foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
