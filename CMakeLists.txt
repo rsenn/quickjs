@@ -21,6 +21,7 @@ include(CheckFunctionExists)
 include(CheckSymbolExists)
 include(CheckLibraryExists)
 include(CheckTypeSize)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/try-compiler.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-flags.cmake)
 
 check_library_exists(pthread pthread_create /usr/lib HAVE_LIBPTHREAD)
