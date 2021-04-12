@@ -6,3 +6,15 @@
 	path = modules
 	url = https://github.com/rsenn/quickjs-modules.git
 	branch = master
+<<<<<<< HEAD
+=======
+[submodule "net"]
+	path = net
+	url = https://github.com/rsenn/minnet-quickjs.git
+[submodule "qjs-glfw"]
+	path = qjs-glfw
+	url = https://github.com/rsenn/qjs-glfw.git
+[submodule "qjs-nanovg"]
+	path = qjs-nanovg
+	url = https://github.com/rsenn/nanovg-qjs.git
+>>>>>>> e45567feff829543642a011d434c4865eb278e82
