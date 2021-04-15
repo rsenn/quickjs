@@ -69,7 +69,7 @@ JSModuleDef*
 js_module_loader_path(JSContext* ctx, const char* module_name, void* opaque) {
   char* filename;
   JSModuleDef* ret = NULL;
-  filename = js_find_module(ctx, module_name);
+  filename = module_name[0] == '/' ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
   if(filename) {
     ret = js_module_loader(ctx, filename, opaque);
     js_free(ctx, filename);
