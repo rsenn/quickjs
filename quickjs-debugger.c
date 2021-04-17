@@ -537,14 +537,18 @@ void js_debugger_check(JSContext* ctx, const uint8_t *cur_pc) {
     if (!info->attempted_connect) {
         info->attempted_connect = 1;
         char *address = getenv("QUICKJS_DEBUG_ADDRESS");
-        if (address != NULL && !info->transport_close)
+        if (address != NULL && !info->transport_close) {
+            printf("QUICKJS_DEBUG_ADDRESS = %s\n", address);
             js_debugger_connect(ctx, address);
+        }
     }
     else if (!info->attempted_wait) {
         info->attempted_wait = 1;
         char *address = getenv("QUICKJS_DEBUG_LISTEN_ADDRESS");
-        if (address != NULL && !info->transport_close)
+        if (address != NULL && !info->transport_close) {
+            printf("QUICKJS_DEBUG_LISTEN_ADDRESS = %s\n", address);
             js_debugger_wait_connection(ctx, address);
+        }
     }
 
     if (info->transport_close == NULL)
