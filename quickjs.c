@@ -16253,7 +16253,7 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
         [ OP_COUNT ... 255 ] = &&case_default
     };
 #define SWITCH(pc)      goto *active_dispatch_table[opcode = *pc++];
-#define CASE(op)        case_debugger_ ## op: js_debugger_check(ctx, pc); case_ ## op
+#define CASE(op)        case_debugger_ ## op: if(ctx->rt->debugger_info.is_debugging) js_debugger_check(ctx, pc); case_ ## op
 #define DEFAULT         case_default
 #define BREAK           SWITCH(pc)
 
@@ -16349,7 +16349,8 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
         int call_argc;
         JSValue *call_argv;
 
-        js_debugger_check(ctx, NULL);
+        if(ctx->rt->debugger_info.is_debugging)
+            js_debugger_check(ctx, NULL);
 
         SWITCH(pc) {
         CASE(OP_push_i32):

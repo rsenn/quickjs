@@ -27,16 +27,6 @@ set(quickjs_extract_dir ${CMAKE_CURRENT_BINARY_DIR}/sources)
 if(NOT quickjs_sources_root)
   set(quickjs_sources_root ${CMAKE_CURRENT_SOURCE_DIR})
 endif(NOT quickjs_sources_root)
-set(quickjs_sources
-    ${quickjs_sources_root}/cutils.c
-    ${quickjs_sources_root}/libbf.c
-    ${quickjs_sources_root}/libregexp.c
-    ${quickjs_sources_root}/libunicode.c
-    ${quickjs_sources_root}/quickjs.c
-    ${quickjs_sources_root}/quickjs-libc.c
-    ${quickjs_sources_root}/quickjs-debugger.c
-    ${quickjs_sources_root}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
-    ${quickjs_sources_root}/quickjs-find-module.c)
 set(quickjs_includes
     cutils.h
     libbf.h
@@ -51,6 +41,17 @@ set(quickjs_includes
     quickjs.h
     unicode_gen_def.h)
 
+  set(quickjs_sources
+      ${quickjs_sources_root}/cutils.c
+      ${quickjs_sources_root}/libbf.c
+      ${quickjs_sources_root}/libregexp.c
+      ${quickjs_sources_root}/libunicode.c
+      ${quickjs_sources_root}/quickjs.c
+      ${quickjs_sources_root}/quickjs-libc.c
+      ${quickjs_sources_root}/quickjs-debugger.c
+      ${quickjs_sources_root}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
+      ${quickjs_sources_root}/quickjs-find-module.c
+      ${quickjs_includes})
 
 execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -81,4 +82,7 @@ endif(quickjs_cross_arch)
 message("libdir = ${quickjs_libdir}")
 message("bindir = ${quickjs_bindir}")
 message("includedir = ${quickjs_includedir}")
+
+option(CONFIG_BIGNUM "Enable bignum support" ON)
+set(CONFIG_VERSION "${quickjs_version}" CACHE STRING "QuickJS version")
 

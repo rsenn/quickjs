@@ -19,25 +19,11 @@ include(FindThreads)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(CheckSymbolExists)
-include(CheckLibraryExists)
-include(CheckTypeSize)
+ include(CheckTypeSize)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/try-compiler.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-flags.cmake)
-
-check_library_exists(pthread pthread_create /usr/lib HAVE_LIBPTHREAD)
-if(HAVE_LIBPTHREAD)
-  set(LIBPTHREAD pthread)
-endif(HAVE_LIBPTHREAD)
-
-check_library_exists(m atan2 /usr/lib HAVE_LIBM)
-if(HAVE_LIBM)
-  set(LIBM m)
-endif(HAVE_LIBM)
-
-check_library_exists(dl dlopen /usr/lib HAVE_LIBDL)
-if(HAVE_LIBDL)
-  set(LIBDL dl)
-endif(HAVE_LIBDL)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-libraries.cmake)
+ 
 
 # link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
 
@@ -268,6 +254,7 @@ add_custom_target(
   SOURCES examples/hello.js)
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
+configure_file(quickjs-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 # add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake}
 # COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P
 # ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
@@ -303,7 +290,7 @@ endif(BUILD_SHARED_LIBS)
 install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION lib LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin)
 
-install(FILES ${quickjs_includes} DESTINATION include/quickjs)
+install(FILES ${quickjs_includes} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h DESTINATION include/quickjs)
 
 add_executable(
   qjs
@@ -356,10 +343,13 @@ add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(QUICKJS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(MODULE_SUBDIRS "ffi;net;modules")
+set(MODULE_SUBDIRS "")
 
 option(MODULE_GLFW "Enable GLFW module" OFF)
 option(MODULE_NANOVG "Enable NanoVG module" OFF)
+option(MODULE_FFI "Enable FFI module" ON)
+option(MODULE_NET "Enable NET module" ON)
+option(MODULE_MODULES "Enable MODULES module" ON)
 
 if(MODULE_GLFW)
   list(APPEND MODULE_SUBDIRS qjs-glfw)
@@ -367,6 +357,15 @@ endif(MODULE_GLFW)
 if(MODULE_NANOVG)
   list(APPEND MODULE_SUBDIRS qjs-nanovg)
 endif(MODULE_NANOVG)
+if(MODULE_FFI)
+  list(APPEND MODULE_SUBDIRS ffi)
+endif(MODULE_FFI)
+if(MODULE_NET)
+  list(APPEND MODULE_SUBDIRS net)
+endif(MODULE_NET)
+if(MODULE_MODULES)
+  list(APPEND MODULE_SUBDIRS modules)
+endif(MODULE_MODULES)
 message("Module subdirectories: ${MODULE_SUBDIRS}")
 
 foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
