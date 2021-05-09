@@ -287,10 +287,10 @@ if(BUILD_SHARED_LIBS)
                                           ${LIBWS2_32})
 
 endif(BUILD_SHARED_LIBS)
-install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION lib LIBRARY DESTINATION lib
-        RUNTIME DESTINATION bin)
+install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION ${quickjs_libdir} LIBRARY DESTINATION ${quickjs_libdir}
+        RUNTIME DESTINATION ${quickjs_bindir})
 
-install(FILES ${quickjs_includes} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h DESTINATION include/quickjs)
+install(FILES ${quickjs_includes} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h DESTINATION ${quickjs_includedir}/quickjs)
 
 add_executable(
   qjs
@@ -334,7 +334,7 @@ target_compile_definitions(
           CONFIG_LTO=1
           CONFIG_BIGNUM=1)
 
-install(TARGETS qjs qjsc DESTINATION bin)
+install(TARGETS qjs qjsc DESTINATION ${quickjs_bindir})
 install(
   CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)"
 )
