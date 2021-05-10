@@ -335,13 +335,9 @@ if(BUILD_QJSC)
 
   target_compile_definitions(
     qjsc
-    PRIVATE _GNU_SOURCE=1
-            CONFIG_VERSION="${quickjs_version}"
-            CONFIG_SOVERSION="${quickjs_soversion}"
-            CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
-            CONFIG_CC="${CMAKE_C_COMPILER}"
-            CONFIG_LTO=1
-            CONFIG_BIGNUM=1)
+    PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
+            CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
+            CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
   install(TARGETS qjsc DESTINATION ${quickjs_bindir})
 endif(BUILD_QJSC)
 

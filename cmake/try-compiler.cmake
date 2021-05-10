@@ -1,5 +1,4 @@
-# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
-# file Copyright.txt or https://cmake.org/licensing for details.
+# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying file Copyright.txt or https://cmake.org/licensing for details.
 
 #[=[
 
@@ -45,15 +44,13 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
   set(comment "Is the '${flag}' option(s) supported")
   string(REPLACE ";" " " comment "${comment}")
 
-  if (NOT lang MATCHES "^(C|CXX|Fortran|ASM)$")
-    # other possible languages are not supported
-    # log message to keep trace of this problem...
-    file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
-      "Function 'CMAKE_CHECK_COMPILER_FLAG' called with unsupported language: ${lang}\n")
+  if(NOT lang MATCHES "^(C|CXX|Fortran|ASM)$")
+    # other possible languages are not supported log message to keep trace of this problem...
+    file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log "Function 'CMAKE_CHECK_COMPILER_FLAG' called with unsupported language: ${lang}\n")
     set(${result} FALSE CACHE INTERNAL ${comment})
     return()
   endif()
-  if (lang STREQUAL "ASM")
+  if(lang STREQUAL "ASM")
     # assume ASM compiler is a multi-language compiler, so supports C language as well
     set(check_lang C)
   else()
@@ -62,20 +59,17 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
 
   cmake_parse_arguments(CCCF "" "SRC_EXT;COMMAND_PATTERN;OUTPUT_VARIABLE" "FAIL_REGEX" ${ARGN})
 
-  if (NOT CCCF_COMMAND_PATTERN)
-    set (CCCF_COMMAND_PATTERN "<FLAG> -o <OUTPUT> <SOURCE>")
+  if(NOT CCCF_COMMAND_PATTERN)
+    set(CCCF_COMMAND_PATTERN "<FLAG> -o <OUTPUT> <SOURCE>")
   endif()
 
-  list (APPEND CCCF_FAIL_REGEX "argument unused during compilation") # clang
-  if (check_lang STREQUAL "C")
-    list(APPEND CCCF_FAIL_REGEX
-      "command line option .* is valid for .* but not for C") # GNU
+  list(APPEND CCCF_FAIL_REGEX "argument unused during compilation") # clang
+  if(check_lang STREQUAL "C")
+    list(APPEND CCCF_FAIL_REGEX "command line option .* is valid for .* but not for C") # GNU
   elseif(check_lang STREQUAL "CXX")
-    list(APPEND CCCF_FAIL_REGEX
-      "command line option .* is valid for .* but not for C\\+\\+") # GNU
+    list(APPEND CCCF_FAIL_REGEX "command line option .* is valid for .* but not for C\\+\\+") # GNU
   elseif(check_lang STREQUAL "Fortran")
-    list(APPEND CCCF_FAIL_REGEX
-      "command line option .* is valid for .* but not for Fortran") # GNU
+    list(APPEND CCCF_FAIL_REGEX "command line option .* is valid for .* but not for Fortran") # GNU
   endif()
 
   # Add patterns for common errors
@@ -88,7 +82,7 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
   endforeach()
 
   if(NOT CCCF_SRC_EXT)
-    if (check_lang STREQUAL "C")
+    if(check_lang STREQUAL "C")
       set(CCCF_SRC_EXT c)
     elseif(check_lang STREQUAL "CXX")
       set(CCCF_SRC_EXT cxx)
@@ -97,18 +91,16 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
     endif()
   endif()
 
-  if (CCCF_OUTPUT_VARIABLE)
+  if(CCCF_OUTPUT_VARIABLE)
     unset(${CCCF_OUTPUT_VARIABLE} PARENT_SCOPE)
   endif()
 
   # Compute the directory in which to run the test.
   set(COMPILER_FLAG_DIR "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp")
   # Compute source and output files.
-  set(COMPILER_FLAG_SRC
-    "${COMPILER_FLAG_DIR}/CompilerFlag${lang}.${CCCF_SRC_EXT}")
+  set(COMPILER_FLAG_SRC "${COMPILER_FLAG_DIR}/CompilerFlag${lang}.${CCCF_SRC_EXT}")
   if(check_lang STREQUAL "Fortran")
-    file(WRITE "${COMPILER_FLAG_SRC}"
-      "      program simple\n      end program simple\n")
+    file(WRITE "${COMPILER_FLAG_SRC}" "      program simple\n      end program simple\n")
   else()
     file(WRITE "${COMPILER_FLAG_SRC}" "int main (void)\n{ return 0; }\n")
   endif()
@@ -116,24 +108,17 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
   string(APPEND COMPILER_FLAG_EXE "${CMAKE_EXECUTABLE_SUFFIX}")
 
   # Build command line
-  separate_arguments(CCCF_COMMAND_PATTERN UNIX_COMMAND
-    "${CCCF_COMMAND_PATTERN}")
+  separate_arguments(CCCF_COMMAND_PATTERN UNIX_COMMAND "${CCCF_COMMAND_PATTERN}")
   list(TRANSFORM CCCF_COMMAND_PATTERN REPLACE "<SOURCE>" "${COMPILER_FLAG_SRC}")
   list(TRANSFORM CCCF_COMMAND_PATTERN REPLACE "<OUTPUT>" "${COMPILER_FLAG_EXE}")
   list(TRANSFORM CCCF_COMMAND_PATTERN REPLACE "<FLAG>" "${flag}")
 
-  STRING(REPLACE ";" " " COMMAND_PATTERN "${CCCF_COMMAND_PATTERN}")
+  string(REPLACE ";" " " COMMAND_PATTERN "${CCCF_COMMAND_PATTERN}")
 
-  execute_process(
-    COMMAND "${CMAKE_COMMAND}" -E env LC_ALL=C LC_MESSAGES=C LANG=C
-            "${CMAKE_${lang}_COMPILER}" ${CCCF_COMMAND_PATTERN}
-    WORKING_DIRECTORY "${COMPILER_FLAG_DIR}"
-    OUTPUT_VARIABLE COMPILER_FLAG_OUTPUT
-    ERROR_VARIABLE COMPILER_FLAG_ERROR
-    RESULT_VARIABLE COMPILER_FLAG_RESULT)
+  execute_process(COMMAND "${CMAKE_COMMAND}" -E env LC_ALL=C LC_MESSAGES=C LANG=C "${CMAKE_${lang}_COMPILER}" ${CCCF_COMMAND_PATTERN} WORKING_DIRECTORY "${COMPILER_FLAG_DIR}" OUTPUT_VARIABLE COMPILER_FLAG_OUTPUT ERROR_VARIABLE COMPILER_FLAG_ERROR RESULT_VARIABLE COMPILER_FLAG_RESULT)
 
   # Record result in the cache so we can avoid re-testing every CMake run
-  if (COMPILER_FLAG_RESULT)
+  if(COMPILER_FLAG_RESULT)
     set(${result} FALSE CACHE INTERNAL ${comment})
   else()
     foreach(regex IN LISTS CCCF_FAIL_REGEX)
@@ -142,12 +127,9 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
       endif()
     endforeach()
   endif()
-  if (DEFINED ${result})
-    file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
-        "Determining if the ${flag} option "
-        "is supported for ${lang} language failed with the following output:\n"
-        "${COMPILER_FLAG_OUTPUT}\n")
-    if (CCCF_OUTPUT_VARIABLE)
+  if(DEFINED ${result})
+    file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log "Determining if the ${flag} option " "is supported for ${lang} language failed with the following output:\n" "${COMPILER_FLAG_OUTPUT}\n")
+    if(CCCF_OUTPUT_VARIABLE)
       set(${CCCF_OUTPUT_VARIABLE} "${COMPILER_FLAG_OUTPUT}" PARENT_SCOPE)
     endif()
     return()
