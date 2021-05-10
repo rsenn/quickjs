@@ -61,7 +61,7 @@ typedef sig_t sighandler_t;
 #include "quickjs-config.h"
 #endif
 
-#if !defined(_WIN32) && !defined(USE_WORKER)
+#if !defined(_WIN32) && !defined(USE_WORKER) && !defined(__wasi__)
 /* enable the os.Worker API. IT relies on POSIX threads */
 #define USE_WORKER
 #endif
