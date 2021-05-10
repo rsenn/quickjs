@@ -77,8 +77,9 @@ else(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${SYSTEM_NAME}")
   set(quickjs_cross_arch "")
 endif(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${SYSTEM_NAME}")
 
-# message("HOST_SYSTEM_NAME = ${HOST_SYSTEM_NAME}") message("SYSTEM_NAME =
-# ${SYSTEM_NAME}") message("quickjs_cross_arch = ${quickjs_cross_arch}")
+#message("HOST_SYSTEM_NAME = ${HOST_SYSTEM_NAME}")
+#message("SYSTEM_NAME = ${SYSTEM_NAME}")
+#message("quickjs_cross_arch = ${quickjs_cross_arch}")
 
 if(quickjs_cross_arch)
   set(quickjs_libdir lib/${quickjs_cross_arch})
