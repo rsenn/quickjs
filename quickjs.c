@@ -1934,11 +1934,12 @@ void JS_SetRuntimeInfo(JSRuntime *rt, const char *s)
 
 void JS_FreeRuntime(JSRuntime *rt)
 {
-    js_debugger_free(rt, &rt->debugger_info);
-
     struct list_head *el, *el1;
     int i;
 
+#ifdef CONFIG_DEBUGGER
+    js_debugger_free(rt, &rt->debugger_info);
+#endif
     JS_FreeValueRT(rt, rt->current_exception);
 
     list_for_each_safe(el, el1, &rt->job_list) {
@@ -2155,8 +2156,9 @@ JSContext *JS_NewContextRaw(JSRuntime *rt)
 
     JS_AddIntrinsicBasicObjects(ctx);
 
+#ifdef CONFIG_DEBUGGER
     js_debugger_new_context(ctx);
-
+#endif
     return ctx;
 }
 
@@ -2318,9 +2320,9 @@ void JS_FreeContext(JSContext *ctx)
         JS_DumpMemoryUsage(stdout, &stats, rt);
     }
 #endif
-
+#ifdef CONFIG_DEBUGGER
     js_debugger_free_context(ctx);
-
+#endif
     js_free_modules(ctx, JS_FREE_MODULE_ALL);
 
     JS_FreeValue(ctx, ctx->global_obj);
@@ -6343,7 +6345,9 @@ JSValue JS_Throw(JSContext *ctx, JSValue obj)
     JSRuntime *rt = ctx->rt;
     JS_FreeValue(ctx, rt->current_exception);
     rt->current_exception = obj;
+#ifdef CONFIG_DEBUGGER
     js_debugger_exception(ctx);
+#endif
     return JS_EXCEPTION;
 }
 
@@ -16228,7 +16232,11 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
 
 #if !DIRECT_DISPATCH
 #define SWITCH(pc)      switch (opcode = *pc++)
+#ifdef CONFIG_DEBUGGER
 #define CASE(op)        case op: if (caller_ctx->rt->debugger_info.transport_close) js_debugger_check(ctx, pc); stub_ ## op
+#else
+#define CASE(op)        case op: stub_ ## op
+#endif
 #define DEFAULT         default
 #define BREAK           break
 #else
@@ -16253,7 +16261,11 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
         [ OP_COUNT ... 255 ] = &&case_default
     };
 #define SWITCH(pc)      goto *active_dispatch_table[opcode = *pc++];
+#ifdef CONFIG_DEBUGGER
 #define CASE(op)        case_debugger_ ## op: if(ctx->rt->debugger_info.is_debugging) js_debugger_check(ctx, pc); case_ ## op
+#else
+#define CASE(op)        case_debugger_ ## op: case_ ## op
+#endif
 #define DEFAULT         case_default
 #define BREAK           SWITCH(pc)
 
@@ -16349,8 +16361,10 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
         int call_argc;
         JSValue *call_argv;
 
+#ifdef CONFIG_DEBUGGER
         if(ctx->rt->debugger_info.is_debugging)
             js_debugger_check(ctx, NULL);
+#endif
 
         SWITCH(pc) {
         CASE(OP_push_i32):
@@ -54148,6 +54162,7 @@ JSValue js_debugger_build_backtrace(JSContext *ctx, const uint8_t *cur_pc)
     return ret;
 }
 
+#ifdef CONFIG_DEBUGGER
 int js_debugger_check_breakpoint(JSContext *ctx, uint32_t current_dirty, const uint8_t *cur_pc) {
     JSValue path_data = JS_UNDEFINED;
     if (!ctx->rt->current_stack_frame)
@@ -54471,3 +54486,4 @@ JSValue js_debugger_evaluate(JSContext *ctx, int stack_index, JSValue expression
     }
     return JS_UNDEFINED;
 }
+#endif

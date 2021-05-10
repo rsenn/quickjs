@@ -33,6 +33,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-libraries.cmake)
 
 if(QUICKJS_DEBUGGER)
   message(STATUS "Enabling quickjs-debugger")
+
+  set(CONFIG_DEBUGGER 1)
+  add_definitions(-DCONFIG_DEBUGGER)
 endif(QUICKJS_DEBUGGER)
 
 
