@@ -14,7 +14,9 @@ macro(append_vars STR)
     endif(NOT LIST MATCHES ".*${STR}.*")
     string(REPLACE ";" " " LIST "${LIST}")
     # message("New value for ${L}: ${LIST}")
-    set("${L}" "${LIST}" PARENT_SCOPE)
+    set("${L}"
+        "${LIST}"
+        PARENT_SCOPE)
   endforeach(L ${ARGN})
 endmacro(append_vars STR)
 
@@ -23,8 +25,8 @@ function(check_flag FLAG VAR)
     string(TOUPPER "${FLAG}" TMP)
     string(REGEX REPLACE "[^0-9A-Za-z]" _ VAR "${TMP}")
   endif(NOT VAR OR VAR STREQUAL "")
-  # set(CMAKE_REQUIRED_QUIET ON)
-  cmake_try_compiler_flag(C "${FLAG}" "${VAR}")
+  #set(CMAKE_REQUIRED_QUIET ON)
+  CMAKE_TRY_COMPILER_FLAG(C "${FLAG}" "${VAR}")
   # check_c_compiler_flag("${FLAG}" "${VAR}")
   set(CMAKE_REQUIRED_QUIET OFF)
 
@@ -34,14 +36,18 @@ function(check_flag FLAG VAR)
     message(STATUS "Compiler flag ${FLAG} ... supported")
     # message("append_vars(${FLAG} ${ARGN})")
   endif(RESULT)
-endfunction(check_flag FLAG VAR)
+endfunction(
+  check_flag
+  FLAG
+  VAR)
 
 macro(check_flags FLAGS)
-  message(STATUS "Checking flags ${FLAGS} ${ARGN}")
+  message("Checking flags ${FLAGS} ${ARGN}")
   foreach(FLAG ${FLAGS})
     check_flag(${FLAG} "" ${ARGN})
   endforeach(FLAG ${FLAGS})
 endmacro(check_flags FLAGS)
+
 
 macro(NOWARN_FLAG FLAG)
   canonicalize(VARNAME "${FLAG}")
@@ -87,3 +93,4 @@ if(WARN_NO_UNUSED_VARIABLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable" )
 endif(WARN_NO_UNUSED_VARIABLE)
 ]]
+
