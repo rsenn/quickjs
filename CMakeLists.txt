@@ -115,11 +115,22 @@ macro(check_include NAME)
   message(STATUS "Checking for ${NAME} ... ${FOUND}")
 endmacro(check_include NAME)
 
+macro(check_function NAME)
+  string(TOUPPER "${NAME}" TMP)
+  string(REPLACE . _ VARNAME "${TMP}")
+  set(CMAKE_REQUIRED_QUIET OFF)
+  message(STATUS "Checking for ${NAME})() ...")
+  check_function_exists("${NAME}" "HAVE_${VARNAME}")
+  set(FOUND "not found")
+  message(STATUS "Checking for ${NAME}() ... ${FOUND}")
+endmacro(check_function NAME)
+
 check_include(signal.h)
 check_include(unistd.h)
 check_include(stdlib.h)
 check_include(stdatomic.h)
 check_include(fenv.h)
+
 
 if(HAVE_FENV_H)
   list(APPEND CMAKE_REQUIRED_INCLUDES "fenv.h")
@@ -152,6 +163,17 @@ set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
 
 check_function_exists(environ HAVE_ENVIRON)
 check_symbol_exists(environ unistd.h HAVE_ENVIRON_UNISTD)
+
+#[[check_function(pclose)
+check_function(popen)
+check_function(tmpfile)
+check_function(utimes)
+check_function(fork)
+check_function(setuid)
+check_function(setgid)
+check_function(execve)
+check_function(waitpid)
+check_function(pipe)]]
 
 if(HAVE_ENVIRON AND NOT HAVE_ENVIRON_UNISTD)
 
