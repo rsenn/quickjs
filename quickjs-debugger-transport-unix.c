@@ -11,6 +11,10 @@
 #include <poll.h>
 #include <arpa/inet.h>
 
+#ifndef SO_REUSEADDR
+#define SO_REUSEADDR 0
+#endif
+
 struct js_transport_data {
     int handle;
 } js_transport_data;

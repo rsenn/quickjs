@@ -116,6 +116,22 @@ check_include(signal.h)
 check_include(unistd.h)
 check_include(stdlib.h)
 check_include(stdatomic.h)
+check_include(fenv.h)
+
+if(HAVE_FENV_H)
+  list(APPEND CMAKE_REQUIRED_INCLUDES "fenv.h")
+endif(HAVE_FENV_H)
+
+check_symbol_exists(FE_DOWNWARD fenv.h HAVE_FE_DOWNWARD)
+if(NOT HAVE_FE_DOWNWARD)
+  add_definitions(-DFE_DOWNWARD=0x400)
+endif(NOT HAVE_FE_DOWNWARD)
+
+check_symbol_exists(FE_UPWARD fenv.h HAVE_FE_UPWARD)
+if(NOT HAVE_FE_UPWARD)
+  add_definitions(-DFE_UPWARD=0x800)
+endif(NOT HAVE_FE_UPWARD)
+
 
 if(NOT HAVE_STDATOMIC_H)
   add_definitions(-DNO_STDATOMIC_H=1)
@@ -224,17 +240,19 @@ check_flag("-Wno-array-bounds" HAVE_WARN_NO_ARRAY_BOUNDS_FLAG CMAKE_C_FLAGS)
 check_flag("-Wno-format-truncation" HAVE_WARN_NO_FORMAT_TRUNCATION_FLAG CMAKE_C_FLAGS)
 check_flag("-Wno-discarded-qualifiers" HAVE_WARN_NO_DISCARDED_QUALIFIERS_FLAG CMAKE_C_FLAGS)
 ]]
-if(CMAKE_CROSSCOMPILING)
+option(BUILD_QJSC "Build quickjs compiler" ON)
+
+if(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
   set(QJS "qjsc")
   set(QJS_DEPS)
   set(QJSC "qjsc")
   set(QJSC_DEPS)
-else(CMAKE_CROSSCOMPILING)
+else(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
   set(QJS "${CMAKE_CURRENT_BINARY_DIR}/qjs")
   set(QJS_DEPS qjs)
   set(QJSC "${CMAKE_CURRENT_BINARY_DIR}/qjsc")
   set(QJSC_DEPS qjsc)
-endif(CMAKE_CROSSCOMPILING)
+endif(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
 
 add_custom_command(
   OUTPUT repl.c
@@ -317,20 +335,26 @@ target_compile_definitions(
   qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1
               CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
 
-add_executable(qjsc qjsc.c ${quickjs_sources})
-target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
-target_compile_definitions(
-  qjsc
-  PRIVATE _GNU_SOURCE=1
-          CONFIG_VERSION="${quickjs_version}"
-          CONFIG_SOVERSION="${quickjs_soversion}"
-          CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
-          CONFIG_CC="${CMAKE_C_COMPILER}"
-          CONFIG_LTO=1
-          CONFIG_BIGNUM=1)
+if(BUILD_QJSC)
+  add_executable(
+    qjsc
+    qjsc.c ${quickjs_sources})
+  target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
-install(TARGETS qjs qjsc DESTINATION ${quickjs_bindir})
+  target_compile_definitions(
+    qjsc
+    PRIVATE _GNU_SOURCE=1
+            CONFIG_VERSION="${quickjs_version}"
+            CONFIG_SOVERSION="${quickjs_soversion}"
+            CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
+            CONFIG_CC="${CMAKE_C_COMPILER}"
+            CONFIG_LTO=1
+            CONFIG_BIGNUM=1)
+  install(TARGETS qjsc DESTINATION ${quickjs_bindir})
+endif(BUILD_QJSC)
+
+install(TARGETS qjs DESTINATION ${quickjs_bindir})
 install(
   CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)"
 )
