@@ -26,9 +26,18 @@ if(NOT quickjs_sources_root)
   set(quickjs_sources_root ${CMAKE_CURRENT_SOURCE_DIR})
 endif(NOT quickjs_sources_root)
 set(quickjs_includes
-    cutils.h libbf.h libregexp-opcode.h libregexp.h libunicode-table.h
-    libunicode.h list.h quickjs-atom.h quickjs-libc.h quickjs-opcode.h
-    quickjs.h unicode_gen_def.h)
+    cutils.h
+    libbf.h
+    libregexp-opcode.h
+    libregexp.h
+    libunicode-table.h
+    libunicode.h
+    list.h
+    quickjs-atom.h
+    quickjs-libc.h
+    quickjs-opcode.h
+    quickjs.h
+    unicode_gen_def.h)
 
 set(quickjs_sources
     ${quickjs_sources_root}/cutils.c
@@ -37,14 +46,13 @@ set(quickjs_sources
     ${quickjs_sources_root}/libunicode.c
     ${quickjs_sources_root}/quickjs.c
     ${quickjs_sources_root}/quickjs-libc.c
-    ${quickjs_sources_root}/quickjs-debugger.c
-    ${quickjs_sources_root}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
     ${quickjs_sources_root}/quickjs-find-module.c
     ${quickjs_includes})
 
 if(QUICKJS_DEBUGGER)
   set(quickjs_sources
-      ${quickjs_sources} ${quickjs_sources_root}/quickjs-debugger.c
+      ${quickjs_sources}
+      ${quickjs_sources_root}/quickjs-debugger.c
       ${quickjs_sources_root}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
   )
 endif(QUICKJS_DEBUGGER)
@@ -80,9 +88,10 @@ else(quickjs_cross_arch)
   set(quickjs_includedir include)
 endif(quickjs_cross_arch)
 
-#message("libdir = ${quickjs_libdir}")
-#message("bindir = ${quickjs_bindir}")
-#message("includedir = ${quickjs_includedir}")
+# message("libdir = ${quickjs_libdir}") message("bindir = ${quickjs_bindir}")
+# message("includedir = ${quickjs_includedir}")
 
 option(CONFIG_BIGNUM "Enable bignum support" ON)
-set(CONFIG_VERSION "${quickjs_version}" CACHE STRING "QuickJS version")
+set(CONFIG_VERSION
+    "${quickjs_version}"
+    CACHE STRING "QuickJS version")
