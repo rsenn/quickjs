@@ -56,6 +56,8 @@ if(QUICKJS_DEBUGGER)
       ${quickjs_sources_root}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
   )
 endif(QUICKJS_DEBUGGER)
+string(REPLACE ";" "\n" sources "${quickjs_sources}")
+message("quickjs_sources = ${sources}")
 
 execute_process(
   COMMAND cc -dumpmachine

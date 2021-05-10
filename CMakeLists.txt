@@ -13,6 +13,9 @@ endif(WIN32 OR MINGW)
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel
                                              RelWithDebInfo)
 
+option(QUICKJS_DEBUGGER "Enable debugger protocol" ON)
+option(QUICKJS_NODEBUG "Disable debugging" ON)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/defs.cmake)
 include(FindThreads)
 
@@ -26,8 +29,12 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-libraries.cmake)
  
 # link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
 
-option(QUICKJS_DEBUGGER "Enable debugger protocol" ON)
-option(QUICKJS_NODEBUG "Disable debugging" ON)
+
+
+if(QUICKJS_DEBUGGER)
+  message(STATUS "Enabling quickjs-debugger")
+endif(QUICKJS_DEBUGGER)
+
 
 if(QUICKJS_NODEBUG)
   add_definitions(-DNDEBUG)
@@ -295,19 +302,9 @@ install(FILES ${quickjs_includes} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h D
 add_executable(
   qjs
   qjs.c
-  quickjs.c
-  quickjs.h
-  libregexp.c
-  libunicode.c
-  cutils.c
-  quickjs-libc.c
-  quickjs-libc.h
-  quickjs-find-module.c
-  libbf.c
+  ${quickjs_sources}
   ${CMAKE_CURRENT_BINARY_DIR}/repl.c
-  ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c
-  quickjs-debugger.c
-  quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+  ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
 
 # target_link_libraries(qjs ${QUICKJS_LIBRARY})
 target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
@@ -317,11 +314,7 @@ target_compile_definitions(
   qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1
               CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
 
-add_executable(
-  qjsc
-  qjsc.c quickjs.c quickjs.h libregexp.c libunicode.c cutils.c quickjs-libc.c
-  quickjs-libc.h quickjs-find-module.c libbf.c quickjs-debugger.c
-  quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+add_executable(qjsc qjsc.c ${quickjs_sources})
 target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
 target_compile_definitions(
