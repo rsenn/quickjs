@@ -53,8 +53,21 @@ set(quickjs_includes
       ${quickjs_sources_root}/quickjs-find-module.c
       ${quickjs_includes})
 
-execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(QUICKJS_DEBUGGER)
+  set(quickjs_sources
+      ${quickjs_sources} ${quickjs_sources_root}/quickjs-debugger.c
+      ${quickjs_sources_root}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
+  )
+endif(QUICKJS_DEBUGGER)
+
+execute_process(
+  COMMAND cc -dumpmachine
+  OUTPUT_VARIABLE HOST_SYSTEM_NAME
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(
+  COMMAND ${CMAKE_C_COMPILER} -dumpmachine
+  OUTPUT_VARIABLE SYSTEM_NAME
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 string(REGEX REPLACE "-pc-" "-" quickjs_host_arch "${SYSTEM_NAME}")
 

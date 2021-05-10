@@ -24,9 +24,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/try-compiler.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-flags.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-libraries.cmake)
  
-
 # link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
 
+option(QUICKJS_DEBUGGER "Enable debugger protocol" ON)
 option(QUICKJS_NODEBUG "Disable debugging" ON)
 
 if(QUICKJS_NODEBUG)
