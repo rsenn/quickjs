@@ -73,9 +73,9 @@ string(REGEX REPLACE "-pc-" "-" quickjs_host_arch "${SYSTEM_NAME}")
 if(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${quickjs_host_arch}")
   string(REGEX REPLACE i686 i386 quickjs_cross_arch "${quickjs_host_arch}")
   # set(quickjs_cross_arch ${SYSTEM_NAME}) endif(CMAKE_CROSSCOMPILING)
-else(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${SYSTEM_NAME}")
+else(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${quickjs_host_arch}")
   set(quickjs_cross_arch "")
-endif(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${SYSTEM_NAME}")
+endif(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${quickjs_host_arch}")
 
 # message("HOST_SYSTEM_NAME = ${HOST_SYSTEM_NAME}") message("SYSTEM_NAME =
 # ${SYSTEM_NAME}") message("quickjs_cross_arch = ${quickjs_cross_arch}")
