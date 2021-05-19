@@ -33,7 +33,7 @@ if("${SYSTEM_NAME}" MATCHES ".*wasi")
 elseif(WIN32 OR MINGW)
   set(LIBWS2_32 ws2_32)
   set(BUILD_SHARED_LIBS TRUE)
-endif(WIN32 OR MINGW)
+endif()
 
 # link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
 
@@ -348,7 +348,10 @@ set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
 target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1
                                        CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
-
+                                    
+if(WASI)
+  set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc" FORCE)
+endif(WASI)
 if(BUILD_QJSC)
   add_executable(
     qjsc
