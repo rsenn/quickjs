@@ -70,7 +70,7 @@ EQUALS = =
 CMAKE_SOURCE_DIR = /home/roman/Projects/plot-cv
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/roman/Sources/plot-cv
+CMAKE_BINARY_DIR = /home/roman/Projects/plot-cv
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -135,7 +135,7 @@ rebuild_cache/fast: rebuild_cache
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/opt/cmake-20201216/bin/ccmake -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/opt/cmake-20201114/bin/cmake-gui -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -145,14 +145,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/roman/Sources/plot-cv && $(CMAKE_COMMAND) -E cmake_progress_start /home/roman/Sources/plot-cv/CMakeFiles /home/roman/Sources/plot-cv/quickjs//CMakeFiles/progress.marks
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/roman/Sources/plot-cv/CMakeFiles 0
+	cd /home/roman/Projects/plot-cv && $(CMAKE_COMMAND) -E cmake_progress_start /home/roman/Projects/plot-cv/CMakeFiles /home/roman/Projects/plot-cv/quickjs//CMakeFiles/progress.marks
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/roman/Projects/plot-cv/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/clean
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/clean
 .PHONY : clean
 
 # The main clean target
@@ -162,22 +162,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/preinstall
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/preinstall
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/roman/Sources/plot-cv && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/roman/Projects/plot-cv && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 quickjs/CMakeFiles/.ctags.dir/rule:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/.ctags.dir/rule
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/.ctags.dir/rule
 .PHONY : quickjs/CMakeFiles/.ctags.dir/rule
 
 # Convenience name for target.
@@ -187,12 +187,12 @@ quickjs/CMakeFiles/.ctags.dir/rule:
 
 # fast build rule for target.
 .ctags/fast:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/.ctags.dir/build.make quickjs/CMakeFiles/.ctags.dir/build
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/.ctags.dir/build.make quickjs/CMakeFiles/.ctags.dir/build
 .PHONY : .ctags/fast
 
 # Convenience name for target.
 quickjs/CMakeFiles/qjsc.dir/rule:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/qjsc.dir/rule
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/qjsc.dir/rule
 .PHONY : quickjs/CMakeFiles/qjsc.dir/rule
 
 # Convenience name for target.
@@ -202,12 +202,12 @@ qjsc: quickjs/CMakeFiles/qjsc.dir/rule
 
 # fast build rule for target.
 qjsc/fast:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/build
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/build
 .PHONY : qjsc/fast
 
 # Convenience name for target.
 quickjs/CMakeFiles/quickjs.dir/rule:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/quickjs.dir/rule
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/quickjs.dir/rule
 .PHONY : quickjs/CMakeFiles/quickjs.dir/rule
 
 # Convenience name for target.
@@ -217,12 +217,12 @@ quickjs: quickjs/CMakeFiles/quickjs.dir/rule
 
 # fast build rule for target.
 quickjs/fast:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/build
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/build
 .PHONY : quickjs/fast
 
 # Convenience name for target.
 quickjs/CMakeFiles/qjs.dir/rule:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/qjs.dir/rule
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/qjs.dir/rule
 .PHONY : quickjs/CMakeFiles/qjs.dir/rule
 
 # Convenience name for target.
@@ -232,12 +232,12 @@ qjs: quickjs/CMakeFiles/qjs.dir/rule
 
 # fast build rule for target.
 qjs/fast:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/build
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/build
 .PHONY : qjs/fast
 
 # Convenience name for target.
 quickjs/CMakeFiles/quickjs-static.dir/rule:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/quickjs-static.dir/rule
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/quickjs-static.dir/rule
 .PHONY : quickjs/CMakeFiles/quickjs-static.dir/rule
 
 # Convenience name for target.
@@ -247,12 +247,12 @@ quickjs-static: quickjs/CMakeFiles/quickjs-static.dir/rule
 
 # fast build rule for target.
 quickjs-static/fast:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/build
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/build
 .PHONY : quickjs-static/fast
 
 # Convenience name for target.
 quickjs/CMakeFiles/hello.c.dir/rule:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/hello.c.dir/rule
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quickjs/CMakeFiles/hello.c.dir/rule
 .PHONY : quickjs/CMakeFiles/hello.c.dir/rule
 
 # Convenience name for target.
@@ -262,7 +262,7 @@ hello.c: quickjs/CMakeFiles/hello.c.dir/rule
 
 # fast build rule for target.
 hello.c/fast:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/hello.c.dir/build.make quickjs/CMakeFiles/hello.c.dir/build
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/hello.c.dir/build.make quickjs/CMakeFiles/hello.c.dir/build
 .PHONY : hello.c/fast
 
 cutils.o: cutils.c.o
@@ -271,10 +271,10 @@ cutils.o: cutils.c.o
 
 # target to build an object file
 cutils.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/cutils.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/cutils.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/cutils.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/cutils.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/cutils.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/cutils.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/cutils.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/cutils.c.o
 .PHONY : cutils.c.o
 
 cutils.i: cutils.c.i
@@ -283,10 +283,10 @@ cutils.i: cutils.c.i
 
 # target to preprocess a source file
 cutils.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/cutils.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/cutils.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/cutils.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/cutils.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/cutils.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/cutils.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/cutils.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/cutils.c.i
 .PHONY : cutils.c.i
 
 cutils.s: cutils.c.s
@@ -295,10 +295,10 @@ cutils.s: cutils.c.s
 
 # target to generate assembly for a file
 cutils.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/cutils.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/cutils.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/cutils.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/cutils.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/cutils.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/cutils.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/cutils.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/cutils.c.s
 .PHONY : cutils.c.s
 
 libbf.o: libbf.c.o
@@ -307,10 +307,10 @@ libbf.o: libbf.c.o
 
 # target to build an object file
 libbf.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libbf.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libbf.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libbf.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libbf.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libbf.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libbf.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libbf.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libbf.c.o
 .PHONY : libbf.c.o
 
 libbf.i: libbf.c.i
@@ -319,10 +319,10 @@ libbf.i: libbf.c.i
 
 # target to preprocess a source file
 libbf.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libbf.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libbf.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libbf.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libbf.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libbf.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libbf.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libbf.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libbf.c.i
 .PHONY : libbf.c.i
 
 libbf.s: libbf.c.s
@@ -331,10 +331,10 @@ libbf.s: libbf.c.s
 
 # target to generate assembly for a file
 libbf.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libbf.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libbf.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libbf.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libbf.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libbf.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libbf.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libbf.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libbf.c.s
 .PHONY : libbf.c.s
 
 libregexp.o: libregexp.c.o
@@ -343,10 +343,10 @@ libregexp.o: libregexp.c.o
 
 # target to build an object file
 libregexp.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libregexp.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libregexp.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libregexp.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libregexp.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libregexp.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libregexp.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libregexp.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libregexp.c.o
 .PHONY : libregexp.c.o
 
 libregexp.i: libregexp.c.i
@@ -355,10 +355,10 @@ libregexp.i: libregexp.c.i
 
 # target to preprocess a source file
 libregexp.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libregexp.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libregexp.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libregexp.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libregexp.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libregexp.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libregexp.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libregexp.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libregexp.c.i
 .PHONY : libregexp.c.i
 
 libregexp.s: libregexp.c.s
@@ -367,10 +367,10 @@ libregexp.s: libregexp.c.s
 
 # target to generate assembly for a file
 libregexp.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libregexp.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libregexp.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libregexp.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libregexp.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libregexp.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libregexp.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libregexp.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libregexp.c.s
 .PHONY : libregexp.c.s
 
 libunicode.o: libunicode.c.o
@@ -379,10 +379,10 @@ libunicode.o: libunicode.c.o
 
 # target to build an object file
 libunicode.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libunicode.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libunicode.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libunicode.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libunicode.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libunicode.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libunicode.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libunicode.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libunicode.c.o
 .PHONY : libunicode.c.o
 
 libunicode.i: libunicode.c.i
@@ -391,10 +391,10 @@ libunicode.i: libunicode.c.i
 
 # target to preprocess a source file
 libunicode.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libunicode.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libunicode.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libunicode.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libunicode.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libunicode.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libunicode.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libunicode.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libunicode.c.i
 .PHONY : libunicode.c.i
 
 libunicode.s: libunicode.c.s
@@ -403,10 +403,10 @@ libunicode.s: libunicode.c.s
 
 # target to generate assembly for a file
 libunicode.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libunicode.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libunicode.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libunicode.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libunicode.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/libunicode.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/libunicode.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/libunicode.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/libunicode.c.s
 .PHONY : libunicode.c.s
 
 qjs.o: qjs.c.o
@@ -415,7 +415,7 @@ qjs.o: qjs.c.o
 
 # target to build an object file
 qjs.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjs.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjs.c.o
 .PHONY : qjs.c.o
 
 qjs.i: qjs.c.i
@@ -424,7 +424,7 @@ qjs.i: qjs.c.i
 
 # target to preprocess a source file
 qjs.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjs.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjs.c.i
 .PHONY : qjs.c.i
 
 qjs.s: qjs.c.s
@@ -433,7 +433,7 @@ qjs.s: qjs.c.s
 
 # target to generate assembly for a file
 qjs.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjs.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjs.c.s
 .PHONY : qjs.c.s
 
 qjsc.o: qjsc.c.o
@@ -442,7 +442,7 @@ qjsc.o: qjsc.c.o
 
 # target to build an object file
 qjsc.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/qjsc.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/qjsc.c.o
 .PHONY : qjsc.c.o
 
 qjsc.i: qjsc.c.i
@@ -451,7 +451,7 @@ qjsc.i: qjsc.c.i
 
 # target to preprocess a source file
 qjsc.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/qjsc.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/qjsc.c.i
 .PHONY : qjsc.c.i
 
 qjsc.s: qjsc.c.s
@@ -460,7 +460,7 @@ qjsc.s: qjsc.c.s
 
 # target to generate assembly for a file
 qjsc.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/qjsc.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/qjsc.c.s
 .PHONY : qjsc.c.s
 
 qjscalc.o: qjscalc.c.o
@@ -469,7 +469,7 @@ qjscalc.o: qjscalc.c.o
 
 # target to build an object file
 qjscalc.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjscalc.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjscalc.c.o
 .PHONY : qjscalc.c.o
 
 qjscalc.i: qjscalc.c.i
@@ -478,7 +478,7 @@ qjscalc.i: qjscalc.c.i
 
 # target to preprocess a source file
 qjscalc.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjscalc.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjscalc.c.i
 .PHONY : qjscalc.c.i
 
 qjscalc.s: qjscalc.c.s
@@ -487,7 +487,7 @@ qjscalc.s: qjscalc.c.s
 
 # target to generate assembly for a file
 qjscalc.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjscalc.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/qjscalc.c.s
 .PHONY : qjscalc.c.s
 
 quickjs-debugger-transport-unix.o: quickjs-debugger-transport-unix.c.o
@@ -496,10 +496,10 @@ quickjs-debugger-transport-unix.o: quickjs-debugger-transport-unix.c.o
 
 # target to build an object file
 quickjs-debugger-transport-unix.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger-transport-unix.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger-transport-unix.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger-transport-unix.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger-transport-unix.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger-transport-unix.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger-transport-unix.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger-transport-unix.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger-transport-unix.c.o
 .PHONY : quickjs-debugger-transport-unix.c.o
 
 quickjs-debugger-transport-unix.i: quickjs-debugger-transport-unix.c.i
@@ -508,10 +508,10 @@ quickjs-debugger-transport-unix.i: quickjs-debugger-transport-unix.c.i
 
 # target to preprocess a source file
 quickjs-debugger-transport-unix.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger-transport-unix.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger-transport-unix.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger-transport-unix.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger-transport-unix.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger-transport-unix.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger-transport-unix.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger-transport-unix.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger-transport-unix.c.i
 .PHONY : quickjs-debugger-transport-unix.c.i
 
 quickjs-debugger-transport-unix.s: quickjs-debugger-transport-unix.c.s
@@ -520,10 +520,10 @@ quickjs-debugger-transport-unix.s: quickjs-debugger-transport-unix.c.s
 
 # target to generate assembly for a file
 quickjs-debugger-transport-unix.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger-transport-unix.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger-transport-unix.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger-transport-unix.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger-transport-unix.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger-transport-unix.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger-transport-unix.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger-transport-unix.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger-transport-unix.c.s
 .PHONY : quickjs-debugger-transport-unix.c.s
 
 quickjs-debugger.o: quickjs-debugger.c.o
@@ -532,10 +532,10 @@ quickjs-debugger.o: quickjs-debugger.c.o
 
 # target to build an object file
 quickjs-debugger.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger.c.o
 .PHONY : quickjs-debugger.c.o
 
 quickjs-debugger.i: quickjs-debugger.c.i
@@ -544,10 +544,10 @@ quickjs-debugger.i: quickjs-debugger.c.i
 
 # target to preprocess a source file
 quickjs-debugger.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger.c.i
 .PHONY : quickjs-debugger.c.i
 
 quickjs-debugger.s: quickjs-debugger.c.s
@@ -556,10 +556,10 @@ quickjs-debugger.s: quickjs-debugger.c.s
 
 # target to generate assembly for a file
 quickjs-debugger.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-debugger.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-debugger.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-debugger.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger.c.s
 .PHONY : quickjs-debugger.c.s
 
 quickjs-find-module.o: quickjs-find-module.c.o
@@ -568,10 +568,10 @@ quickjs-find-module.o: quickjs-find-module.c.o
 
 # target to build an object file
 quickjs-find-module.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.o
 .PHONY : quickjs-find-module.c.o
 
 quickjs-find-module.i: quickjs-find-module.c.i
@@ -580,10 +580,10 @@ quickjs-find-module.i: quickjs-find-module.c.i
 
 # target to preprocess a source file
 quickjs-find-module.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.i
 .PHONY : quickjs-find-module.c.i
 
 quickjs-find-module.s: quickjs-find-module.c.s
@@ -592,10 +592,10 @@ quickjs-find-module.s: quickjs-find-module.c.s
 
 # target to generate assembly for a file
 quickjs-find-module.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.s
 .PHONY : quickjs-find-module.c.s
 
 quickjs-libc.o: quickjs-libc.c.o
@@ -604,10 +604,10 @@ quickjs-libc.o: quickjs-libc.c.o
 
 # target to build an object file
 quickjs-libc.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-libc.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-libc.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-libc.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-libc.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-libc.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-libc.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-libc.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-libc.c.o
 .PHONY : quickjs-libc.c.o
 
 quickjs-libc.i: quickjs-libc.c.i
@@ -616,10 +616,10 @@ quickjs-libc.i: quickjs-libc.c.i
 
 # target to preprocess a source file
 quickjs-libc.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-libc.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-libc.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-libc.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-libc.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-libc.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-libc.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-libc.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-libc.c.i
 .PHONY : quickjs-libc.c.i
 
 quickjs-libc.s: quickjs-libc.c.s
@@ -628,10 +628,10 @@ quickjs-libc.s: quickjs-libc.c.s
 
 # target to generate assembly for a file
 quickjs-libc.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-libc.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-libc.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-libc.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-libc.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-libc.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-libc.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-libc.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-libc.c.s
 .PHONY : quickjs-libc.c.s
 
 quickjs.o: quickjs.c.o
@@ -640,10 +640,10 @@ quickjs.o: quickjs.c.o
 
 # target to build an object file
 quickjs.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs.c.o
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs.c.o
 .PHONY : quickjs.c.o
 
 quickjs.i: quickjs.c.i
@@ -652,10 +652,10 @@ quickjs.i: quickjs.c.i
 
 # target to preprocess a source file
 quickjs.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs.c.i
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs.c.i
 .PHONY : quickjs.c.i
 
 quickjs.s: quickjs.c.s
@@ -664,10 +664,10 @@ quickjs.s: quickjs.c.s
 
 # target to generate assembly for a file
 quickjs.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs.c.s
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs.c.s
 .PHONY : quickjs.c.s
 
 repl.o: repl.c.o
@@ -676,7 +676,7 @@ repl.o: repl.c.o
 
 # target to build an object file
 repl.c.o:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/repl.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/repl.c.o
 .PHONY : repl.c.o
 
 repl.i: repl.c.i
@@ -685,7 +685,7 @@ repl.i: repl.c.i
 
 # target to preprocess a source file
 repl.c.i:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/repl.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/repl.c.i
 .PHONY : repl.c.i
 
 repl.s: repl.c.s
@@ -694,7 +694,7 @@ repl.s: repl.c.s
 
 # target to generate assembly for a file
 repl.c.s:
-	cd /home/roman/Sources/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/repl.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/repl.c.s
 .PHONY : repl.c.s
 
 # Help Target
@@ -765,6 +765,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/roman/Sources/plot-cv && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/roman/Projects/plot-cv && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 
