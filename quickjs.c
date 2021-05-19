@@ -54179,6 +54179,16 @@ void JS_AddIntrinsicTypedArrays(JSContext *ctx)
 #endif
 }
 
+JSClassID JS_GetClassID(JSValue v) {
+    JSObject *p;
+
+    if (JS_VALUE_GET_TAG(v) != JS_TAG_OBJECT)
+        return 0;
+    p = JS_VALUE_GET_OBJ(v);
+    assert(p != 0);
+    return p->class_id;
+}
+
 JSDebuggerLocation js_debugger_current_location(JSContext *ctx, const uint8_t *cur_pc) {
     JSDebuggerLocation location;
     location.filename = 0;
