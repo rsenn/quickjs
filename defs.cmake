@@ -32,7 +32,9 @@ if(QUICKJS_DEBUGGER)
   set(quickjs_sources ${quickjs_sources} ${quickjs_sources_root}/quickjs-debugger.c ${quickjs_sources_root}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
 endif(QUICKJS_DEBUGGER)
 string(REPLACE ";" "\n" sources "${quickjs_sources}")
-message("quickjs_sources = ${sources}")
+
+
+dump(quickjs_sources)
 
 execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)

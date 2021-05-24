@@ -10,17 +10,19 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel Re
 option(QUICKJS_DEBUGGER "Enable debugger protocol" ON)
 option(QUICKJS_NODEBUG "Disable debugging" ON)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/defs.cmake)
 include(FindThreads)
 
 include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(CheckSymbolExists)
 include(CheckTypeSize)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/try-compiler.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-flags.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-libraries.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-shared.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/defs.cmake)
+
 message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "System name: ${SYSTEM_NAME}")
 
@@ -300,6 +302,8 @@ add_custom_target(
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 configure_file(quickjs-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
 # add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs
 # sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 

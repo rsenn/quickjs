@@ -1,7 +1,7 @@
 function(DUMP)
   foreach(VAR ${ARGN})
-   string(REGEX REPLACE "[;\n]" "\n  " A "${${VAR}}")
-   message("  ${VAR} = ${A}")
+    string(REGEX REPLACE "[;\n]" "\n  " A "${${VAR}}")
+    message("  ${VAR} = ${A}")
   endforeach(VAR ${ARGN})
 endfunction(DUMP)
 
