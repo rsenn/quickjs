@@ -16357,7 +16357,7 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
     };
 #define SWITCH(pc)      goto *active_dispatch_table[opcode = *pc++];
 #ifdef CONFIG_DEBUGGER
-#define CASE(op)        case_debugger_ ## op: if(ctx->rt->debugger_info.is_debugging) js_debugger_check(ctx, pc); case_ ## op
+#define CASE(op)        case_debugger_ ## op: if(!ctx->rt->debugger_info.is_debugging) js_debugger_check(ctx, pc); case_ ## op
 #else
 #define CASE(op)        case_debugger_ ## op: case_ ## op
 #endif
@@ -54189,6 +54189,7 @@ JSClassID JS_GetClassID(JSValue v) {
     return p->class_id;
 }
 
+#ifdef CONFIG_DEBUGGER
 JSDebuggerLocation js_debugger_current_location(JSContext *ctx, const uint8_t *cur_pc) {
     JSDebuggerLocation location;
     location.filename = 0;
@@ -54267,7 +54268,6 @@ JSValue js_debugger_build_backtrace(JSContext *ctx, const uint8_t *cur_pc)
     return ret;
 }
 
-#ifdef CONFIG_DEBUGGER
 int js_debugger_check_breakpoint(JSContext *ctx, uint32_t current_dirty, const uint8_t *cur_pc) {
     JSValue path_data = JS_UNDEFINED;
     if (!ctx->rt->current_stack_frame)
