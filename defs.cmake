@@ -34,7 +34,7 @@ endif(QUICKJS_DEBUGGER)
 string(REPLACE ";" "\n" sources "${quickjs_sources}")
 
 
-dump(quickjs_sources)
+#dump(quickjs_sources)
 
 execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
