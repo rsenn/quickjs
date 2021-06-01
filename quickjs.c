@@ -629,7 +629,9 @@ typedef struct JSFunctionBytecode {
         uint8_t *pc2line_buf;
         char *source;
     } debug;
+#ifdef CONFIG_DEBUGGER
     struct JSDebuggerFunctionInfo debugger;
+#endif
 } JSFunctionBytecode;
 
 typedef struct JSBoundFunction {
