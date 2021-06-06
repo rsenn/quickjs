@@ -77,4 +77,7 @@ endif(quickjs_cross_arch)
 # ${quickjs_includedir}")
 
 option(CONFIG_BIGNUM "Enable bignum support" ON)
+option(USE_WORKER "Enable worker support" ON)
+
+
 set(CONFIG_VERSION "${quickjs_version}" CACHE STRING "QuickJS version")

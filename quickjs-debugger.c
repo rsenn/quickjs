@@ -561,7 +561,8 @@ void js_debugger_check(JSContext* ctx, const uint8_t *cur_pc) {
         char *address = getenv("QUICKJS_DEBUG_ADDRESS");
         if (address != NULL && !info->transport_close) {
             printf("QUICKJS_DEBUG_ADDRESS = %s\n", address);
-            fprintf(stderr, "QUICKJS_DEBUG_ADDRESS = %s\n", address);
+            fprintf(stdout, "QUICKJS_DEBUG_ADDRESS = %s\n", address);
+            fflush(stdout);
             js_debugger_connect(ctx, address);
         }
     }
@@ -570,6 +571,7 @@ void js_debugger_check(JSContext* ctx, const uint8_t *cur_pc) {
         char *address = getenv("QUICKJS_DEBUG_LISTEN_ADDRESS");
         if (address != NULL && !info->transport_close) {
             printf("QUICKJS_DEBUG_LISTEN_ADDRESS = %s\n", address);
+            fflush(stdout);
             js_debugger_wait_connection(ctx, address);
         }
     }

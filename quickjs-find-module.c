@@ -65,8 +65,8 @@ js_find_module(JSContext* ctx, const char* module_name) {
   return ret;
 }
 
-JSModuleDef*
-js_module_loader_path(JSContext* ctx, const char* module_name, void* opaque) {
+static JSModuleDef*
+js_find_module_path(JSContext* ctx, const char* module_name, void* opaque) {
   char* filename;
   JSModuleDef* ret = NULL;
   filename = module_name[0] == '/' ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
@@ -76,3 +76,14 @@ js_module_loader_path(JSContext* ctx, const char* module_name, void* opaque) {
   }
   return ret;
 }
+
+static JSModuleLoaderFunc* module_loader_path  = &js_find_module_path;
+
+void js_std_set_module_loader_func(JSModuleLoaderFunc*func) {
+module_loader_path = func;
+}
+
+JSModuleLoaderFunc* js_std_get_module_loader_func() {
+ return module_loader_path;
+}
+
