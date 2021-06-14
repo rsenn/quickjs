@@ -1,5 +1,4 @@
-# Copyright (c) 2020 Kosaki Mezumona This cmake script is distributed under the MIT License. See
-# LICENSE for more details.
+# Copyright (c) 2020 Kosaki Mezumona This cmake script is distributed under the MIT License. See LICENSE for more details.
 cmake_minimum_required(VERSION 3.1)
 project(quickjs)
 
@@ -39,15 +38,12 @@ endif()
 
 # link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
 
-
-
 if(QUICKJS_DEBUGGER)
   message(STATUS "Enabling quickjs-debugger")
 
   set(CONFIG_DEBUGGER 1)
   add_definitions(-DCONFIG_DEBUGGER)
 endif(QUICKJS_DEBUGGER)
-
 
 if(QUICKJS_NODEBUG)
   add_definitions(-DNDEBUG)
@@ -80,13 +76,11 @@ option(DUMP_READ_OBJECT "Enable dump READ_OBJECT" OFF)
 option(DUMP_BYTECODE "Enable dump BYTECODE" OFF)
 option(DUMP_LEAKS "Enable dump LEAKS" ${DUMP})
 
-foreach(DEF DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE DUMP_PROMISE
-            DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT DUMP_BYTECODE DUMP_LEAKS)
+foreach(DEF DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE DUMP_PROMISE DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT DUMP_BYTECODE DUMP_LEAKS)
   if(${${DEF}})
     add_definitions(-D${DEF}=1)
   endif(${${DEF}})
-endforeach(DEF DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE DUMP_PROMISE
-           DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT DUMP_BYTECODE DUMP_LEAKS)
+endforeach(DEF DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE DUMP_PROMISE DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT DUMP_BYTECODE DUMP_LEAKS)
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   set(A_NAME ${PROJECT_NAME}-static)
@@ -132,11 +126,110 @@ check_include(unistd.h)
 check_include(stdlib.h)
 check_include(stdatomic.h)
 check_include(fenv.h)
-
+check_include(math.h)
 
 if(HAVE_FENV_H)
   list(APPEND CMAKE_REQUIRED_INCLUDES "fenv.h")
 endif(HAVE_FENV_H)
+if(HAVE_MATH_H)
+  list(APPEND CMAKE_REQUIRED_INCLUDES "math.h")
+endif(HAVE_MATH_H)
+
+check_symbol_exists(__dietlibc__ "" HAVE_DIETLIBC)
+
+if(HAVE_DIETLIBC)
+  check_symbol_exists(_REDIR_TIME64 "" HAVE__REDIR_TIME64)
+  if(NOT HAVE__REDIR_TIME64)
+    add_definitions("-D_REDIR_TIME64=0")
+  endif(NOT HAVE__REDIR_TIME64)
+
+endif(HAVE_DIETLIBC)
+
+check_symbol_exists(NAN math.h HAVE_NAN)
+if(NOT HAVE_NAN)
+  add_definitions("-DNAN=__builtin_nan(\"\")")
+endif(NOT HAVE_NAN)
+
+check_symbol_exists(INFINITY math.h HAVE_INFINITY)
+if(NOT HAVE_INFINITY)
+  add_definitions("-DINFINITY=\"__builtin_inf()\"")
+endif(NOT HAVE_INFINITY)
+
+check_function_exists(trunc HAVE_TRUNC)
+if(NOT HAVE_TRUNC)
+  add_definitions("-D\"trunc(x)=__builtin_trunc(x)\"")
+endif(NOT HAVE_TRUNC)
+
+set(HAVE_VARIABLES)
+
+macro(check_builtin NAME VAR)
+  set(RESULT "${${VAR}}")
+  if(RESULT STREQUAL "")
+    set(SOURCE "int main() { void *ptr;  ptr = &${NAME}; return ptr != 0; }")
+    set(C_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/try-${NAME}.c")
+    file(WRITE "${C_SOURCE}" "${SOURCE}")
+    try_compile(RESULT "${CMAKE_CURRENT_BINARY_DIR}" "${C_SOURCE}" OUTPUT_VARIABLE OUTPUT LINK_OPTIONS -c LINK_LIBRARIES "${ARGN}")
+
+    if(NOT RESULT)
+      set(RESULT FALSE)
+    endif(NOT RESULT)
+  endif(RESULT STREQUAL "")
+  if(RESULT)
+    set(MSG found)
+  else(RESULT)
+    set(MSG missing)
+  endif(RESULT)
+  set("${VAR}" "${RESULT}" PARENT_SCOPE)
+
+  message("Checking builtin ${NAME} -- ${MSG}")
+  set(CMAKE_REQUIRED_QUIET FALSE)
+endmacro(check_builtin NAME VAR)
+
+function(check_func NAME)
+  string(TOUPPER "${NAME}" UNAME)
+  # set(BUILTIN ${ARGN})
+  if(NOT BUILTIN)
+    set(BUILTIN "__builtin_${NAME}")
+  endif(NOT BUILTIN)
+  if(ARGN)
+    set(LIB "${ARGN}")
+  endif(ARGN)
+  if(LIB)
+    check_library_exists("${LIB}" "${NAME}" "" RESULT)
+  else(LIB)
+    check_function_exists(${NAME} RESULT)
+  endif(LIB)
+  set("HAVE_${UNAME}" "${RESULT}" PARENT_SCOPE)
+
+  if(NOT RESULT)
+    check_builtin("${BUILTIN}" B_RESULT)
+    set("HAVE_${BUILTIN}" "${B_RESULT}" PARENT_SCOPE)
+    if(B_RESULT)
+      # add_definitions("-D${NAME}(x...)=${BUILTIN}(x)")
+    endif(B_RESULT)
+  endif(NOT RESULT)
+  if(RESULT)
+    list(APPEND HAVE_VARIABLES HAVE_${UNAME})
+    set(HAVE_VARIABLES "${HAVE_VARIABLES}" PARENT_SCOPE)
+  endif(RESULT)
+endfunction(check_func NAME)
+
+check_library_exists(m sqrt "" HAVE_LIBM)
+
+if(HAVE_LIBM)
+  set(LIBM m)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIBM})
+endif(HAVE_LIBM)
+
+set(MATH_FUNCS acos acosh asin asinh atan atan2 atanh cbrt ceil cos cosh exp expm1 fabs fesetround floor fmax fmin fmod hypot isfinite log log10 log1p log2 lrint pow round sin sinh sqrt tan tanh trunc)
+foreach(MATH_FUNC ${MATH_FUNCS})
+  check_func(${MATH_FUNC} ${LIBM})
+endforeach(MATH_FUNC ${MATH_FUNCS})
+
+link_libraries(${LIBM})
+set(SEPARATOR " | ")
+
+dump(HAVE_VARIABLES)
 
 check_symbol_exists(FE_DOWNWARD fenv.h HAVE_FE_DOWNWARD)
 if(NOT HAVE_FE_DOWNWARD)
@@ -199,9 +292,7 @@ endif()
 
 check_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings" CMAKE_C_FLAGS)
 
-check_flags(
-  "-Wall;-Wno-implicit-int-float-conversion;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation"
-  CMAKE_C_FLAGS_DEBUG)
+check_flags("-Wall;-Wno-implicit-int-float-conversion;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation" CMAKE_C_FLAGS_DEBUG)
 
 if(NOT QUICKJS_NODEBUG)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
@@ -278,38 +369,20 @@ else(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
   set(QJSC_DEPS qjsc)
 endif(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
 
-add_custom_command(
-  OUTPUT repl.c COMMAND ${QJSC} -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js
-  DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT "Generate from repl.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
+add_custom_command(OUTPUT repl.c COMMAND ${QJSC} -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from repl.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
 
-add_custom_command(
-  OUTPUT qjscalc.c
-  COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
-  DEPENDS ${QJSC_DEPS}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES
-          ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
+add_custom_command(OUTPUT qjscalc.c COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
 
-add_custom_target(
-  hello.c
-  COMMAND ${CMAKE_CURRENT_BINARY_DIR}/qjsc -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m
-          ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js
-  DEPENDS ${QJSC_DEPS}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT "Generate from hello.js using qjs compiler"
-  SOURCES examples/hello.js)
+add_custom_target(hello.c COMMAND ${CMAKE_CURRENT_BINARY_DIR}/qjsc -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from hello.js using qjs compiler" SOURCES examples/hello.js)
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 configure_file(quickjs-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
-# add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs
-# sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
+# add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 
 add_library(${A_NAME} STATIC ${quickjs_sources})
-target_compile_definitions(${A_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
-                                             CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM)
+target_compile_definitions(${A_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${quickjs_sources_root})
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
@@ -320,60 +393,39 @@ target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_3
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   add_library(${SO_NAME} SHARED ${quickjs_sources})
-  target_compile_definitions(
-    ${SO_NAME}
-    PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
-            CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
-            CONFIG_BIGNUM)
+  target_compile_definitions(${SO_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}" CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM)
   target_include_directories(${SO_NAME} PUBLIC ${quickjs_sources_root})
-  set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${quickjs_soversion}" OUTPUT_NAME
-                                                                               ${PROJECT_NAME})
+  set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${quickjs_soversion}" OUTPUT_NAME ${PROJECT_NAME})
   target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 if(LIB_TARGETS)
-  install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION ${quickjs_libdir}
-          LIBRARY DESTINATION ${quickjs_libdir} RUNTIME DESTINATION ${quickjs_bindir})
+  install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION ${quickjs_libdir} LIBRARY DESTINATION ${quickjs_libdir} RUNTIME DESTINATION ${quickjs_bindir})
 endif(LIB_TARGETS)
 
-install(FILES ${quickjs_includes} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
-        DESTINATION ${quickjs_includedir}/quickjs)
+install(FILES ${quickjs_includes} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h DESTINATION ${quickjs_includedir}/quickjs)
 
-add_executable(
-  qjs
-  qjs.c
-  ${quickjs_sources}
-  ${CMAKE_CURRENT_BINARY_DIR}/repl.c
-  ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
+add_executable(qjs qjs.c ${quickjs_sources} ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
 
 # target_link_libraries(qjs ${QUICKJS_LIBRARY})
 target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
-target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1
-                                       CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
-                                    
+target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1 CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
+
 if(WASI)
   set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc" FORCE)
 endif(WASI)
 if(BUILD_QJSC)
-  add_executable(
-    qjsc
-    qjsc.c ${quickjs_sources})
+  add_executable(qjsc qjsc.c ${quickjs_sources})
   target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
-  target_compile_definitions(
-    qjsc
-    PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
-            CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
-            CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
+  target_compile_definitions(qjsc PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}" CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
   install(TARGETS qjsc DESTINATION ${quickjs_bindir})
 endif(BUILD_QJSC)
 
 install(TARGETS qjs DESTINATION ${quickjs_bindir})
-install(
-  CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)"
-)
+install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)")
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
