@@ -437,7 +437,9 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     else return a < b;
   }
 
-  operators_set(Fraction.prototype, {
+  operators_set(
+    Fraction.prototype,
+    {
       '+': fraction_add,
       '-': fraction_sub,
       '*': fraction_mul,
@@ -622,14 +624,14 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       return Fraction(num1, den1);
     },
     /* similar constants as Math.x */
-    get E() { return get_const(0); },
-    get LN10() { return get_const(1); },
+    /* prettier-ignore */ get E() { return get_const(0); },
+    /* prettier-ignore */ get LN10() { return get_const(1); },
     //        get LN2() { return get_const(2); },
-    get LOG2E() { return get_const(3); },
-    get LOG10E() { return get_const(4); },
+    /* prettier-ignore */ get LOG2E() { return get_const(3); },
+    /* prettier-ignore */ get LOG10E() { return get_const(4); },
     //        get PI() { return get_const(5); },
-    get SQRT1_2() { return get_const(6); },
-    get SQRT2() { return get_const(7); }
+    /* prettier-ignore */ get SQRT1_2() { return get_const(6); },
+    /* prettier-ignore */ get SQRT2() { return get_const(7); }
   });
 
   add_props(Float.prototype, {
@@ -702,7 +704,9 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     return a.re == b.re && a.im == b.im;
   }
 
-  operators_set(Complex.prototype, {
+  operators_set(
+    Complex.prototype,
+    {
       '+': complex_add,
       '-': complex_sub,
       '*': complex_mul,
@@ -841,7 +845,9 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     return a.mod == b.mod && a.res == b.res;
   }
 
-  operators_set(Mod.prototype, {
+  operators_set(
+    Mod.prototype,
+    {
       '+': mod_add,
       '-': mod_sub,
       '*': mod_mul,
@@ -907,7 +913,8 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
   };
 
   function number_need_paren(c) {
-    return !(Integer.isInteger(c) ||
+    return !(
+      Integer.isInteger(c) ||
       Float.isFloat(c) ||
       c instanceof Fraction ||
       (c instanceof Complex && c.re == 0)
@@ -1165,7 +1172,9 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     return true;
   }
 
-  operators_set(Polynomial.prototype, {
+  operators_set(
+    Polynomial.prototype,
+    {
       '+': polynomial_add,
       '-': polynomial_sub,
       '*': polynomial_mul,
@@ -1314,7 +1323,9 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     return a.mod == b.mod && a.res == b.res;
   }
 
-  operators_set(PolyMod.prototype, {
+  operators_set(
+    PolyMod.prototype,
+    {
       '+': polymod_add,
       '-': polymod_sub,
       '*': polymod_mul,
@@ -1426,7 +1437,9 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     return a.num == b.num && a.den == b.den;
   }
 
-  operators_set(RationalFunction.prototype, {
+  operators_set(
+    RationalFunction.prototype,
+    {
       '+': ratfunc_add,
       '-': ratfunc_sub,
       '*': ratfunc_mul,
@@ -1590,7 +1603,9 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     return true;
   }
 
-  operators_set(Series.prototype, {
+  operators_set(
+    Series.prototype,
+    {
       '+': series_add,
       '-': series_sub,
       '*': series_mul,
@@ -2195,7 +2210,9 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     return true;
   }
 
-  operators_set(Array.prototype, {
+  operators_set(
+    Array.prototype,
+    {
       '+': array_add,
       '-': array_sub,
       '*': array_mul,
