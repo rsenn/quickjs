@@ -155,10 +155,10 @@ if(NOT HAVE_INFINITY)
   add_definitions("-DINFINITY=\"__builtin_inf()\"")
 endif(NOT HAVE_INFINITY)
 
-check_function_exists(trunc HAVE_TRUNC)
-if(NOT HAVE_TRUNC)
-  add_definitions("-D\"trunc(x)=__builtin_trunc(x)\"")
-endif(NOT HAVE_TRUNC)
+#check_function_exists(trunc HAVE_TRUNC)
+#if(NOT HAVE_TRUNC)
+#  add_definitions("-D\"trunc(x)=__builtin_trunc(x)\"")
+#endif(NOT HAVE_TRUNC)
 
 set(HAVE_VARIABLES)
 
