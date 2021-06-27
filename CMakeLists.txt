@@ -401,13 +401,13 @@ configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 configure_file(quickjs-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
-# add_custom_command( OUTPUT ${quickjs_sources} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs
+# add_custom_command( OUTPUT ${QUICKJS_SOURCES} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs
 # sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 
-add_library(${A_NAME} STATIC ${quickjs_sources})
-target_compile_definitions(${A_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
+add_library(${A_NAME} STATIC ${QUICKJS_SOURCES})
+target_compile_definitions(${A_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}"
                                              CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM)
-target_include_directories(${A_NAME} PUBLIC ${quickjs_sources_root})
+target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
   set_target_properties(${A_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
@@ -416,14 +416,14 @@ target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_3
 # message("target_link_libraries ${A_NAME} PRIVATE ${LIBDL} ${LIBM} ${LIBPTHREAD}")
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
-  add_library(${SO_NAME} SHARED ${quickjs_sources})
+  add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES})
   target_compile_definitions(
     ${SO_NAME}
-    PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
-            CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
+    PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}"
+            CONFIG_SOVERSION="${QUICKJS_SOVERSION}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
             CONFIG_BIGNUM)
-  target_include_directories(${SO_NAME} PUBLIC ${quickjs_sources_root})
-  set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${quickjs_soversion}" OUTPUT_NAME
+  target_include_directories(${SO_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
+  set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${QUICKJS_SOVERSION}" OUTPUT_NAME
                                                                                ${PROJECT_NAME})
   target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
@@ -433,30 +433,30 @@ if(LIB_TARGETS)
           LIBRARY DESTINATION ${QUICKJS_LIBRARY_DIR} RUNTIME DESTINATION ${QUICKJS_BINARY_DIR})
 endif(LIB_TARGETS)
 
-install(FILES ${quickjs_includes} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
+install(FILES ${QUICKJS_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
         DESTINATION ${QUICKJS_INCLUDE_DIR}/quickjs)
 
-add_executable(qjs qjs.c ${quickjs_sources} ${CMAKE_CURRENT_BINARY_DIR}/repl.c
+add_executable(qjs qjs.c ${QUICKJS_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/repl.c
                    ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
 
 # target_link_libraries(qjs ${QUICKJS_LIBRARY})
 target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
-target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${quickjs_version}" _GNU_SOURCE=1
+target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" _GNU_SOURCE=1
                                        CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
 
 if(WASI)
   set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc" FORCE)
 endif(WASI)
 if(BUILD_QJSC)
-  add_executable(qjsc qjsc.c ${quickjs_sources})
+  add_executable(qjsc qjsc.c ${QUICKJS_SOURCES})
   target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
   target_compile_definitions(
     qjsc
-    PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
-            CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
+    PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}"
+            CONFIG_SOVERSION="${QUICKJS_SOVERSION}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
             CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
   install(TARGETS qjsc DESTINATION ${QUICKJS_BINARY_DIR})
 endif(BUILD_QJSC)
