@@ -501,6 +501,9 @@ if(MODULE_MODULES)
 endif(MODULE_MODULES)
 message("Module subdirectories: ${MODULE_SUBDIRS}")
 
+set(QUICKJS_PREFIX "${CMAKE_CURRENT_BINARY_DIR}" CACHE PATH "QuickJS install directory" FORCE)
+set(QUICKJS_SOURCES_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "QuickJS source directory" FORCE)
+
 foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
     add_subdirectory(${MODULE_SUBDIR})
