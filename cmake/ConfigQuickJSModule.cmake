@@ -1,4 +1,3 @@
-
 function(config_module TARGET_NAME)
   if(QUICKJS_LIBRARY_DIR)
     set_target_properties(${TARGET_NAME} PROPERTIES LINK_DIRECTORIES "${QUICKJS_LIBRARY_DIR}")

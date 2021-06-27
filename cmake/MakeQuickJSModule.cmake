@@ -1,5 +1,3 @@
-
- 
 function(make_module FNAME)
   message(STATUS "Building QuickJS module: ${FNAME}")
   string(REGEX REPLACE "_" "-" NAME "${FNAME}")
@@ -39,4 +37,4 @@ function(make_module FNAME)
   # install(TARGETS ${TARGET_NAME}-static DESTINATION lib/quickjs)
 
   config_module(${TARGET_NAME})
-endfunction() 
+endfunction()
