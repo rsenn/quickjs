@@ -1,4 +1,5 @@
-# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying file Copyright.txt or https://cmake.org/licensing for details.
+# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying file Copyright.txt or
+# https://cmake.org/licensing for details.
 
 #[=[
 
@@ -46,7 +47,8 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
 
   if(NOT lang MATCHES "^(C|CXX|Fortran|ASM)$")
     # other possible languages are not supported log message to keep trace of this problem...
-    file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log "Function 'CMAKE_CHECK_COMPILER_FLAG' called with unsupported language: ${lang}\n")
+    file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
+         "Function 'CMAKE_CHECK_COMPILER_FLAG' called with unsupported language: ${lang}\n")
     set(${result} FALSE CACHE INTERNAL ${comment})
     return()
   endif()
@@ -115,7 +117,13 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
 
   string(REPLACE ";" " " COMMAND_PATTERN "${CCCF_COMMAND_PATTERN}")
 
-  execute_process(COMMAND "${CMAKE_COMMAND}" -E env LC_ALL=C LC_MESSAGES=C LANG=C "${CMAKE_${lang}_COMPILER}" ${CCCF_COMMAND_PATTERN} WORKING_DIRECTORY "${COMPILER_FLAG_DIR}" OUTPUT_VARIABLE COMPILER_FLAG_OUTPUT ERROR_VARIABLE COMPILER_FLAG_ERROR RESULT_VARIABLE COMPILER_FLAG_RESULT)
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E env LC_ALL=C LC_MESSAGES=C LANG=C "${CMAKE_${lang}_COMPILER}"
+            ${CCCF_COMMAND_PATTERN}
+    WORKING_DIRECTORY "${COMPILER_FLAG_DIR}"
+    OUTPUT_VARIABLE COMPILER_FLAG_OUTPUT
+    ERROR_VARIABLE COMPILER_FLAG_ERROR
+    RESULT_VARIABLE COMPILER_FLAG_RESULT)
 
   # Record result in the cache so we can avoid re-testing every CMake run
   if(COMPILER_FLAG_RESULT)
@@ -128,7 +136,11 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
     endforeach()
   endif()
   if(DEFINED ${result})
-    file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log "Determining if the ${flag} option " "is supported for ${lang} language failed with the following output:\n" "${COMPILER_FLAG_OUTPUT}\n")
+    file(
+      APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
+      "Determining if the ${flag} option "
+      "is supported for ${lang} language failed with the following output:\n"
+      "${COMPILER_FLAG_OUTPUT}\n")
     if(CCCF_OUTPUT_VARIABLE)
       set(${CCCF_OUTPUT_VARIABLE} "${COMPILER_FLAG_OUTPUT}" PARENT_SCOPE)
     endif()
