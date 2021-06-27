@@ -435,6 +435,7 @@ endif(LIB_TARGETS)
 
 install(FILES ${QUICKJS_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
         DESTINATION ${QUICKJS_INCLUDE_DIR}/quickjs)
+install(FILES cmake/FindQuickJS.cmake DESTINATION ${QUICKJS_LIBRARY_DIR}/cmake)
 
 add_executable(qjs qjs.c ${QUICKJS_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/repl.c
                    ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)

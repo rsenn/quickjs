@@ -127,8 +127,7 @@ function(make_module FNAME)
       BUILD_RPATH
       "${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_CURRENT_BINARY_DIR}/quickjs:${CMAKE_CURRENT_BINARY_DIR}/quickjs"
       COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
-  set_target_properties(${TARGET_NAME}-static PROPERTIES PREFIX "" OUTPUT_NAME "${VNAME}"
-                                                         COMPILE_FLAGS "")
+  set_target_properties(${TARGET_NAME}-static PROPERTIES OUTPUT_NAME "${VNAME}" COMPILE_FLAGS "")
   target_compile_definitions(${TARGET_NAME} PRIVATE JS_SHARED_LIBRARY=1 JS_${UNAME}_MODULE=1
                                                     CONFIG_PREFIX="${QUICKJS_PREFIX}")
   target_compile_definitions(${TARGET_NAME}-static PRIVATE JS_${UNAME}_MODULE=1
@@ -136,40 +135,26 @@ function(make_module FNAME)
   install(TARGETS ${TARGET_NAME} DESTINATION lib/quickjs
           PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ
                       WORLD_EXECUTE)
-  install(TARGETS ${TARGET_NAME}-static DESTINATION lib/quickjs)
+  # install(TARGETS ${TARGET_NAME}-static DESTINATION lib/quickjs)
 
   config_module(${TARGET_NAME})
 endfunction()
-
-macro(get_modules_dir VAR)
-  string(REGEX REPLACE "/modules" "" BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-
-  set(MODULES_DIR "${BINARY_DIR}/modules" CACHE PATH "CMake modules")
-  string(REGEX REPLACE ".*/build/" "build/" MODULES_DIR "${MODULES_DIR}")
-  set("${VAR}" "${MODULES_DIR}" PARENT_SCOPE)
-endmacro(get_modules_dir VAR)
-
-if(NOT "${MODULES_DIR}")
-  get_modules_dir(MODULES_DIR)
-endif(NOT "${MODULES_DIR}")
-
 function(compile_module SOURCE)
   basename(BASE "${SOURCE}" .js)
-  get_modules_dir(MODULES_DIR)
-  message(STATUS "QuickJS compile '${SOURCE}' -> '${MODULES_DIR}/${BASE}.c'")
+  message(STATUS "Compile QuickJS module '${BASE}.c' from '${SOURCE}'")
 
-  file(MAKE_DIRECTORY "${MODULES_DIR}")
   if(ARGN)
     set(OUTPUT_FILE ${ARGN})
   else(ARGN)
-    set(OUTPUT_FILE ${MODULES_DIR}/${BASE}.c)
+    set(OUTPUT_FILE ${BASE}.c)
   endif(ARGN)
   add_custom_command(
     OUTPUT "${OUTPUT_FILE}"
-    COMMAND sh -x -c "qjsc -v -c -o ${OUTPUT_FILE} -m ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}"
+    COMMAND qjsc -v -c -o "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}"
     DEPENDS ${QJSC_DEPS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES
-            ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE})
+            ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}
+    DEPENDS qjs-inspect qjs-misc)
 
 endfunction(compile_module SOURCE)
