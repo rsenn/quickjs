@@ -429,12 +429,12 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 if(LIB_TARGETS)
-  install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION ${quickjs_libdir}
-          LIBRARY DESTINATION ${quickjs_libdir} RUNTIME DESTINATION ${quickjs_bindir})
+  install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION ${QUICKJS_LIBRARY_DIR}
+          LIBRARY DESTINATION ${QUICKJS_LIBRARY_DIR} RUNTIME DESTINATION ${QUICKJS_BINARY_DIR})
 endif(LIB_TARGETS)
 
 install(FILES ${quickjs_includes} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
-        DESTINATION ${quickjs_includedir}/quickjs)
+        DESTINATION ${QUICKJS_INCLUDE_DIR}/quickjs)
 
 add_executable(qjs qjs.c ${quickjs_sources} ${CMAKE_CURRENT_BINARY_DIR}/repl.c
                    ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
@@ -458,10 +458,10 @@ if(BUILD_QJSC)
     PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${quickjs_version}"
             CONFIG_SOVERSION="${quickjs_soversion}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
             CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
-  install(TARGETS qjsc DESTINATION ${quickjs_bindir})
+  install(TARGETS qjsc DESTINATION ${QUICKJS_BINARY_DIR})
 endif(BUILD_QJSC)
 
-install(TARGETS qjs DESTINATION ${quickjs_bindir})
+install(TARGETS qjs DESTINATION ${QUICKJS_BINARY_DIR})
 install(
   CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)"
 )
