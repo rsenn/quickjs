@@ -76,11 +76,10 @@ else(QUICKJS_CROSS_ARCH)
   set(QUICKJS_INCLUDE_DIR ${QUICKJS_PREFIX}/include)
 endif(QUICKJS_CROSS_ARCH)
 
-# message("libdir = ${QUICKJS_LIBRARY_DIR}") message("bindir = ${QUICKJS_BINARY_DIR}") message("includedir =
-# ${QUICKJS_INCLUDE_DIR}")
+# message("libdir = ${QUICKJS_LIBRARY_DIR}") message("bindir = ${QUICKJS_BINARY_DIR}")
+# message("includedir = ${QUICKJS_INCLUDE_DIR}")
 
 option(CONFIG_BIGNUM "Enable bignum support" ON)
 option(USE_WORKER "Enable worker support" ON)
-
 
 set(CONFIG_VERSION "${QUICKJS_VERSION}" CACHE STRING "QuickJS version")
