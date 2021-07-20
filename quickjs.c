@@ -32854,9 +32854,10 @@ static void free_function_bytecode(JSRuntime *rt, JSFunctionBytecode *b)
         JS_FreeAtomRT(rt, b->debug.filename);
         js_free_rt(rt, b->debug.pc2line_buf);
         js_free_rt(rt, b->debug.source);
-
+#ifdef CONFIG_DEBUGGER
         if (b->debugger.breakpoints)
             js_free_rt(rt, b->debugger.breakpoints);
+#endif
     }
 
     remove_gc_object(&b->header);

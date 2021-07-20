@@ -27,32 +27,24 @@ set(QUICKJS_EXTRACT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sources)
 if(NOT QUICKJS_SOURCES_ROOT)
   set(QUICKJS_SOURCES_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 endif(NOT QUICKJS_SOURCES_ROOT)
-set(QUICKJS_INCLUDES
-    cutils.h libbf.h libregexp-opcode.h libregexp.h libunicode-table.h libunicode.h list.h
-    quickjs-atom.h quickjs-libc.h quickjs-opcode.h quickjs-debugger.h quickjs.h unicode_gen_def.h)
+set(QUICKJS_INCLUDES cutils.h libbf.h libregexp-opcode.h libregexp.h libunicode-table.h libunicode.h list.h quickjs-atom.h quickjs-libc.h quickjs-opcode.h quickjs-debugger.h quickjs.h unicode_gen_def.h)
 
-set(QUICKJS_SOURCES
-    ${QUICKJS_SOURCES_ROOT}/cutils.c
-    ${QUICKJS_SOURCES_ROOT}/libbf.c
-    ${QUICKJS_SOURCES_ROOT}/libregexp.c
-    ${QUICKJS_SOURCES_ROOT}/libunicode.c
-    ${QUICKJS_SOURCES_ROOT}/quickjs.c
-    ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c
-    ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c
-    ${QUICKJS_INCLUDES})
+set(QUICKJS_SOURCES ${QUICKJS_SOURCES_ROOT}/cutils.c ${QUICKJS_SOURCES_ROOT}/libbf.c ${QUICKJS_SOURCES_ROOT}/libregexp.c ${QUICKJS_SOURCES_ROOT}/libunicode.c ${QUICKJS_SOURCES_ROOT}/quickjs.c ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c ${QUICKJS_INCLUDES})
 
 if(QUICKJS_DEBUGGER)
-  set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
-                      ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+  set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+  add_definitions(-DCONFIG_DEBUGGER=1)
+
+  message(STATUS "Enabling quickjs-debugger")
+
+  set(CONFIG_DEBUGGER 1)
 endif(QUICKJS_DEBUGGER)
 string(REPLACE ";" "\n" sources "${QUICKJS_SOURCES}")
 
 # dump(QUICKJS_SOURCES)
 
-execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 string(REGEX REPLACE "-pc-" "-" QUICKJS_HOST_ARCH "${SYSTEM_NAME}")
 
@@ -63,8 +55,7 @@ else(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${QUICKJS_HOST_ARCH}")
   set(QUICKJS_CROSS_ARCH "")
 endif(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${QUICKJS_HOST_ARCH}")
 
-# message("HOST_SYSTEM_NAME = ${HOST_SYSTEM_NAME}") message("SYSTEM_NAME = ${SYSTEM_NAME}")
-# message("QUICKJS_CROSS_ARCH = ${QUICKJS_CROSS_ARCH}")
+# message("HOST_SYSTEM_NAME = ${HOST_SYSTEM_NAME}") message("SYSTEM_NAME = ${SYSTEM_NAME}") message("QUICKJS_CROSS_ARCH = ${QUICKJS_CROSS_ARCH}")
 
 if(QUICKJS_CROSS_ARCH)
   set(QUICKJS_LIBRARY_DIR ${QUICKJS_PREFIX}/lib/${QUICKJS_CROSS_ARCH})
@@ -76,8 +67,7 @@ else(QUICKJS_CROSS_ARCH)
   set(QUICKJS_INCLUDE_DIR ${QUICKJS_PREFIX}/include)
 endif(QUICKJS_CROSS_ARCH)
 
-# message("libdir = ${QUICKJS_LIBRARY_DIR}") message("bindir = ${QUICKJS_BINARY_DIR}")
-# message("includedir = ${QUICKJS_INCLUDE_DIR}")
+# message("libdir = ${QUICKJS_LIBRARY_DIR}") message("bindir = ${QUICKJS_BINARY_DIR}") message("includedir = ${QUICKJS_INCLUDE_DIR}")
 
 option(CONFIG_BIGNUM "Enable bignum support" ON)
 option(USE_WORKER "Enable worker support" ON)
