@@ -476,12 +476,12 @@ cfg-aarch64() {
     : ${host=aarch64-${build#*-}}
     : ${builddir=build/$host}
 
-    : ${prefix=/usr/aarch64-linux-gnu/sysroot/usr}
+    : ${prefix=/usr/aarch64-linux-gnu/sysroot/usr/local}
 
     : ${TOOLCHAIN=/opt/cmake-toolchains/aarch64-linux-gnu.toolchain.cmake}
     export prefix TOOLCHAIN
 
-    PKG_CONFIG=$(which ${host}-pkg-config) \
+ PKG_CONFIG=aarch64-linux-gnu-pkg-config \
       cfg "$@"
   )
 }
