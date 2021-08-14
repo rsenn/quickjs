@@ -2300,8 +2300,13 @@
     function array_div(a, b) {
         return array_mul(a, b.inverse());
     }
-    function array_scalar_div(a, b) {
-        return a * b.inverse();
+    function array_element_wise_inverse(a) {
+        var r, i, n;
+        n = a.length;
+        r = [];
+        for(i = 0; i < n; i++)
+            r[i] = a[i].inverse();
+        return r;
     }
     function array_eq(a, b) {
         var n, i;
@@ -2338,14 +2343,14 @@
             right: [Number, BigInt, Float, Fraction, Complex, Mod,
                     Polynomial, PolyMod, RationalFunction, Series],
             "*": array_scalar_mul,
-            "/": array_scalar_div,
+            "/"(a, b) { return a * b.inverse(); },
             "**": generic_pow, /* XXX: only for integer */
         },
         {
             left: [Number, BigInt, Float, Fraction, Complex, Mod,
                    Polynomial, PolyMod, RationalFunction, Series],
             "*"(a, b) { return array_scalar_mul(b, a); },
-            "/"(a, b) { return array_scalar_div(b, a); },
+            "/"(a, b) { return a * array_element_wise_inverse(b); },
         });
 
     add_props(Array.prototype, {
