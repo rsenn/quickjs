@@ -295,7 +295,7 @@ import * as os from 'os';
         last_cmd.substring(0, last_cursor_pos) == cmd.substring(0, last_cursor_pos)
       ) {
         /* optimize common case */
-        std.puts(cmd.substring(last_cursor_pos));
+        fs.puts(output, cmd.substring(last_cursor_pos));
       } else {
         /* goto the start of the line */
         move_cursor(-ucs_length(last_cmd.substring(0, last_cursor_pos)));
@@ -305,16 +305,16 @@ import * as os from 'os';
           var colorstate = colorize_js(str);
           print_color_text(str, start, colorstate[2]);
         } else {
-          std.puts(cmd);
+          fs.puts(output, cmd);
         }
       }
       term_cursor_x = (term_cursor_x + ucs_length(cmd)) % term_width;
       if(term_cursor_x == 0) {
         /* show the cursor on the next line */
-        std.puts(' \x08');
+        fs.puts(output, ' \x08');
       }
       /* remove the trailing characters */
-      std.puts('\x1b[J');
+   fs.puts(output, '\x1b[J');
       last_cmd = cmd;
       last_cursor_pos = cmd.length;
     }
@@ -324,7 +324,9 @@ import * as os from 'os';
       move_cursor(-ucs_length(cmd.substring(cursor_pos, last_cursor_pos)));
     }
     last_cursor_pos = cursor_pos;
-    std.out.flush();
+
+    fs.flushSync(output);
+//    std.out.flush();
   }
 
   /* editing commands */
