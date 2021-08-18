@@ -10,3 +10,11 @@
 	path = qjs-modules
 	url = git@github.com:rsenn/qjs-modules.git
 	branch = main
+[submodule "quickjs-glfw"]
+	path = qjs-glfw
+	url = git@github.com:rsenn/qjs-glfw.git
+	branch = main
+[submodule "quickjs-nanovg"]
+	path = qjs-nanovg
+	url = git@github.com:rsenn/qjs-nanovg.git
+	branch = main
