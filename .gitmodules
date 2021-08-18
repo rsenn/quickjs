@@ -2,10 +2,6 @@
 	path = qjs-minnet
 	url = git@github.com:rsenn/minnet-quickjs.git
 	branch = main
-[submodule "qjs-ffi"]
-	path = qjs-ffi
-	url = git@github.com:rsenn/qjs-ffi.git
-	branch = main
 [submodule "qjs-modules"]
 	path = qjs-modules
 	url = git@github.com:rsenn/qjs-modules.git
@@ -17,4 +13,8 @@
 [submodule "quickjs-nanovg"]
 	path = qjs-nanovg
 	url = git@github.com:rsenn/qjs-nanovg.git
+	branch = main
+[submodule "quickjs-ffi"]
+	path = qjs-ffi
+	url = git@github.com:rsenn/qjs-ffi.git
 	branch = main
