@@ -18,3 +18,7 @@
 	path = qjs-net
 	url = git@github.com:rsenn/minnet-quickjs.git
 	branch = main
+[submodule "quickjs-net"]
+	path = qjs-net
+	url = git@github.com:rsenn/minnet-quickjs.git
+	branch = main
