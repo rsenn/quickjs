@@ -14,7 +14,3 @@
 	path = qjs-nanovg
 	url = git@github.com:rsenn/qjs-nanovg.git
 	branch = main
-[submodule "quickjs-ffi"]
-	path = qjs-ffi
-	url = git@github.com:rsenn/qjs-ffi.git
-	branch = main
