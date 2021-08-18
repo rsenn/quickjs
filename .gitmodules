@@ -14,3 +14,7 @@
 	path = qjs-nanovg
 	url = https://github.com/rsenn/nanovg-qjs.git
 	branch = master
+[submodule "qjs-minnet"]
+	path = qjs-minnet
+	url = git@github.com:rsenn/minnet-quickjs.git
+	branch = main
