@@ -226,7 +226,7 @@ endforeach(MATH_FUNC ${MATH_FUNCS})
 link_libraries(${LIBM})
 set(SEPARATOR " | ")
 
-dump(HAVE_VARIABLES)
+#dump(HAVE_VARIABLES)
 
 check_symbol_exists(FE_DOWNWARD fenv.h HAVE_FE_DOWNWARD)
 if(NOT HAVE_FE_DOWNWARD)
