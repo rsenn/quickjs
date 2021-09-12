@@ -291,7 +291,8 @@ import * as os from 'os';
     /* cursor_pos is the position in 16 bit characters inside the
            UTF-16 string 'cmd' */
     if(cmd != last_cmd) {
-      if(!show_colors &&
+      if(
+        !show_colors &&
         last_cmd.substring(0, last_cursor_pos) == cmd.substring(0, last_cursor_pos)
       ) {
         /* optimize common case */
@@ -314,7 +315,7 @@ import * as os from 'os';
         fs.puts(output, ' \x08');
       }
       /* remove the trailing characters */
-   fs.puts(output, '\x1b[J');
+      fs.puts(output, '\x1b[J');
       last_cmd = cmd;
       last_cursor_pos = cmd.length;
     }
@@ -326,7 +327,7 @@ import * as os from 'os';
     last_cursor_pos = cursor_pos;
 
     fs.flushSync(output);
-//    std.out.flush();
+    //    std.out.flush();
   }
 
   /* editing commands */
@@ -597,7 +598,8 @@ import * as os from 'os';
           return {};
         case '/':
           return / /;
-        default: if (is_word(c)) {
+        default:
+          if(is_word(c)) {
             base = get_context_word(line, pos);
             if(['true', 'false', 'null', 'this'].includes(base) || !isNaN(+base))
               return eval(base);
@@ -932,7 +934,8 @@ import * as os from 'os';
       }
       if(typeof a === 'bigfloat' && eval_mode !== 'math') {
         s += 'l';
-      } else if(eval_mode !== 'std' &&
+      } else if(
+        eval_mode !== 'std' &&
         s.indexOf('.') < 0 &&
         ((radix == 16 && s.indexOf('p') < 0) || (radix == 10 && s.indexOf('e') < 0))
       ) {
@@ -974,7 +977,8 @@ import * as os from 'os';
           std.puts(a);
         } else if(stack.indexOf(a) >= 0) {
           std.puts('[circular]');
-        } else if(has_jscalc &&
+        } else if(
+          has_jscalc &&
           (a instanceof Fraction ||
             a instanceof Complex ||
             a instanceof Mod ||
@@ -1073,7 +1077,8 @@ import * as os from 'os';
         .trim()
         .split(' ');
       if(param.length === 1 && param[0] === '') {
-        std.puts('BigFloat precision=' +
+        std.puts(
+          'BigFloat precision=' +
             prec +
             ' bits (~' +
             Math.floor(prec / log2_10) +
@@ -1101,7 +1106,8 @@ import * as os from 'os';
           std.puts('Invalid precision\n');
           return false;
         }
-        if(Number.isNaN(expBits1) ||
+        if(
+          Number.isNaN(expBits1) ||
           expBits1 < BigFloatEnv.expBitsMin ||
           expBits1 > BigFloatEnv.expBitsMax
         ) {
@@ -1171,7 +1177,8 @@ import * as os from 'os';
     function sel(n) {
       return n ? '*' : ' ';
     }
-    std.puts('\\h          this help\n' +
+    std.puts(
+      '\\h          this help\n' +
         '\\x         ' +
         sel(hex_mode) +
         'hexadecimal number display\n' +
@@ -1184,7 +1191,8 @@ import * as os from 'os';
         '\\clear      clear the terminal\n'
     );
     if(has_jscalc) {
-      std.puts('\\a         ' +
+      std.puts(
+        '\\a         ' +
           sel(algebraicMode) +
           'algebraic mode\n' +
           '\\n         ' +
@@ -1193,7 +1201,8 @@ import * as os from 'os';
       );
     }
     if(has_bignum) {
-      std.puts("\\p [m [e]]  set the BigFloat precision to 'm' bits\n" +
+      std.puts(
+        "\\p [m [e]]  set the BigFloat precision to 'm' bits\n" +
           "\\digits n   set the BigFloat precision to 'ceil(n*log2(10))' bits\n"
       );
       if(!has_jscalc) {
@@ -1517,7 +1526,8 @@ import * as os from 'os';
           }
           style = 'error';
           break;
-        default: if (is_digit(c)) {
+        default:
+          if(is_digit(c)) {
             parse_number();
             can_regex = 0;
             break;

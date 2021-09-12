@@ -277,25 +277,24 @@ cfg-tcc() {
 }
 
 cfg-musl() {
-  (
-    : ${build=$(gcc -dumpmachine | sed 's|-pc-|-|g')}
-    : ${host=${build%-*}-musl}
-
-    : ${prefix=/opt/musl}
-    : ${includedir=$prefix/include/$host}
-    : ${libdir=$prefix/lib/$host}
-    : ${bindir=$prefix/bin/$host}
-    : ${builddir=build/$host}
-
-    CC=/usr/bin/musl-gcc \
-      PKG_CONFIG=musl-pkg-config \
-      PKG_CONFIG_PATH=/opt/musl/lib/pkgconfig:/usr/lib/${host%%-*}-linux-musl/pkgconfig \
-      cfg \
-      -DENABLE_SHARED=OFF \
-      -DSHARED_LIBS=OFF \
-      -DBUILD_SHARED_LIBS=OFF \
-      "$@"
-  )
+ (: ${build=$(${CC:-gcc} -dumpmachine)}
+  : ${host=${build/-gnu/-musl}}
+  : ${host=${host/-pc-/-}}
+  : ${builddir=build/$host}
+  : ${prefix=/usr/lib/musl}
+  : ${includedir=$prefix/include}
+  : ${libdir=$prefix/lib}
+  : ${bindir=$prefix/bin}
+  : ${PKG_CONFIG=musl-pkg-config}
+  : ${PKG_CONFIG_PATH=/opt/musl/lib/pkgconfig}
+  : ${CC=musl-gcc}
+  : ${AR=ar}
+  : ${RANLIB=ranlib}
+ 
+   export PKG_CONFIG PKG_CNOFIG_PATH CC AR RANLIB
+  
+   cfg \
+    "$@")
 }
 
 cfg-musl64() {
