@@ -460,7 +460,7 @@ if(MODULE_MODULES)
 endif(MODULE_MODULES)
 message("Module subdirectories: ${MODULE_SUBDIRS}")
 
-set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "QuickJS install directory")  
+set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "QuickJS install directory")
 set(QUICKJS_SOURCES_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "QuickJS source directory")
 
 foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
