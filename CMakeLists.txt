@@ -299,8 +299,13 @@ check_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
   option(ENABLE_LTO "Enable link-time optimization" ON)
 endif(HAVE_LTO_FLAG)
+
+
 if(ENABLE_LTO)
-  append_vars("-flto" CMAKE_C_FLAGS CMAKE_EXE_LINKER_FLAGS)
+  message(STATUS "Enabling link-time optimization")
+  #append_vars("-flto" CMAKE_C_FLAGS CMAKE_EXE_LINKER_FLAGS)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
 endif(ENABLE_LTO)
 
 check_type_size(sighandler_t SIZEOF_SIGHANDLER_T)
