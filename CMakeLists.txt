@@ -15,10 +15,10 @@ include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(CheckSymbolExists)
 include(CheckTypeSize)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-libraries.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/try-compiler.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckFlags.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-libraries.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-shared.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/defs.cmake)
 
@@ -35,6 +35,7 @@ elseif(WIN32 OR MINGW)
   set(LIBWS2_32 ws2_32)
   set(BUILD_SHARED_LIBS TRUE)
 endif()
+
 
 # link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
 
@@ -211,19 +212,11 @@ function(check_func NAME)
   endif(RESULT)
 endfunction(check_func NAME)
 
-check_library_exists(m sqrt "" HAVE_LIBM)
-
-if(HAVE_LIBM)
-  set(LIBM m)
-  list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIBM})
-endif(HAVE_LIBM)
-
 set(MATH_FUNCS acos acosh asin asinh atan atan2 atanh cbrt ceil cos cosh exp expm1 fabs fesetround floor fmax fmin fmod hypot isfinite log log10 log1p log2 lrint pow round sin sinh sqrt tan tanh trunc)
 foreach(MATH_FUNC ${MATH_FUNCS})
   check_func(${MATH_FUNC} ${LIBM})
 endforeach(MATH_FUNC ${MATH_FUNCS})
 
-link_libraries(${LIBM})
 set(SEPARATOR " | ")
 
 #dump(HAVE_VARIABLES)
@@ -306,8 +299,13 @@ check_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
   option(ENABLE_LTO "Enable link-time optimization" ON)
 endif(HAVE_LTO_FLAG)
+
+
 if(ENABLE_LTO)
-  append_vars("-flto" CMAKE_C_FLAGS CMAKE_EXE_LINKER_FLAGS)
+  message(STATUS "Enabling link-time optimization")
+  #append_vars("-flto" CMAKE_C_FLAGS CMAKE_EXE_LINKER_FLAGS)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
 endif(ENABLE_LTO)
 
 check_type_size(sighandler_t SIZEOF_SIGHANDLER_T)
@@ -379,7 +377,7 @@ add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
 # add_custom_command( OUTPUT ${QUICKJS_SOURCES} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 
 add_library(${A_NAME} STATIC ${QUICKJS_SOURCES})
-target_compile_definitions(${A_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}" CONFIG_BIGNUM)
+target_compile_definitions(${A_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${QUICKJS_PREFIX}" CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
@@ -390,18 +388,18 @@ target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_3
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES})
-  target_compile_definitions(${SO_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_SOVERSION="${QUICKJS_SOVERSION}" CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}" CONFIG_BIGNUM)
+  target_compile_definitions(${SO_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_SOVERSION="${QUICKJS_SOVERSION}" CONFIG_PREFIX="${QUICKJS_PREFIX}" CONFIG_BIGNUM)
   target_include_directories(${SO_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
   set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${QUICKJS_SOVERSION}" OUTPUT_NAME ${PROJECT_NAME})
   target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 if(LIB_TARGETS)
-  install(TARGETS ${LIB_TARGETS} DESTINATION ${QUICKJS_INSTALL_PREFIX}/lib)
+  install(TARGETS ${LIB_TARGETS} DESTINATION ${QUICKJS_PREFIX}/lib)
 endif(LIB_TARGETS)
 
-install(FILES ${QUICKJS_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h DESTINATION ${QUICKJS_INSTALL_PREFIX}/include/quickjs)
-install(FILES cmake/FindQuickJS.cmake cmake/CompileQuickJSModule.cmake cmake/MakeQuickJSModule.cmake cmake/ConfigQuickJSModule.cmake DESTINATION ${QUICKJS_INSTALL_PREFIX}/lib/cmake)
+install(FILES ${QUICKJS_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h DESTINATION ${QUICKJS_PREFIX}/include/quickjs)
+install(FILES cmake/FindQuickJS.cmake cmake/CompileQuickJSModule.cmake cmake/MakeQuickJSModule.cmake cmake/ConfigQuickJSModule.cmake DESTINATION ${QUICKJS_PREFIX}/lib/cmake)
 
 add_executable(qjs qjs.c ${QUICKJS_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
 
@@ -409,7 +407,7 @@ add_executable(qjs qjs.c ${QUICKJS_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/repl.c $
 target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
-target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" _GNU_SOURCE=1 CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
+target_compile_definitions(qjs PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" _GNU_SOURCE=1 CONFIG_PREFIX="${QUICKJS_PREFIX}" CONFIG_BIGNUM=1)
 
 if(WASI)
   set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc" FORCE)
@@ -418,8 +416,8 @@ if(BUILD_QJSC)
   add_executable(qjsc qjsc.c ${QUICKJS_SOURCES})
   target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
-  target_compile_definitions(qjsc PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_SOVERSION="${QUICKJS_SOVERSION}" CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
-  install(TARGETS qjsc DESTINATION ${QUICKJS_INSTALL_PREFIX}/bin)
+  target_compile_definitions(qjsc PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_SOVERSION="${QUICKJS_SOVERSION}" CONFIG_PREFIX="${QUICKJS_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" CONFIG_LTO=1 CONFIG_BIGNUM=1)
+  install(TARGETS qjsc DESTINATION ${QUICKJS_PREFIX}/bin)
 endif(BUILD_QJSC)
 
 install(TARGETS qjs DESTINATION ${QUICKJS_BINARY_DIR})
@@ -462,7 +460,7 @@ if(MODULE_MODULES)
 endif(MODULE_MODULES)
 message("Module subdirectories: ${MODULE_SUBDIRS}")
 
-set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "QuickJS install directory")  
+set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "QuickJS install directory")
 set(QUICKJS_SOURCES_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "QuickJS source directory")
 
 foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})

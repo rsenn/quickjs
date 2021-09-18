@@ -5,9 +5,14 @@ if(HAVE_LIBPTHREAD)
   set(LIBPTHREAD pthread)
 endif(HAVE_LIBPTHREAD)
 
-check_library_exists(m atan2 /usr/lib HAVE_LIBM)
+
+check_library_exists(m fabs "" HAVE_LIBM)
+
 if(HAVE_LIBM)
   set(LIBM m)
+  link_libraries(${LIBM})
+  list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIBM})
+  message("Math library: ${LIBM}")
 endif(HAVE_LIBM)
 
 check_library_exists(dl dlopen /usr/lib HAVE_LIBDL)
