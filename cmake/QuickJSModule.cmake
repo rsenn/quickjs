@@ -20,16 +20,17 @@ function(compile_module SOURCE)
   else(ARGN)
     set(OUTPUT_FILE "${MODULES_DIR}/${BASE}.c")
   endif(ARGN)
-  add_custom_command(
-    OUTPUT "${OUTPUT_FILE}"
+  #add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc -v -c -o "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
+  add_custom_target(
+    "${BASE}.c"
+    BYPRODUCTS "${OUTPUT_FILE}"
     COMMAND qjsc -v -c -o "${OUTPUT_FILE}" -m
             "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}"
     DEPENDS ${QJSC_DEPS}
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-    COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES
-            ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}
+    COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler"
+    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}"
     DEPENDS qjs-inspect qjs-misc)
-
 endfunction(compile_module SOURCE)
 
 function(make_module FNAME)
@@ -42,12 +43,14 @@ function(make_module FNAME)
   set(TARGET_NAME qjs-${NAME})
 
   if(ARGN)
-    set(SOURCES ${ARGN})
+    set(SOURCES ${ARGN} ${${VNAME}_SOURCES})
+    set(DEPS ${ARGN} ${${VNAME}_DEPS})
   else(ARGN)
     set(SOURCES quickjs-${NAME}.c ${${VNAME}_SOURCES})
   endif(ARGN)
 
-  # dump(VNAME ${VNAME}_SOURCES)
+  #dump(VNAME ${VNAME}_SOURCES SOURCES)
+
   add_library(${TARGET_NAME} SHARED ${SOURCES})
   add_library(${TARGET_NAME}-static STATIC ${SOURCES})
 
@@ -61,25 +64,29 @@ function(make_module FNAME)
       PREFIX ""
       RPATH
       "${OPENCV_LIBRARY_DIRS}:${QUICKJS_INSTALL_PREFIX}/lib:${QUICKJS_INSTALL_PREFIX}/lib/quickjs"
-      OUTPUT_NAME "${VNAME}"
       INSTALL_RPATH
       "${QUICKJS_INSTALL_PREFIX}/lib:${QUICKJS_INSTALL_PREFIX}/lib/quickjs"
+      OUTPUT_NAME "${VNAME}"
       BUILD_RPATH
       "${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_CURRENT_BINARY_DIR}/quickjs:${CMAKE_CURRENT_BINARY_DIR}/quickjs"
       COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
   set_target_properties(${TARGET_NAME}-static PROPERTIES OUTPUT_NAME "${VNAME}"
                                                          COMPILE_FLAGS "")
   target_compile_definitions(
-    ${TARGET_NAME} PRIVATE JS_SHARED_LIBRARY=1 JS_${UNAME}_MODULE=1
-                           CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}")
+    ${TARGET_NAME}
+    PRIVATE _GNU_SOURCE=1 JS_SHARED_LIBRARY=1 JS_${UNAME}_MODULE=1
+            CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}")
   target_compile_definitions(
-    ${TARGET_NAME}-static PRIVATE JS_${UNAME}_MODULE=1
+    ${TARGET_NAME}-static PRIVATE _GNU_SOURCE=1 JS_${UNAME}_MODULE=1
                                   CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}")
 
   set(LIBRARIES ${${VNAME}_LIBRARIES})
   if(LIBRARIES)
-    target_link_libraries(${TARGET_NAME} ${LIBRARIES})
+    target_link_libraries(${TARGET_NAME} PRIVATE ${LIBRARIES})
   endif(LIBRARIES)
+  if(DEPS)
+    add_dependencies(${TARGET_NAME} ${DEPS})
+  endif(DEPS)
 
   install(TARGETS ${TARGET_NAME} DESTINATION lib/quickjs
           PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ

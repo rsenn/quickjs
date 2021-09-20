@@ -11,11 +11,11 @@
 #define PATH_MAX 1024
 #endif
 
+#include "quickjs-debugger.h"
+
 #ifdef HAVE_QUICKJS_CONFIG_H
 #include "quickjs-config.h"
 #endif
-
-#include "quickjs-debugger.h"
 
 typedef struct DebuggerSuspendedState {
     uint32_t variable_reference_count;

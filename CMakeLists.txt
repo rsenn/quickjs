@@ -86,8 +86,14 @@ endif("${DUMP_REDIR}" STREQUAL "printf")
 if("${DUMP_REDIR}" STREQUAL "")
   set(DUMP_MACRO OFF CACHE INTERNAL "Enable dump macro")
   #unset(DUMP_REDIR)
+  set(DUMP_DEFINE "")
 else("${DUMP_REDIR}" STREQUAL "")
   set(DUMP_MACRO ON CACHE INTERNAL "Enable dump macro")
+  if(NOT "${DUMP_REDIR}" MATCHES ".*[()].*")
+    set(DUMP_REDIR "${DUMP_REDIR}(__VA_ARGS__)")
+  endif(NOT "${DUMP_REDIR}" MATCHES ".*[()].*")
+
+  set(DUMP_DEFINE "\n/* printf - Redirect output */\n#define printf(...) ${DUMP_REDIR}\n\n#define errprintf(...) fprintf(stderr, __VA_ARGS__)\n")
 endif("${DUMP_REDIR}" STREQUAL "")
 
 foreach(

@@ -43,7 +43,7 @@ macro(find_quickjs)
   set(QUICKJS_INSTALL_PREFIX "${QUICKJS_INSTALL_DIR}"
       CACHE PATH "QuickJS installation prefix")
 
-  ##dump(QUICKJS_INSTALL_PREFIX)
+  #dump(QUICKJS_INSTALL_PREFIX)
 
   # set(CMAKE_INSTALL_PREFIX "${QUICKJS_PREFIX}" CACHE PATH "Install directory" FORCE)
 
@@ -87,19 +87,15 @@ macro(find_quickjs)
         CACHE PATH "QuickJS library directory")
   endif(EXISTS "${QUICKJS_PREFIX}/lib")
 
-  if(EXISTS "${CMAKE_BINARY_DIR}/quickjs")
-    set(QUICKJS_LIBRARY_DIR "${CMAKE_BINARY_DIR}/quickjs"
-        CACHE PATH "QuickJS library directory")
-  endif(EXISTS "${CMAKE_BINARY_DIR}/quickjs")
-  #[[
-  if(NOT QUICKJS_INCLUDE_DIR)
-    set(QUICKJS_INCLUDE_DIR "${QUICKJS_PREFIX}/include" CACHE STRING "QuickJS include dirs")
-  endif(NOT QUICKJS_INCLUDE_DIR)]]
   if(EXISTS "${QUICKJS_PREFIX}/lib/quickjs")
-    set(QUICKJS_MODULE_DIR "${QUICKJS_INSTALL_PREFIX}/lib/quickjs")
+    set(QUICKJS_MODULE_DIR "${QUICKJS_PREFIX}/lib/quickjs")
   endif(EXISTS "${QUICKJS_PREFIX}/lib/quickjs")
 
-  set(CMAKE_REQUIRED_INCLUDES "${QUICKJS_INCLUDE_DIR}")
+  if(NOT QUICKJS_INCLUDE_DIRS)
+    set(QUICKJS_INCLUDE_DIRS "${QUICKJS_INCLUDE_DIR}")
+  endif()
+
+  set(CMAKE_REQUIRED_INCLUDES "${QUICKJS_INCLUDE_DIRS}")
 
   check_include_file(quickjs.h HAVE_QUICKJS_H)
   check_include_file(quickjs-config.h HAVE_QUICKJS_CONFIG_H)
@@ -110,7 +106,7 @@ macro(find_quickjs)
   endif(HAVE_QUICKJS_CONFIG_H)
 
   if(NOT HAVE_QUICKJS_H)
-    message(FATAL_ERROR "QuickJS headers not found in ${QUICKJS_INCLUDE_DIR}")
+    #message(FATAL_ERROR "QuickJS headers not found in ${QUICKJS_INCLUDE_DIR}")
   endif(NOT HAVE_QUICKJS_H)
 
   include_directories(${QUICKJS_INCLUDE_DIR})
@@ -124,12 +120,13 @@ macro(find_quickjs)
   find_program(QJSC qjsc PATHS "${CMAKE_CURRENT_BINARY_DIR}/.."
                                "${QUICKJS_PREFIX}/bin" ENV PATH NO_DEFAULT_PATH)
 
-  message(STATUS "QuickJS interpreter: ${QJS}")
-  message(STATUS "QuickJS compiler: ${QJSC}")
-  message("QuickJS install directory: ${QUICKJS_PREFIX}")
-  message("QuickJS library directory: ${QUICKJS_LIBRARY_DIR}")
-  message("QuickJS include directory: ${QUICKJS_INCLUDE_DIR}")
-  message("QuickJS module directory: ${QUICKJS_MODULE_DIR}")
+  message(STATUS "QuickJS configuration")
+  message(STATUS "\tinterpreter: ${QJS}")
+  message(STATUS "\tcompiler: ${QJSC}")
+  message(STATUS "\tinstall directory: ${QUICKJS_PREFIX}")
+  message(STATUS "\tlibrary directory: ${QUICKJS_LIBRARY_DIR}")
+  message(STATUS "\tinclude directory: ${QUICKJS_INCLUDE_DIR}")
+  message(STATUS "\tmodule directory: ${QUICKJS_MODULE_DIR}")
 
   set(CUTILS_H ${CMAKE_CURRENT_SOURCE_DIR}/../cutils.h)
   set(QUICKJS_H ${CMAKE_CURRENT_SOURCE_DIR}/../quickjs.h)
