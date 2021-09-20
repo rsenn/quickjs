@@ -1,6 +1,3 @@
-#define _GNU_SOURCE
-
-#include "quickjs-debugger.h"
 #include <time.h>
 #include <math.h>
 #include <sys/socket.h>
@@ -13,6 +10,12 @@
 #ifndef PATH_MAX
 #define PATH_MAX 1024
 #endif
+
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
+#include "quickjs-debugger.h"
 
 typedef struct DebuggerSuspendedState {
     uint32_t variable_reference_count;

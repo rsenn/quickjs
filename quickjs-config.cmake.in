@@ -66,3 +66,8 @@
 
 /* DUMP_READ_OBJECT - Define this if you want to debug binary object reader */
 #cmakedefine DUMP_READ_OBJECT 1
+
+/* printf - Redirect DUMP_* output */
+#define printf @DUMP_REDIR@
+
+#define errprintf(...) fprintf(stderr, __VA_ARGS__)

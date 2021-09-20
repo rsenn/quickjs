@@ -1,5 +1,3 @@
-#include "quickjs-debugger.h"
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -10,6 +8,12 @@
 #include <assert.h>
 #include <poll.h>
 #include <arpa/inet.h>
+
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
+#include "quickjs-debugger.h"
 
 #ifndef SO_REUSEADDR
 #define SO_REUSEADDR 0

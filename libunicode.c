@@ -27,6 +27,10 @@
 #include <string.h>
 #include <assert.h>
 
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
 #include "cutils.h"
 #include "libunicode.h"
 #include "libunicode-table.h"

@@ -5,7 +5,6 @@ if(HAVE_LIBPTHREAD)
   set(LIBPTHREAD pthread)
 endif(HAVE_LIBPTHREAD)
 
-
 check_library_exists(m fabs "" HAVE_LIBM)
 
 if(HAVE_LIBM)

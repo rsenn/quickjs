@@ -32,6 +32,10 @@
 #include <immintrin.h>
 #endif
 
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
 #include "cutils.h"
 #include "libbf.h"
 
