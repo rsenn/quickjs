@@ -93,7 +93,9 @@ else("${DUMP_REDIR}" STREQUAL "")
     set(DUMP_REDIR "${DUMP_REDIR}(__VA_ARGS__)")
   endif(NOT "${DUMP_REDIR}" MATCHES ".*[()].*")
 
-  set(DUMP_DEFINE "\n/* printf - Redirect output */\n#define printf(...) ${DUMP_REDIR}\n\n#define errprintf(...) fprintf(stderr, __VA_ARGS__)\n")
+  set(DUMP_DEFINE
+      "\n#ifdef BUILD_QUICKJS\n/* printf - Redirect output */\n#define printf(...) ${DUMP_REDIR}\n\n#define errprintf(...) fprintf(stderr, __VA_ARGS__)\n#endif /* BUILD_QUICKJS */\n"
+  )
 endif("${DUMP_REDIR}" STREQUAL "")
 
 foreach(
@@ -436,8 +438,10 @@ add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
 
 add_library(${A_NAME} STATIC ${QUICKJS_SOURCES})
 target_compile_definitions(
-  ${A_NAME} PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}"
-                    CONFIG_PREFIX="${QUICKJS_PREFIX}" CONFIG_BIGNUM)
+  ${A_NAME}
+  PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
+          CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${QUICKJS_PREFIX}"
+          CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
@@ -451,9 +455,13 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES})
   target_compile_definitions(
     ${SO_NAME}
-    PRIVATE _GNU_SOURCE=1 CONFIG_VERSION="${QUICKJS_VERSION}"
+    PRIVATE _GNU_SOURCE=1
+            BUILD_QUICKJS=1
+            HAVE_QUICKJS_CONFIG_H=1
+            CONFIG_VERSION="${QUICKJS_VERSION}"
             CONFIG_SOVERSION="${QUICKJS_SOVERSION}"
-            CONFIG_PREFIX="${QUICKJS_PREFIX}" CONFIG_BIGNUM)
+            CONFIG_PREFIX="${QUICKJS_PREFIX}"
+            CONFIG_BIGNUM)
   target_include_directories(${SO_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
   set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${QUICKJS_SOVERSION}"
                                               OUTPUT_NAME ${PROJECT_NAME})
@@ -479,8 +487,10 @@ target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
 target_compile_definitions(
-  qjs PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" _GNU_SOURCE=1
-              CONFIG_PREFIX="${QUICKJS_PREFIX}" CONFIG_BIGNUM=1)
+  qjs
+  PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
+          CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${QUICKJS_PREFIX}"
+          CONFIG_BIGNUM=1)
 
 if(WASI)
   set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc" FORCE)
@@ -492,6 +502,8 @@ if(BUILD_QJSC)
   target_compile_definitions(
     qjsc
     PRIVATE _GNU_SOURCE=1
+            BUILD_QUICKJS=1
+            HAVE_QUICKJS_CONFIG_H=1
             CONFIG_VERSION="${QUICKJS_VERSION}"
             CONFIG_SOVERSION="${QUICKJS_SOVERSION}"
             CONFIG_PREFIX="${QUICKJS_PREFIX}"
