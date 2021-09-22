@@ -248,29 +248,36 @@ struct JSRuntime {
     JSMallocFunctions mf;
     JSMallocState malloc_state;
     const char *rt_info;
-    int atom_hash_size;
+
+    int atom_hash_size; /* power of two */
     int atom_count;
     int atom_size;
-    int atom_count_resize;
+    int atom_count_resize; /* resize hash table at this count */
     uint32_t *atom_hash;
     JSAtomStruct **atom_array;
-    int atom_free_index;
-    int class_count;
+    int atom_free_index; /* 0 = none */
+
+    int class_count;    /* size of class_array */
     JSClass *class_array;
-    struct list_head context_list;
+
+    struct list_head context_list; /* list of JSContext.link */
+    /* list of JSGCObjectHeader.link. List of allocated GC objects (used
+       by the garbage collector) */
     struct list_head gc_obj_list;
-    struct list_head gc_zero_ref_count_list;
-    struct list_head tmp_obj_list;
+    /* list of JSGCObjectHeader.link. Used during JS_FreeValueRT() */
+    struct list_head gc_zero_ref_count_list; 
+    struct list_head tmp_obj_list; /* used during GC */
     JSGCPhaseEnum gc_phase : 8;
     size_t malloc_gc_threshold;
 #ifdef DUMP_LEAKS
-    struct list_head string_list;
+    struct list_head string_list; /* list of JSString.link */
 #endif
-    uintptr_t stack_size;
+    /* stack limitation */
+    uintptr_t stack_size; /* in bytes, 0 if no limit */
     uintptr_t stack_top;
-    uintptr_t stack_limit;
+    uintptr_t stack_limit; /* lower stack limit */
+    
     JSValue current_exception;
-
     /* true if inside an out of memory error, to avoid recursing */
     BOOL in_out_of_memory : 8;
 
@@ -2359,7 +2366,6 @@ void JS_FreeContext(JSContext *ctx)
 
 JSRuntime *JS_GetRuntime(JSContext *ctx)
 {
-    static int once; if(!once++) printf("current_exception 0x%08x\n", offsetof(JSRuntime, current_exception));
     return ctx->rt;
 }
 
