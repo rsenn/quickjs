@@ -43,19 +43,19 @@ set(QUICKJS_SOURCES
     ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c
     ${QUICKJS_INCLUDES})
 
-if(QUICKJS_DEBUGGER)
+#message("CONFIG_DEBUGGER = ${CONFIG_DEBUGGER}")
+if(CONFIG_DEBUGGER)
   set(QUICKJS_SOURCES
-      ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
+      ${QUICKJS_SOURCES}
+      ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
       ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
   )
-  add_definitions(-DCONFIG_DEBUGGER=1)
-
   message(STATUS "Enabling quickjs-debugger")
+endif(CONFIG_DEBUGGER)
 
-  set(CONFIG_DEBUGGER 1)
-endif(QUICKJS_DEBUGGER)
 string(REPLACE ";" "\n" sources "${QUICKJS_SOURCES}")
 
+#message("QUICKJS_SOURCES = ${QUICKJS_SOURCES}")
 # dump(QUICKJS_SOURCES)
 
 execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME

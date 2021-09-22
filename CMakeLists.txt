@@ -7,8 +7,8 @@ set(DISABLE_WERROR TRUE)
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel
                                              RelWithDebInfo)
 
-option(QUICKJS_DEBUGGER "Enable debugger protocol" ON)
-option(QUICKJS_NODEBUG "Disable debugging" ON)
+option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
+option(CONFIG_NODEBUG "Disable debugging" ON)
 
 include(FindThreads)
 
@@ -39,16 +39,16 @@ endif()
 
 # link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
 
-if(QUICKJS_DEBUGGER)
+if(CONFIG_DEBUGGER)
   message(STATUS "Enabling quickjs-debugger")
 
   set(CONFIG_DEBUGGER 1)
-  add_definitions(-DCONFIG_DEBUGGER)
-endif(QUICKJS_DEBUGGER)
+  #add_definitions(-DCONFIG_DEBUGGER)
+endif(CONFIG_DEBUGGER)
 
-if(QUICKJS_NODEBUG)
+if(CONFIG_NODEBUG)
   add_definitions(-DNDEBUG)
-endif(QUICKJS_NODEBUG)
+endif(CONFIG_NODEBUG)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
@@ -319,7 +319,7 @@ check_flags(
   "-Wall;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation"
   CMAKE_C_FLAGS_DEBUG)
 
-if(NOT QUICKJS_NODEBUG)
+if(NOT CONFIG_NODEBUG)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL
                                           "RelWithDebInfo")
     check_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
@@ -330,7 +330,7 @@ if(NOT QUICKJS_NODEBUG)
     check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
   endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
-endif(NOT QUICKJS_NODEBUG)
+endif(NOT CONFIG_NODEBUG)
 
 check_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
