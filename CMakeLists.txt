@@ -16,6 +16,7 @@ include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(CheckSymbolExists)
 include(CheckTypeSize)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseMultiArch.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-libraries.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/try-compiler.cmake)
@@ -440,7 +441,7 @@ add_library(${A_NAME} STATIC ${QUICKJS_SOURCES})
 target_compile_definitions(
   ${A_NAME}
   PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
-          CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${QUICKJS_PREFIX}"
+          CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
           CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
@@ -460,7 +461,7 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
             HAVE_QUICKJS_CONFIG_H=1
             CONFIG_VERSION="${QUICKJS_VERSION}"
             CONFIG_SOVERSION="${QUICKJS_SOVERSION}"
-            CONFIG_PREFIX="${QUICKJS_PREFIX}"
+            CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
             CONFIG_BIGNUM)
   target_include_directories(${SO_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
   set_target_properties(${SO_NAME} PROPERTIES SOVERSION "${QUICKJS_SOVERSION}"
@@ -489,7 +490,7 @@ set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 target_compile_definitions(
   qjs
   PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
-          CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${QUICKJS_PREFIX}"
+          CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
           CONFIG_BIGNUM=1)
 
 if(WASI)
@@ -506,7 +507,7 @@ if(BUILD_QJSC)
             HAVE_QUICKJS_CONFIG_H=1
             CONFIG_VERSION="${QUICKJS_VERSION}"
             CONFIG_SOVERSION="${QUICKJS_SOVERSION}"
-            CONFIG_PREFIX="${QUICKJS_PREFIX}"
+            CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
             CONFIG_CC="${CMAKE_C_COMPILER}"
             CONFIG_LTO=1
             CONFIG_BIGNUM=1)

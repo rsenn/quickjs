@@ -80,7 +80,7 @@ js_find_module_path(JSContext* ctx, const char* module_name, void* opaque) {
 static JSModuleLoaderFunc* module_loader_path  = &js_find_module_path;
 
 void js_std_set_module_loader_func(JSModuleLoaderFunc*func) {
-module_loader_path = func;
+  module_loader_path = func;
 }
 
 JSModuleLoaderFunc* js_std_get_module_loader_func() {
