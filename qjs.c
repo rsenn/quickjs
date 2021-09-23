@@ -45,8 +45,6 @@
 #include "cutils.h"
 #include "quickjs-libc.h"
 
-JSModuleLoaderFunc* js_std_get_module_loader_func();
-
 #ifdef HAVE_MALLOC_USABLE_SIZE
 #ifndef HAVE_MALLOC_USABLE_SIZE_DEFINITION
 extern size_t malloc_usable_size();
@@ -492,7 +490,7 @@ int main(int argc, char **argv)
     }
 
     /* loader for ES6 modules */
-    JS_SetModuleLoaderFunc(rt, NULL, js_std_get_module_loader_func(), NULL);
+    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
 
     if (dump_unhandled_promise_rejection) {
         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,

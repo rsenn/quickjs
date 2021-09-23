@@ -5,8 +5,10 @@
 #include <sys/stat.h>
 
 const char js_default_module_path[] = "."
-#ifdef CONFIG_PREFIX
-                                      ":" CONFIG_PREFIX "/lib/quickjs"
+#ifdef QUICKJS_MODULE_PATH
+                                      ";" QUICKJS_MODULE_PATH 
+#elif defined(CONFIG_PREFIX)
+                                      ";" CONFIG_PREFIX "/lib/quickjs"
 #endif
     ;
 

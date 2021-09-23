@@ -88,7 +88,7 @@ function(make_module FNAME)
     add_dependencies(${TARGET_NAME} ${DEPS})
   endif(DEPS)
 
-  install(TARGETS ${TARGET_NAME} DESTINATION lib/quickjs
+  install(TARGETS ${TARGET_NAME} DESTINATION "${QUICKJS_C_MODULE_DIR}"
           PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
                       GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   # install(TARGETS ${TARGET_NAME}-static DESTINATION lib/quickjs)

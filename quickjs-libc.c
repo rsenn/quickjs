@@ -76,8 +76,6 @@ typedef sig_t sighandler_t;
 #include "list.h"
 #include "quickjs-libc.h"
 
-JSModuleLoaderFunc* js_std_get_module_loader_func();
-
 /* TODO:
    - add socket calls
 */
@@ -3319,8 +3317,7 @@ static void *worker_func(void *opaque)
     }        
     js_std_init_handlers(rt);
 
-    JS_SetModuleLoaderFunc(rt, NULL, 
-  js_std_get_module_loader_func(), NULL);
+    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
 
     /* set the pipe to communicate with the parent */
     ts = JS_GetRuntimeOpaque(rt);

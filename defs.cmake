@@ -40,14 +40,13 @@ set(QUICKJS_SOURCES
     ${QUICKJS_SOURCES_ROOT}/libunicode.c
     ${QUICKJS_SOURCES_ROOT}/quickjs.c
     ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c
-    ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c
+   #${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c
     ${QUICKJS_INCLUDES})
 
 #message("CONFIG_DEBUGGER = ${CONFIG_DEBUGGER}")
 if(CONFIG_DEBUGGER)
   set(QUICKJS_SOURCES
-      ${QUICKJS_SOURCES}
-      ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
+      ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
       ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
   )
   message(STATUS "Enabling quickjs-debugger")
