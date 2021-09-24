@@ -8,6 +8,17 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel Re
 
 option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
 option(CONFIG_NODEBUG "Disable debugging" ON)
+option(CONFIG_WORKER "Enable Worker" ON)
+option(CONFIG_BIGNUM "Enable bignum support" ON)
+
+if(WASI)
+  set(CONFIG_WORKER OFF)
+  set(CONFIG_DEBUGGER OFF)
+endif(WASI)
+
+if(CONFIG_WORKER)
+  set(USE_WORKER "${CONFIG_WORKER}")
+endif(CONFIG_WORKER)
 
 include(FindThreads)
 
@@ -395,18 +406,18 @@ else(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
 endif(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
 
 add_custom_command(
-  OUTPUT repl.c COMMAND ${QJSC} -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js DEPENDS ${QJSC_DEPS}
+  OUTPUT repl.c COMMAND "${QJSC}" -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js DEPENDS ${QJSC_DEPS}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from repl.js using qjs compiler" SOURCES
                                                         ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
 
 add_custom_command(
-  OUTPUT qjscalc.c COMMAND ${QJSC} -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
+  OUTPUT qjscalc.c COMMAND "${QJSC}" -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
   DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
 
 add_custom_target(
   hello.c
-  COMMAND ${CMAKE_CURRENT_BINARY_DIR}/qjsc -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m
+  COMMAND "${QJSC}" -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m
           ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js
   DEPENDS ${QJSC_DEPS}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
