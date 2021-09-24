@@ -223,6 +223,8 @@ cfg-emscripten() {
     libdir=$prefix/lib
     bindir=$prefix/bin
 
+    export TOOLCHAIN=/opt/cmake-toolchains/Emscripten-wasm.cmake
+
     CC="emcc" \
       PKG_CONFIG="PKG_CONFIG_PATH=$libdir/pkgconfig pkg-config" \
       cfg \
@@ -230,6 +232,26 @@ cfg-emscripten() {
       -DENABLE_SHARED=OFF \
       -DSHARED_LIBS=OFF \
       -DBUILD_SHARED_LIBS=OFF \
+      "$@"
+  )
+}
+
+cfg-wasi() {
+  (
+    build=$(gcc -dumpmachine | sed 's|-pc-|-|g')
+    host=${build/-gnu/-wasi}
+    builddir=build/wasm32-unknown-wasi
+
+    prefix=/opt/wasi-sdk
+    libdir=$prefix/lib
+    bindir=$prefix/bin
+
+    export TOOLCHAIN=/opt/cmake-toolchains/wasi-sdk.cmake
+
+    CFLAGS="-w -D_WASI_EMULATED_SIGNAL" \
+      cfg \
+      -DCMAKE_INSTALL_PREFIX="$prefix" \
+      -DMODULE_{GLFW,IMGUI,NANOVG,NET,FFI}=OFF \
       "$@"
   )
 }
@@ -387,7 +409,7 @@ cfg-wasm() {
       -DCMAKE_EXE_LINKER_FLAGS="-s WASM=1" \
       -DCMAKE_EXECUTABLE_SUFFIX=".html" \
       -DCMAKE_EXECUTABLE_SUFFIX_INIT=".html" \
-      -DUSE_{ZLIB,BZIP,LZMA,SSL}=OFF \
+      -DMODULE_{GLFW,IMGUI,NANOVG,NET,FFI}=OFF \
       "$@"
   )
 }
