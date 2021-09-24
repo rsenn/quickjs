@@ -9,13 +9,14 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel Re
 option(CONFIG_NODEBUG "Disable debugging" ON)
 option(CONFIG_BIGNUM "Enable bignum support" ON)
 
-if(WASI)
+if(WASI OR EMSCRIPTEN)
+  set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
   option(CONFIG_WORKER "Enable Worker" OFF)
   option(CONFIG_DEBUGGER "Enable debugger protocol" OFF)
-else(WASI)
+else(WASI OR EMSCRIPTEN)
   option(CONFIG_WORKER "Enable Worker" ON)
   option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
-endif(WASI)
+endif(WASI OR EMSCRIPTEN)
 
 if(CONFIG_WORKER)
   set(USE_WORKER "${CONFIG_WORKER}")
