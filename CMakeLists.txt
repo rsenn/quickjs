@@ -6,14 +6,15 @@ set(DISABLE_WERROR TRUE)
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel RelWithDebInfo)
 
-option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
 option(CONFIG_NODEBUG "Disable debugging" ON)
-option(CONFIG_WORKER "Enable Worker" ON)
 option(CONFIG_BIGNUM "Enable bignum support" ON)
 
 if(WASI)
-  set(CONFIG_WORKER OFF)
-  set(CONFIG_DEBUGGER OFF)
+  option(CONFIG_WORKER "Enable Worker" OFF)
+  option(CONFIG_DEBUGGER "Enable debugger protocol" OFF)
+else(WASI)
+  option(CONFIG_WORKER "Enable Worker" ON)
+  option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
 endif(WASI)
 
 if(CONFIG_WORKER)
