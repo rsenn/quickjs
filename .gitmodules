@@ -22,3 +22,7 @@
 	path = qjs-imgui
 	url = git@github.com:rsenn/qjs-imgui.git
 	branch = main
+[submodule "qjs-modules"]
+	path = qjs-modules
+	url = git@github.com:rsenn/qjs-modules.git
+	branch = main
