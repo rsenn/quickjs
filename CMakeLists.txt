@@ -481,7 +481,7 @@ target_compile_definitions(
               QUICKJS_MODULE_PATH="${QUICKJS_MODULE_PATH}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
 
 if(WASI)
-  set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc" FORCE)
+  set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc")
 endif(WASI)
 if(BUILD_QJSC)
   add_executable(qjsc qjsc.c ${QUICKJS_SOURCES})
