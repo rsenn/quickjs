@@ -87,19 +87,17 @@ cfg() {
   } 2>&1 && echo "Configured in '$builddir'" 1>&2) | tee "${builddir##*/}.log"
 }
 
-cfg-android() {
-  (
-    : ${builddir=build/android}
-    cfg \
-      -DCMAKE_INSTALL_PREFIX=/opt/arm-linux-androideabi/sysroot/usr \
-      \
-      -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN:-/opt/android-cmake/android.cmake} \
-      -DANDROID_NATIVE_API_LEVEL=21 \
-      -DPKG_CONFIG_EXECUTABLE=arm-linux-androideabi-pkg-config \
-      -DCMAKE_PREFIX_PATH=/opt/arm-linux-androideabi/sysroot/usr \
-      -DCMAKE_MAKE_PROGRAM=/usr/bin/make \
-      "$@"
-  )
+cfg-android()
+{
+ (build=$(cc -dumpmachine)
+  host=arm-linux-androideabi
+  : ${builddir=build/$host}
+ 
+  PKG_CONFIG_PATH=/opt/${host}/sysroot/usr/lib/pkgconfig:/opt/${host}/sysroot/usr/share/pkgconfig \
+  TOOLCHAIN=/opt/cmake-toolchains/android.cmake \
+  prefix=/opt/$host/sysroot/usr \
+  CMAKE_PREFIX_PATH=/opt/$host/sysroot/usr \
+  cfg "$@")
 }
 
 cfg-diet() {

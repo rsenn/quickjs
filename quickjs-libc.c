@@ -2576,7 +2576,7 @@ static JSValue js_os_stat(JSContext *ctx, JSValueConst this_val,
         JS_DefinePropertyValueStr(ctx, obj, "ctime",
                                   JS_NewInt64(ctx, timespec_to_ms(&st.st_ctimespec)),
                                   JS_PROP_C_W_E);
-#elif defined(__dietlibc__)
+#elif defined(__dietlibc__) || defined(__ANDROID__)
         JS_DefinePropertyValueStr(ctx, obj, "atime",
                                   JS_NewInt64(ctx, 1000 * st.st_atime),
                                   JS_PROP_C_W_E);
