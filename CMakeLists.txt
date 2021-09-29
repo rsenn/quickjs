@@ -420,12 +420,8 @@ add_custom_command(
   COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
 
 add_custom_target(
-  hello.c
-  COMMAND "${QJSC}" -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m
-          ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js
-  DEPENDS ${QJSC_DEPS}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT "Generate from hello.js using qjs compiler"
+  hello.c COMMAND "${QJSC}" -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js
+  DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from hello.js using qjs compiler"
   SOURCES examples/hello.js)
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
@@ -489,7 +485,11 @@ if(BUILD_QJSC)
   add_executable(qjsc qjsc.c ${QUICKJS_SOURCES})
   target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
 
-  target_compile_definitions(qjsc PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" QUICKJS_MODULE_PATH="${QUICKJS_MODULE_PATH}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_BIGNUM=1)
+  target_compile_definitions(
+    qjsc
+    PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" QUICKJS_MODULE_PATH="${QUICKJS_MODULE_PATH}"
+            CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" _GNU_SOURCE=1 BUILD_QUICKJS=1
+            HAVE_QUICKJS_CONFIG_H=1 CONFIG_BIGNUM=1)
   install(TARGETS qjsc DESTINATION ${QUICKJS_PREFIX}/bin)
 endif(BUILD_QJSC)
 

@@ -9,7 +9,7 @@ macro(append_vars STR)
         set(LIST "${STR}")
       else("${LIST}" STREQUAL "")
         set(LIST "${LIST} ${STR}")
-      enDIf("${LIST}" STREQUAL "")
+      endif("${LIST}" STREQUAL "")
 
     endif(NOT LIST MATCHES ".*${STR}.*")
     string(REPLACE ";" " " LIST "${LIST}")
