@@ -14,7 +14,7 @@ set(CMAKE_AR /opt/wasienv/bin/wasiar)
 # which compilers to use for C and C++
 include(CMakeForceCompiler)
 cmake_force_c_compiler(/opt/wasienv/bin/wasicc GNU)
-cmake_force_cxx_compiler(/opt/wasienv/bin/wasic++ GNU)
+cmake_force_c_compiler(/opt/wasienv/bin/wasic++ GNU)
 set(CMAKE_RANLIB /opt/wasienv/bin/wasiranlib)
 set(CMAKE_AR /opt/wasienv/bin/wasiar)
 

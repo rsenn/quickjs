@@ -37,6 +37,8 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-shared.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/defs.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindQuickJS.cmake)
 
+check_c_standard_flag()
+
 configure_quickjs()
 
 message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")
