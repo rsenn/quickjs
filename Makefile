@@ -3,12 +3,10 @@
 
 # Default target executed when no arguments are given to make.
 default_target: all
-
 .PHONY : default_target
 
 # Allow only one "make -f Makefile2" at a time, but pass parallelism.
 .NOTPARALLEL:
-
 
 #=============================================================================
 # Special targets provided by cmake.
@@ -16,29 +14,22 @@ default_target: all
 # Disable implicit rules so canonical targets will work.
 .SUFFIXES:
 
-
 # Disable VCS-based implicit rules.
 % : %,v
-
 
 # Disable VCS-based implicit rules.
 % : RCS/%
 
-
 # Disable VCS-based implicit rules.
 % : RCS/%,v
-
 
 # Disable VCS-based implicit rules.
 % : SCCS/s.%
 
-
 # Disable VCS-based implicit rules.
 % : s.%
 
-
 .SUFFIXES: .hpux_make_needs_suffix_list
-
 
 # Command-line flag to silence nested $(MAKE).
 $(VERBOSE)MAKESILENT = -s
@@ -48,7 +39,6 @@ $(VERBOSE).SILENT:
 
 # A target that is always out of date.
 cmake_force:
-
 .PHONY : cmake_force
 
 #=============================================================================
@@ -58,10 +48,10 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /opt/cmake-20201114/bin/cmake
+CMAKE_COMMAND = /opt/cmake-20201216/bin/cmake
 
 # The command to remove a file.
-RM = /opt/cmake-20201114/bin/cmake -E rm -f
+RM = /opt/cmake-20201216/bin/cmake -E rm -f
 
 # Escaping for special characters.
 EQUALS = =
@@ -78,37 +68,37 @@ CMAKE_BINARY_DIR = /home/roman/Projects/plot-cv
 # Special rule for the target install/strip
 install/strip: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
-	/opt/cmake-20201114/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+	/opt/cmake-20201216/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
 .PHONY : install/strip
 
 # Special rule for the target install/strip
 install/strip/fast: preinstall/fast
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
-	/opt/cmake-20201114/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+	/opt/cmake-20201216/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
 .PHONY : install/strip/fast
 
 # Special rule for the target install/local
 install/local: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
-	/opt/cmake-20201114/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+	/opt/cmake-20201216/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
 .PHONY : install/local
 
 # Special rule for the target install/local
 install/local/fast: preinstall/fast
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
-	/opt/cmake-20201114/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+	/opt/cmake-20201216/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
 .PHONY : install/local/fast
 
 # Special rule for the target install
 install: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/opt/cmake-20201114/bin/cmake -P cmake_install.cmake
+	/opt/cmake-20201216/bin/cmake -P cmake_install.cmake
 .PHONY : install
 
 # Special rule for the target install
 install/fast: preinstall/fast
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/opt/cmake-20201114/bin/cmake -P cmake_install.cmake
+	/opt/cmake-20201216/bin/cmake -P cmake_install.cmake
 .PHONY : install/fast
 
 # Special rule for the target list_install_components
@@ -118,29 +108,26 @@ list_install_components:
 
 # Special rule for the target list_install_components
 list_install_components/fast: list_install_components
-
 .PHONY : list_install_components/fast
 
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/opt/cmake-20201114/bin/cmake --regenerate-during-build -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/opt/cmake-20201216/bin/cmake --regenerate-during-build -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
 rebuild_cache/fast: rebuild_cache
-
 .PHONY : rebuild_cache/fast
 
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/opt/cmake-20201114/bin/ccmake -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/opt/cmake-20201216/bin/cmake-gui -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
 edit_cache/fast: edit_cache
-
 .PHONY : edit_cache/fast
 
 # The main all target
@@ -157,7 +144,6 @@ clean:
 
 # The main clean target
 clean/fast: clean
-
 .PHONY : clean/fast
 
 # Prepare targets for installation.
@@ -182,7 +168,6 @@ quickjs/CMakeFiles/.ctags.dir/rule:
 
 # Convenience name for target.
 .ctags: quickjs/CMakeFiles/.ctags.dir/rule
-
 .PHONY : .ctags
 
 # fast build rule for target.
@@ -197,7 +182,6 @@ quickjs/CMakeFiles/qjsc.dir/rule:
 
 # Convenience name for target.
 qjsc: quickjs/CMakeFiles/qjsc.dir/rule
-
 .PHONY : qjsc
 
 # fast build rule for target.
@@ -212,7 +196,6 @@ quickjs/CMakeFiles/quickjs.dir/rule:
 
 # Convenience name for target.
 quickjs: quickjs/CMakeFiles/quickjs.dir/rule
-
 .PHONY : quickjs
 
 # fast build rule for target.
@@ -227,7 +210,6 @@ quickjs/CMakeFiles/qjs.dir/rule:
 
 # Convenience name for target.
 qjs: quickjs/CMakeFiles/qjs.dir/rule
-
 .PHONY : qjs
 
 # fast build rule for target.
@@ -242,7 +224,6 @@ quickjs/CMakeFiles/quickjs-static.dir/rule:
 
 # Convenience name for target.
 quickjs-static: quickjs/CMakeFiles/quickjs-static.dir/rule
-
 .PHONY : quickjs-static
 
 # fast build rule for target.
@@ -257,7 +238,6 @@ quickjs/CMakeFiles/hello.c.dir/rule:
 
 # Convenience name for target.
 hello.c: quickjs/CMakeFiles/hello.c.dir/rule
-
 .PHONY : hello.c
 
 # fast build rule for target.
@@ -266,7 +246,6 @@ hello.c/fast:
 .PHONY : hello.c/fast
 
 cutils.o: cutils.c.o
-
 .PHONY : cutils.o
 
 # target to build an object file
@@ -278,7 +257,6 @@ cutils.c.o:
 .PHONY : cutils.c.o
 
 cutils.i: cutils.c.i
-
 .PHONY : cutils.i
 
 # target to preprocess a source file
@@ -290,7 +268,6 @@ cutils.c.i:
 .PHONY : cutils.c.i
 
 cutils.s: cutils.c.s
-
 .PHONY : cutils.s
 
 # target to generate assembly for a file
@@ -302,7 +279,6 @@ cutils.c.s:
 .PHONY : cutils.c.s
 
 libbf.o: libbf.c.o
-
 .PHONY : libbf.o
 
 # target to build an object file
@@ -314,7 +290,6 @@ libbf.c.o:
 .PHONY : libbf.c.o
 
 libbf.i: libbf.c.i
-
 .PHONY : libbf.i
 
 # target to preprocess a source file
@@ -326,7 +301,6 @@ libbf.c.i:
 .PHONY : libbf.c.i
 
 libbf.s: libbf.c.s
-
 .PHONY : libbf.s
 
 # target to generate assembly for a file
@@ -338,7 +312,6 @@ libbf.c.s:
 .PHONY : libbf.c.s
 
 libregexp.o: libregexp.c.o
-
 .PHONY : libregexp.o
 
 # target to build an object file
@@ -350,7 +323,6 @@ libregexp.c.o:
 .PHONY : libregexp.c.o
 
 libregexp.i: libregexp.c.i
-
 .PHONY : libregexp.i
 
 # target to preprocess a source file
@@ -362,7 +334,6 @@ libregexp.c.i:
 .PHONY : libregexp.c.i
 
 libregexp.s: libregexp.c.s
-
 .PHONY : libregexp.s
 
 # target to generate assembly for a file
@@ -374,7 +345,6 @@ libregexp.c.s:
 .PHONY : libregexp.c.s
 
 libunicode.o: libunicode.c.o
-
 .PHONY : libunicode.o
 
 # target to build an object file
@@ -386,7 +356,6 @@ libunicode.c.o:
 .PHONY : libunicode.c.o
 
 libunicode.i: libunicode.c.i
-
 .PHONY : libunicode.i
 
 # target to preprocess a source file
@@ -398,7 +367,6 @@ libunicode.c.i:
 .PHONY : libunicode.c.i
 
 libunicode.s: libunicode.c.s
-
 .PHONY : libunicode.s
 
 # target to generate assembly for a file
@@ -410,7 +378,6 @@ libunicode.c.s:
 .PHONY : libunicode.c.s
 
 qjs.o: qjs.c.o
-
 .PHONY : qjs.o
 
 # target to build an object file
@@ -419,7 +386,6 @@ qjs.c.o:
 .PHONY : qjs.c.o
 
 qjs.i: qjs.c.i
-
 .PHONY : qjs.i
 
 # target to preprocess a source file
@@ -428,7 +394,6 @@ qjs.c.i:
 .PHONY : qjs.c.i
 
 qjs.s: qjs.c.s
-
 .PHONY : qjs.s
 
 # target to generate assembly for a file
@@ -437,7 +402,6 @@ qjs.c.s:
 .PHONY : qjs.c.s
 
 qjsc.o: qjsc.c.o
-
 .PHONY : qjsc.o
 
 # target to build an object file
@@ -446,7 +410,6 @@ qjsc.c.o:
 .PHONY : qjsc.c.o
 
 qjsc.i: qjsc.c.i
-
 .PHONY : qjsc.i
 
 # target to preprocess a source file
@@ -455,7 +418,6 @@ qjsc.c.i:
 .PHONY : qjsc.c.i
 
 qjsc.s: qjsc.c.s
-
 .PHONY : qjsc.s
 
 # target to generate assembly for a file
@@ -464,7 +426,6 @@ qjsc.c.s:
 .PHONY : qjsc.c.s
 
 qjscalc.o: qjscalc.c.o
-
 .PHONY : qjscalc.o
 
 # target to build an object file
@@ -473,7 +434,6 @@ qjscalc.c.o:
 .PHONY : qjscalc.c.o
 
 qjscalc.i: qjscalc.c.i
-
 .PHONY : qjscalc.i
 
 # target to preprocess a source file
@@ -482,7 +442,6 @@ qjscalc.c.i:
 .PHONY : qjscalc.c.i
 
 qjscalc.s: qjscalc.c.s
-
 .PHONY : qjscalc.s
 
 # target to generate assembly for a file
@@ -491,7 +450,6 @@ qjscalc.c.s:
 .PHONY : qjscalc.c.s
 
 quickjs-debugger-transport-unix.o: quickjs-debugger-transport-unix.c.o
-
 .PHONY : quickjs-debugger-transport-unix.o
 
 # target to build an object file
@@ -503,7 +461,6 @@ quickjs-debugger-transport-unix.c.o:
 .PHONY : quickjs-debugger-transport-unix.c.o
 
 quickjs-debugger-transport-unix.i: quickjs-debugger-transport-unix.c.i
-
 .PHONY : quickjs-debugger-transport-unix.i
 
 # target to preprocess a source file
@@ -515,7 +472,6 @@ quickjs-debugger-transport-unix.c.i:
 .PHONY : quickjs-debugger-transport-unix.c.i
 
 quickjs-debugger-transport-unix.s: quickjs-debugger-transport-unix.c.s
-
 .PHONY : quickjs-debugger-transport-unix.s
 
 # target to generate assembly for a file
@@ -527,7 +483,6 @@ quickjs-debugger-transport-unix.c.s:
 .PHONY : quickjs-debugger-transport-unix.c.s
 
 quickjs-debugger.o: quickjs-debugger.c.o
-
 .PHONY : quickjs-debugger.o
 
 # target to build an object file
@@ -539,7 +494,6 @@ quickjs-debugger.c.o:
 .PHONY : quickjs-debugger.c.o
 
 quickjs-debugger.i: quickjs-debugger.c.i
-
 .PHONY : quickjs-debugger.i
 
 # target to preprocess a source file
@@ -551,7 +505,6 @@ quickjs-debugger.c.i:
 .PHONY : quickjs-debugger.c.i
 
 quickjs-debugger.s: quickjs-debugger.c.s
-
 .PHONY : quickjs-debugger.s
 
 # target to generate assembly for a file
@@ -562,44 +515,7 @@ quickjs-debugger.c.s:
 	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger.c.s
 .PHONY : quickjs-debugger.c.s
 
-quickjs-find-module.o: quickjs-find-module.c.o
-
-.PHONY : quickjs-find-module.o
-
-# target to build an object file
-quickjs-find-module.c.o:
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.o
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.o
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.o
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.o
-.PHONY : quickjs-find-module.c.o
-
-quickjs-find-module.i: quickjs-find-module.c.i
-
-.PHONY : quickjs-find-module.i
-
-# target to preprocess a source file
-quickjs-find-module.c.i:
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.i
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.i
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.i
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.i
-.PHONY : quickjs-find-module.c.i
-
-quickjs-find-module.s: quickjs-find-module.c.s
-
-.PHONY : quickjs-find-module.s
-
-# target to generate assembly for a file
-quickjs-find-module.c.s:
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.s
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.s
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.s
-	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.s
-.PHONY : quickjs-find-module.c.s
-
 quickjs-libc.o: quickjs-libc.c.o
-
 .PHONY : quickjs-libc.o
 
 # target to build an object file
@@ -611,7 +527,6 @@ quickjs-libc.c.o:
 .PHONY : quickjs-libc.c.o
 
 quickjs-libc.i: quickjs-libc.c.i
-
 .PHONY : quickjs-libc.i
 
 # target to preprocess a source file
@@ -623,7 +538,6 @@ quickjs-libc.c.i:
 .PHONY : quickjs-libc.c.i
 
 quickjs-libc.s: quickjs-libc.c.s
-
 .PHONY : quickjs-libc.s
 
 # target to generate assembly for a file
@@ -635,7 +549,6 @@ quickjs-libc.c.s:
 .PHONY : quickjs-libc.c.s
 
 quickjs.o: quickjs.c.o
-
 .PHONY : quickjs.o
 
 # target to build an object file
@@ -647,7 +560,6 @@ quickjs.c.o:
 .PHONY : quickjs.c.o
 
 quickjs.i: quickjs.c.i
-
 .PHONY : quickjs.i
 
 # target to preprocess a source file
@@ -659,7 +571,6 @@ quickjs.c.i:
 .PHONY : quickjs.c.i
 
 quickjs.s: quickjs.c.s
-
 .PHONY : quickjs.s
 
 # target to generate assembly for a file
@@ -671,7 +582,6 @@ quickjs.c.s:
 .PHONY : quickjs.c.s
 
 repl.o: repl.c.o
-
 .PHONY : repl.o
 
 # target to build an object file
@@ -680,7 +590,6 @@ repl.c.o:
 .PHONY : repl.c.o
 
 repl.i: repl.c.i
-
 .PHONY : repl.i
 
 # target to preprocess a source file
@@ -689,7 +598,6 @@ repl.c.i:
 .PHONY : repl.c.i
 
 repl.s: repl.c.s
-
 .PHONY : repl.s
 
 # target to generate assembly for a file
@@ -742,9 +650,6 @@ help:
 	@echo "... quickjs-debugger.o"
 	@echo "... quickjs-debugger.i"
 	@echo "... quickjs-debugger.s"
-	@echo "... quickjs-find-module.o"
-	@echo "... quickjs-find-module.i"
-	@echo "... quickjs-find-module.s"
 	@echo "... quickjs-libc.o"
 	@echo "... quickjs-libc.i"
 	@echo "... quickjs-libc.s"
