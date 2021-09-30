@@ -342,7 +342,7 @@ endif(NOT CONFIG_NODEBUG)
 
 check_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
-  option(ENABLE_LTO "Enable link-time optimization" ON)
+  option(ENABLE_LTO "Enable link-time optimization" OFF)
 endif(HAVE_LTO_FLAG)
 
 if(ENABLE_LTO)
