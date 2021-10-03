@@ -75,7 +75,7 @@ typedef sig_t sighandler_t;
 
 #include "cutils.h"
 #include "list.h"
-#include "quickjs-libc.h"
+#include "quickjs-libc.h" 
 
 /* TODO:
    - add socket calls
@@ -3174,6 +3174,8 @@ typedef struct {
     char *filename; /* module filename */
     char *basename; /* module base name */
     JSWorkerMessagePipe *recv_pipe, *send_pipe;
+    JSModuleLoaderFunc *module_loader_func;
+    void *module_loader_opaque;
 } WorkerFuncArgs;
 
 typedef struct {
@@ -3322,7 +3324,7 @@ static void *worker_func(void *opaque)
     }        
     js_std_init_handlers(rt);
 
-    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
+    JS_SetModuleLoaderFunc(rt, NULL, args->module_loader_func, args->module_loader_opaque);
 
     /* set the pipe to communicate with the parent */
     ts = JS_GetRuntimeOpaque(rt);
@@ -3386,6 +3388,10 @@ static JSValue js_worker_ctor_internal(JSContext *ctx, JSValueConst new_target,
     return JS_EXCEPTION;
 }
 
+
+JSModuleLoaderFunc* JS_GetModuleLoaderFunc(JSRuntime *rt);
+void* JS_GetModuleLoaderOpaque(JSRuntime *rt);
+
 static JSValue js_worker_ctor(JSContext *ctx, JSValueConst new_target,
                               int argc, JSValueConst *argv)
 {
@@ -3433,6 +3439,9 @@ static JSValue js_worker_ctor(JSContext *ctx, JSValueConst new_target,
     args->send_pipe = js_new_message_pipe();
     if (!args->send_pipe)
         goto oom_fail;
+
+    args->module_loader_func = JS_GetModuleLoaderFunc(JS_GetRuntime(ctx));
+    args->module_loader_opaque = JS_GetModuleLoaderOpaque(JS_GetRuntime(ctx));
 
     obj = js_worker_ctor_internal(ctx, new_target,
                                   args->send_pipe, args->recv_pipe);

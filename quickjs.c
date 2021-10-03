@@ -27393,6 +27393,17 @@ void JS_SetModuleLoaderFunc(JSRuntime *rt,
     rt->module_loader_opaque = opaque;
 }
 
+
+JSModuleLoaderFunc* JS_GetModuleLoaderFunc(JSRuntime *rt)
+{
+    return rt->module_loader_func;
+}
+
+void* JS_GetModuleLoaderOpaque(JSRuntime *rt)
+{
+    return rt->module_loader_opaque;
+}
+
 /* default module filename normalizer */
 static char *js_default_module_normalize_name(JSContext *ctx,
                                               const char *base_name,
