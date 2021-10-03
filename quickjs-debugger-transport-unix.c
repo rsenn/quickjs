@@ -120,16 +120,18 @@ static struct sockaddr_in js_debugger_parse_sockaddr(const char* address) {
     memcpy((char *)&addr.sin_addr.s_addr, (char *)host->h_addr, host->h_length);
     addr.sin_port = htons(port);
 
-    return addr;
+    return addr;            
 }
 
 void js_debugger_connect(JSContext *ctx, const char *address) {
     struct sockaddr_in addr = js_debugger_parse_sockaddr(address);
+    int ret;
 
     int client = socket(AF_INET, SOCK_STREAM, 0);
     assert(client > 0);
 
-    assert(!connect(client, (const struct sockaddr *)&addr, sizeof(addr)));
+ret = connect(client, (const struct sockaddr *)&addr, sizeof(addr));
+    assert(!ret);
 
     struct js_transport_data *data = (struct js_transport_data *)malloc(sizeof(struct js_transport_data));
     memset(data, 0, sizeof(js_transport_data));
@@ -139,14 +141,16 @@ void js_debugger_connect(JSContext *ctx, const char *address) {
 
 void js_debugger_wait_connection(JSContext *ctx, const char* address) {
     struct sockaddr_in addr = js_debugger_parse_sockaddr(address);
-
+int ret;
     int server = socket(AF_INET, SOCK_STREAM, 0);
     assert(server >= 0);
 
     int reuseAddress = 1;
-    assert(setsockopt(server, SOL_SOCKET, SO_REUSEADDR, (const char *) &reuseAddress, sizeof(reuseAddress)) >= 0);
+    ret = setsockopt(server, SOL_SOCKET, SO_REUSEADDR, (const char *) &reuseAddress, sizeof(reuseAddress));
+    assert(ret >= 0);
 
-    assert(bind(server, (struct sockaddr *) &addr, sizeof(addr)) >= 0);
+    ret = bind(server, (struct sockaddr *) &addr, sizeof(addr));
+    assert(ret >= 0);
 
     listen(server, 1);
 
