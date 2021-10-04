@@ -103,12 +103,12 @@ cfg-android()
 cfg-diet() {
   (
     : ${build=$(gcc -dumpmachine | sed 's|-pc-|-|g')}
-    : ${host=${build/-gnu/-diet}}
     : ${prefix=/opt/diet}
     : ${libdir=/opt/diet/lib-${host%%-*}}
     : ${bindir=/opt/diet/bin-${host%%-*}}
 
-    CC="diet-gcc"
+    : ${CC="diet-gcc"}
+    : ${host:=$($CC -dumpmachine)}
 
     export CC
 
@@ -118,7 +118,7 @@ cfg-diet() {
       export PKG_CONFIG=$(type pkg-config 2>&1 | sed 's,.* is ,,')
     fi
 
-    : ${builddir=build/${host%-*}-diet}
+    : ${builddir=build/$host}
     prefix=/opt/diet
 
     export builddir prefix
@@ -186,7 +186,6 @@ cfg-mingw() {
   (
     build=$(gcc -dumpmachine)
     : ${host=${build%%-*}-w64-mingw32}
-    : ${prefix=/usr/$host/sys-root/mingw}
 
     case "$host" in
     x86_64-*) : ${TOOLCHAIN=/opt/cmake-toolchains/mingw64.cmake} ;;
@@ -205,10 +204,14 @@ cfg-mingw() {
   )
 }
 cfg-mingw32() {
-  host=i686-w64-mingw32 cfg-mingw "$@"
+ (host=i686-w64-mingw32
+  prefix=/usr/$host/sys-root/mingw32 \
+    cfg-mingw "$@")
 }
 cfg-mingw64() {
-  host=x86_64-w64-mingw32 cfg-mingw "$@"
+  (host=x86_64-w64-mingw32
+  prefix=/usr/$host/sys-root/mingw64 \
+    cfg-mingw "$@")
 }
 
 cfg-emscripten() {

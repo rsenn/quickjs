@@ -1,7 +1,7 @@
 #include <time.h>
 #include <math.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+/*#include <sys/socket.h>
+#include <netinet/in.h>*/
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -420,11 +420,13 @@ JSValue js_debugger_file_breakpoints(JSContext *ctx, const char* path) {
     JSDebuggerInfo *info = js_debugger_info(JS_GetRuntime(ctx));
     JSValue path_data = JS_GetPropertyStr(ctx, info->breakpoints, path);
 
+#ifndef _WIN32
     if(JS_IsUndefined(path_data) && path[0] != '/') {
         char buf[PATH_MAX];
         realpath(path, buf);
         path_data = JS_GetPropertyStr(ctx, info->breakpoints, buf);
     }
+#endif
     return path_data;    
 }
 
@@ -569,9 +571,9 @@ void js_debugger_check(JSContext* ctx, const uint8_t *cur_pc) {
         info->attempted_connect = 1;
         char *address = getenv("QUICKJS_DEBUG_ADDRESS");
         if (address != NULL && !info->transport_close) {
-            printf("QUICKJS_DEBUG_ADDRESS = %s\n", address);
+            /*printf("QUICKJS_DEBUG_ADDRESS = %s\n", address);
             fprintf(stdout, "QUICKJS_DEBUG_ADDRESS = %s\n", address);
-            fflush(stdout);
+            fflush(stdout);*/
             js_debugger_connect(ctx, address);
         }
     }
@@ -579,8 +581,8 @@ void js_debugger_check(JSContext* ctx, const uint8_t *cur_pc) {
         info->attempted_wait = 1;
         char *address = getenv("QUICKJS_DEBUG_LISTEN_ADDRESS");
         if (address != NULL && !info->transport_close) {
-            printf("QUICKJS_DEBUG_LISTEN_ADDRESS = %s\n", address);
-            fflush(stdout);
+            /*printf("QUICKJS_DEBUG_LISTEN_ADDRESS = %s\n", address);
+            fflush(stdout);*/
             js_debugger_wait_connection(ctx, address);
         }
     }

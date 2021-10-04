@@ -1,5 +1,6 @@
 if(WIN32 OR MINGW)
   set(TRANSPORT_PLATFORM win)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 else(WIN32 OR MINGW)
   set(TRANSPORT_PLATFORM unix)
 endif(WIN32 OR MINGW)
@@ -46,6 +47,10 @@ if(CONFIG_DEBUGGER)
                       ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
   message(STATUS "Enabling quickjs-debugger")
 endif(CONFIG_DEBUGGER)
+
+if(WIN32)
+  set(QUICKJS_SOURCES ${QUICKJS_SOURCES} quickjs.def)
+endif(WIN32)
 
 string(REPLACE ";" "\n" sources "${QUICKJS_SOURCES}")
 
