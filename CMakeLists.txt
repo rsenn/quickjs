@@ -136,6 +136,8 @@ else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   set(QUICKJS_LIBRARY ${A_NAME})
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 
+set(QUICKJS_LIBRARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+
 set(get_quickjs_cmake_in ${CMAKE_CURRENT_LIST_DIR}/get_quickjs.cmake.in)
 set(get_quickjs_cmake ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake)
 
