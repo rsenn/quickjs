@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <poll.h>
 #include <arpa/inet.h>
+#include <signal.h>
 
 #ifdef HAVE_QUICKJS_CONFIG_H
 #include "quickjs-config.h"
@@ -141,8 +142,11 @@ ret = connect(client, (const struct sockaddr *)&addr, sizeof(addr));
 
 void js_debugger_wait_connection(JSContext *ctx, const char* address) {
     struct sockaddr_in addr = js_debugger_parse_sockaddr(address);
-int ret;
-    int server = socket(AF_INET, SOCK_STREAM, 0);
+    int ret,server;
+    
+    signal(SIGPIPE, SIG_IGN);
+
+    server = socket(AF_INET, SOCK_STREAM, 0);
     assert(server >= 0);
 
     int reuseAddress = 1;
