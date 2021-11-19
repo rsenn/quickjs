@@ -56,6 +56,7 @@ elseif(WIN32 OR MINGW)
 endif()
 
 # link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
+message(STATUS "LIBDL = ${LIBDL}")
 
 if(CONFIG_DEBUGGER)
   message(STATUS "Enabling quickjs-debugger")
@@ -386,8 +387,8 @@ string(REPLACE "-O3" "-Os" CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL}
 if(NOT WIN32)
   if(NOT MINGW)
     if(UNIX)
-    check_flag("-rdynamic" HAVE_LINK_RDYNAMIC_FLAG LINK_EXPORT)
-  endif(UNIX)
+      check_flag("-rdynamic" HAVE_LINK_RDYNAMIC_FLAG LINK_EXPORT)
+    endif(UNIX)
   endif(NOT MINGW)
 endif(NOT WIN32)
 # message("LINK_EXPORT = ${LINK_EXPORT}")
