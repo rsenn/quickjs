@@ -54193,7 +54193,7 @@ void JS_AddIntrinsicTypedArrays(JSContext *ctx)
 #endif
 }
 
-JSClassID JS_GetClassID(JSValue v) {
+JSClassID JS_GetClassID(JSValueConst v) {
     JSObject *p;
 
     if (JS_VALUE_GET_TAG(v) != JS_TAG_OBJECT)
