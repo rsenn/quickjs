@@ -182,7 +182,7 @@ else
 QJS_LIB_OBJS+=$(OBJDIR)/quickjs-debugger-transport-win.o
 endif
 endif
-
+QJS_LIB_OBJS+=$(OBJDIR)/quickjs-find-module.o 
 QJS_OBJS=$(OBJDIR)/qjs.o $(OBJDIR)/repl.o $(QJS_LIB_OBJS)
 ifdef CONFIG_BIGNUM
 QJS_LIB_OBJS+=$(OBJDIR)/libbf.o 
