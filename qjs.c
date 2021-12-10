@@ -45,7 +45,7 @@
 #include "cutils.h"
 #include "quickjs-libc.h"
 
-#ifdef HAVE_MALLOC_USABLE_SIZE
+#if defined(HAVE_MALLOC_USABLE_SIZE) && !defined(DONT_HAVE_MALLOC_USABLE_SIZE)
 #ifndef HAVE_MALLOC_USABLE_SIZE_DEFINITION
 extern size_t malloc_usable_size();
 #endif
@@ -156,7 +156,7 @@ static inline size_t js_trace_malloc_usable_size(void *ptr)
     return malloc_size(ptr);
 #elif defined(_WIN32)
     return _msize(ptr);
-#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(__MSYS__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE)
+#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(__ANDROID__) || defined(__MSYS__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE)
     return 0;
 #elif defined(__linux__) || defined(HAVE_MALLOC_USABLE_SIZE)
     return malloc_usable_size(ptr);
@@ -278,7 +278,7 @@ static const JSMallocFunctions trace_mf = {
     malloc_size,
 #elif defined(_WIN32)
     (size_t (*)(const void *))_msize,
-#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(__MSYS__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE_DEFINITION) || defined(__wasi__)
+#elif defined(EMSCRIPTEN) || defined(__dietlibc__) || defined(__ANDROID__) || defined(__MSYS__) || defined(DONT_HAVE_MALLOC_USABLE_SIZE_DEFINITION) || defined(__wasi__)
     NULL, 
 #elif defined(__linux__) || defined(HAVE_MALLOC_USABLE_SIZE)
     (size_t (*)(const void *))malloc_usable_size,
