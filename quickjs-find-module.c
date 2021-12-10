@@ -6,7 +6,7 @@
 
 const char js_default_module_path[] = "."
 #ifdef QUICKJS_MODULE_PATH
-                                      ";" QUICKJS_MODULE_PATH 
+                                      ";" QUICKJS_MODULE_PATH
 #elif defined(CONFIG_PREFIX)
                                       ";" CONFIG_PREFIX "/lib/quickjs"
 #endif
@@ -79,13 +79,14 @@ js_find_module_path(JSContext* ctx, const char* module_name, void* opaque) {
   return ret;
 }
 
-static JSModuleLoaderFunc* module_loader_path  = &js_find_module_path;
+static JSModuleLoaderFunc* module_loader_path = &js_find_module_path;
 
-void js_std_set_module_loader_func(JSModuleLoaderFunc*func) {
+void
+js_std_set_module_loader_func(JSModuleLoaderFunc* func) {
   module_loader_path = func;
 }
 
-JSModuleLoaderFunc* js_std_get_module_loader_func() {
- return module_loader_path;
+JSModuleLoaderFunc*
+js_std_get_module_loader_func() {
+  return module_loader_path;
 }
-
