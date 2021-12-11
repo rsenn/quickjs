@@ -1679,7 +1679,9 @@ static struct termios oldtty;
 
 static void
 term_exit(void) {
+#ifndef __ANDROID__
   tcsetattr(0, TCSANOW, &oldtty);
+#endif
 }
 
 /* XXX: should add a way to go back to normal mode */
@@ -1692,6 +1694,7 @@ js_os_ttySetRaw(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* a
     return JS_EXCEPTION;
 
   memset(&tty, 0, sizeof(tty));
+#ifndef __ANDROID__
   tcgetattr(fd, &tty);
   oldtty = tty;
 
@@ -1706,6 +1709,7 @@ js_os_ttySetRaw(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* a
   tcsetattr(fd, TCSANOW, &tty);
 
   atexit(term_exit);
+#endif
   return JS_UNDEFINED;
 }
 
