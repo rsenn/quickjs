@@ -47,6 +47,11 @@ endif(C_STANDARD_FLAG)
 
 configure_quickjs()
 
+
+if(NOT QUICKJS_BUILD_ROOT)
+  set(QUICKJS_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}")
+endif(NOT QUICKJS_BUILD_ROOT)
+
 message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "System name: ${SYSTEM_NAME}")
 
