@@ -1,4 +1,3 @@
-#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -177,4 +176,3 @@ js_debugger_wait_connection(JSContext* ctx, const char* address) {
   data->handle = client;
   js_debugger_attach(ctx, js_transport_read, js_transport_write, js_transport_peek, js_transport_close, data);
 }
-#endif /* !defined(_WIN32) */

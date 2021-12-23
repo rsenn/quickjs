@@ -342,9 +342,9 @@ cfg-msys() {
     echo "host: $host"
     build=$(gcc -dumpmachine)
     : ${host=${build%%-*}-pc-msys}
-    : ${prefix=/usr/$host/sysroot/usr}
+    : ${prefix=/usr/$host/sys-root/usr}
     echo "host: $host"
-    : ${PKG_CONFIG_PATH=/usr/${host}/sysroot/usr/lib/pkgconfig}
+    : ${PKG_CONFIG_PATH=/usr/${host}/sys-root/usr/lib/pkgconfig}
 
     export PKG_CONFIG_PATH
 

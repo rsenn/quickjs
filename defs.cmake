@@ -86,3 +86,8 @@ endif(QUICKJS_CROSS_ARCH)
 #option(USE_WORKER "Enable worker support" ON)
 
 set(CONFIG_VERSION "${QUICKJS_VERSION}" CACHE STRING "QuickJS version")
+
+file(
+  WRITE "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc"
+  "prefix=${QUICKJS_PREFIX}\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: quickjs\nDescription: QuickJS\nVersion: ${QUICKJS_VERSION}\nLibs: -L\${libdir} -lquickjs\nCflags: -I\${includedir}\n"
+)

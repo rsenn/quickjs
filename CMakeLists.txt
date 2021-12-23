@@ -47,7 +47,6 @@ endif(C_STANDARD_FLAG)
 
 configure_quickjs()
 
-
 if(NOT QUICKJS_BUILD_ROOT)
   set(QUICKJS_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}")
 endif(NOT QUICKJS_BUILD_ROOT)
@@ -58,7 +57,7 @@ message(STATUS "System name: ${SYSTEM_NAME}")
 set(BUILD_SHARED_LIBS "${SUPPORT_SHARED_LIBS}")
 
 if("${SYSTEM_NAME}" MATCHES ".*wasi")
-  message(STATUS "[1;31mwasienv WASM build[0m")
+  message(STATUS "\x1b[1;31mwasienv WASM build\x1b[0m")
   set(BUILD_SHARED_LIBS FALSE)
   set(ENABLE_SHARED FALSE)
 elseif(WIN32 OR MINGW)
@@ -140,15 +139,24 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   set(A_NAME ${PROJECT_NAME}-static)
   set(SO_NAME ${PROJECT_NAME})
   set(LIB_TARGETS ${A_NAME} ${SO_NAME})
-  set(QUICKJS_LIBRARY ${SO_NAME})
+  if(NOT QUICKJS_LIBRARY)
+    set(QUICKJS_LIBRARY "${SO_NAME}" CACHE PATH "QuickJS library")
+  endif(NOT QUICKJS_LIBRARY)
 else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   set(A_NAME ${PROJECT_NAME})
   set(SO_NAME ${PROJECT_NAME}-shared)
   set(LIB_TARGETS ${A_NAME})
-  set(QUICKJS_LIBRARY ${A_NAME})
+  if(NOT QUICKJS_LIBRARY)
+    set(QUICKJS_LIBRARY "${A_NAME}" CACHE PATH "QuickJS library")
+  endif(NOT QUICKJS_LIBRARY)
+
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 
-set(QUICKJS_LIBRARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+set(QUICKJS_LIBRARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" CACHE PATH "QuickJS library directory")
+set(QUICKJS_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH
+                                                                                        "QuickJS include directory")
+
+dump(QUICKJS_LIBRARY QUICKJS_LIBRARY_DIR QUICKJS_INCLUDE_DIR)
 
 set(get_quickjs_cmake_in ${CMAKE_CURRENT_LIST_DIR}/get_quickjs.cmake.in)
 set(get_quickjs_cmake ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake)
@@ -563,3 +571,10 @@ foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
 endforeach(MODULE_SUBDIR ${MODULE_SUBDIRS})
 
 message("BUILDSYSTEM_TARGETS = ${BUILDSYSTEM_TARGETS}")
+
+file(
+  WRITE "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc"
+  "prefix=${QUICKJS_PREFIX}\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: quickjs\nDescription: QuickJS\nVersion: ${QUICKJS_VERSION}\nLibs: -L\${libdir} -lquickjs\nCflags: -I\${includedir}\n"
+)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc" DESTINATION "${QUICKJS_PREFIX}/lib/pkgconfig")
