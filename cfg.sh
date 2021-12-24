@@ -196,10 +196,11 @@ cfg-mingw() {
 
     export TOOLCHAIN PKG_CONFIG_PATH
 
-    builddir=build/$host \
-      bindir=$prefix/bin \
-      libdir=$prefix/lib \
-      cfg \
+    : ${builddir=build/$host}
+
+    bindir=$prefix/bin \
+    libdir=$prefix/lib \
+    cfg \
       "$@"
   )
 }
