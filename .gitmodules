@@ -25,4 +25,7 @@
 [submodule "qjs-net"]
 	path = qjs-net
 	url = git@github.com:rsenn/qjs-net.git
+<<<<<<< HEAD
 	branch = main
+=======
+>>>>>>> 43c239a1a49c74c4220d360e00118ebc75544b02
