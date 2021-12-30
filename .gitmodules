@@ -22,3 +22,6 @@
 	path = qjs-modules
 	url = git@github.com:rsenn/qjs-modules.git
 	branch = main
+[submodule "qjs-net"]
+	path = qjs-net
+	url = git@github.com:rsenn/qjs-net.git
