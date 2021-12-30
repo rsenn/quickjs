@@ -570,7 +570,6 @@ foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
   endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
 endforeach(MODULE_SUBDIR ${MODULE_SUBDIRS})
 
-
 file(
   WRITE "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc"
   "prefix=${QUICKJS_PREFIX}\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: quickjs\nDescription: QuickJS\nVersion: ${QUICKJS_VERSION}\nLibs: -L\${libdir} -lquickjs\nCflags: -I\${includedir}\n"
