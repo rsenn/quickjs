@@ -484,17 +484,22 @@ cfg-emscripten() {
 }
 
 cfg-aarch64() {
-  (
-    : ${build=$(cc -dumpmachine | sed 's|-pc-|-|g')}
-    : ${host=aarch64-${build#*-}}
-    : ${builddir=build/$host}
+ (: ${build=$(cc -dumpmachine | sed 's|-pc-|-|g')}
+  : ${host=aarch64-${build#*-}}
+  : ${builddir=build/$host}
 
-    : ${prefix=/usr/aarch64-linux-gnu/sysroot/usr/local}
+  : ${prefix=/usr/aarch64-linux-gnu/sysroot/usr/local}
 
-    : ${TOOLCHAIN=/opt/cmake-toolchains/aarch64-linux-gnu.toolchain.cmake}
-    export prefix TOOLCHAIN
+  : ${TOOLCHAIN=/opt/cmake-toolchains/aarch64-linux-gnu.toolchain.cmake}
+  : ${PKG_CONFIG=aarch64-linux-gnu-pkg-config}
+  export prefix TOOLCHAIN PKG_CONFIG
 
- PKG_CONFIG=aarch64-linux-gnu-pkg-config \
-      cfg "$@"
-  )
+  cfg "$@")
+}
+
+cfg-rpi4() {
+ (: ${TOOLCHAIN=/opt/cmake-toolchains/rpi4.toolchain.cmake}
+  : ${builddir=build/rpi4}
+  : ${prefix=/usr/local}
+  cfg "$@") 
 }
