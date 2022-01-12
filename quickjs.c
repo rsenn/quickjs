@@ -74,11 +74,11 @@
 
 /* define to include Atomics.* operations which depend on the OS
    threads */
-#if !defined(EMSCRIPTEN) && !defined(CONFIG_ATOMICS) && !defined(__wasi__)
+#if !defined(EMSCRIPTEN) && !defined(CONFIG_ATOMICS) && !defined(__wasi__) && !defined(__wasm__)
 #define CONFIG_ATOMICS
 #endif
 
-#if !defined(EMSCRIPTEN) && !defined(CONFIG_STACK_CHECK) && !defined(__wasi__)
+#if !defined(EMSCRIPTEN) && !defined(CONFIG_STACK_CHECK) && !defined(__wasi__) && !defined(__wasm__)
 /* enable stack limitation */
 #define CONFIG_STACK_CHECK
 #endif
@@ -10315,7 +10315,7 @@ redo:
       } else {
         if(d < INT64_MIN)
           *pres = INT64_MIN;
-        else if(d > INT64_MAX)
+        else if(d > (double)INT64_MAX)
           *pres = INT64_MAX;
         else
           *pres = (int64_t)d;

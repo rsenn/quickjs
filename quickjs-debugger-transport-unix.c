@@ -1,3 +1,9 @@
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
+#ifdef CONFIG_DEBUGGER
+#include "quickjs-debugger.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -9,12 +15,6 @@
 #include <poll.h>
 #include <arpa/inet.h>
 #include <signal.h>
-
-#ifdef HAVE_QUICKJS_CONFIG_H
-#include "quickjs-config.h"
-#endif
-
-#include "quickjs-debugger.h"
 
 #ifndef SO_REUSEADDR
 #define SO_REUSEADDR 0
@@ -176,3 +176,5 @@ js_debugger_wait_connection(JSContext* ctx, const char* address) {
   data->handle = client;
   js_debugger_attach(ctx, js_transport_read, js_transport_write, js_transport_peek, js_transport_close, data);
 }
+
+#endif /* defined(CONFIG_DEBUGGER) */

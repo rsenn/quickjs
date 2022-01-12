@@ -29,10 +29,11 @@ function(make_module FNAME)
   set_target_properties(${TARGET_NAME}-static PROPERTIES OUTPUT_NAME "${VNAME}" COMPILE_FLAGS "")
   target_compile_definitions(${TARGET_NAME} PRIVATE JS_SHARED_LIBRARY=1 JS_${UNAME}_MODULE=1
                                                     CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}")
-  target_compile_definitions(${TARGET_NAME}-static PRIVATE JS_${UNAME}_MODULE=1
-                                                           CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}")
-  install(TARGETS ${TARGET_NAME} DESTINATION lib/quickjs PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-                                                                     GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  target_compile_definitions(${TARGET_NAME}-static
+                             PRIVATE JS_${UNAME}_MODULE=1 CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}")
+  install(TARGETS ${TARGET_NAME} DESTINATION lib/quickjs
+          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ
+                      WORLD_EXECUTE)
   # install(TARGETS ${TARGET_NAME}-static DESTINATION lib/quickjs)
 
   config_module(${TARGET_NAME})

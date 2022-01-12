@@ -1,3 +1,9 @@
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
+#ifdef CONFIG_DEBUGGER
+
 #ifdef __MSYS__
 #define __INSIDE_CYGWIN_NET__ 1
 #endif
@@ -158,3 +164,5 @@ js_debugger_wait_connection(JSContext* ctx, const char* address) {
   data->handle = client;
   js_debugger_attach(ctx, js_transport_read, js_transport_write, js_transport_peek, js_transport_close, data);
 }
+
+#endif /* defined(CONFIG_DEBUGGER) */

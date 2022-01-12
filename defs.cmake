@@ -28,8 +28,9 @@ set(QUICKJS_EXTRACT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sources)
 if(NOT QUICKJS_SOURCES_ROOT)
   set(QUICKJS_SOURCES_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 endif(NOT QUICKJS_SOURCES_ROOT)
-set(QUICKJS_INCLUDES cutils.h libbf.h libregexp-opcode.h libregexp.h libunicode-table.h libunicode.h list.h
-                     quickjs-atom.h quickjs-libc.h quickjs-opcode.h quickjs-debugger.h quickjs.h unicode_gen_def.h)
+set(QUICKJS_INCLUDES
+    cutils.h libbf.h libregexp-opcode.h libregexp.h libunicode-table.h libunicode.h list.h
+    quickjs-atom.h quickjs-libc.h quickjs-opcode.h quickjs-debugger.h quickjs.h unicode_gen_def.h)
 
 set(QUICKJS_SOURCES
     ${QUICKJS_SOURCES_ROOT}/cutils.c
@@ -39,12 +40,13 @@ set(QUICKJS_SOURCES
     ${QUICKJS_SOURCES_ROOT}/quickjs.c
     ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c
     #${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c
+    ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
+    ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
     ${QUICKJS_INCLUDES})
 
 #message("CONFIG_DEBUGGER = ${CONFIG_DEBUGGER}")
 if(CONFIG_DEBUGGER)
-  set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
-                      ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+  #set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
   message(STATUS "Enabling quickjs-debugger")
 endif(CONFIG_DEBUGGER)
 
@@ -57,8 +59,10 @@ string(REPLACE ";" "\n" sources "${QUICKJS_SOURCES}")
 #message("QUICKJS_SOURCES = ${QUICKJS_SOURCES}")
 # dump(QUICKJS_SOURCES)
 
-execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 string(REGEX REPLACE "-pc-" "-" QUICKJS_HOST_ARCH "${SYSTEM_NAME}")
 

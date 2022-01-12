@@ -118,8 +118,11 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
   string(REPLACE ";" " " COMMAND_PATTERN "${CCCF_COMMAND_PATTERN}")
 
   execute_process(
-    COMMAND "${CMAKE_COMMAND}" -E env LC_ALL=C LC_MESSAGES=C LANG=C "${CMAKE_${lang}_COMPILER}" ${CCCF_COMMAND_PATTERN}
-    WORKING_DIRECTORY "${COMPILER_FLAG_DIR}" OUTPUT_VARIABLE COMPILER_FLAG_OUTPUT ERROR_VARIABLE COMPILER_FLAG_ERROR
+    COMMAND "${CMAKE_COMMAND}" -E env LC_ALL=C LC_MESSAGES=C LANG=C "${CMAKE_${lang}_COMPILER}"
+            ${CCCF_COMMAND_PATTERN}
+    WORKING_DIRECTORY "${COMPILER_FLAG_DIR}"
+    OUTPUT_VARIABLE COMPILER_FLAG_OUTPUT
+    ERROR_VARIABLE COMPILER_FLAG_ERROR
     RESULT_VARIABLE COMPILER_FLAG_RESULT)
 
   # Record result in the cache so we can avoid re-testing every CMake run
@@ -133,9 +136,11 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
     endforeach()
   endif()
   if(DEFINED ${result})
-    file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
-         "Determining if the ${flag} option " "is supported for ${lang} language failed with the following output:\n"
-         "${COMPILER_FLAG_OUTPUT}\n")
+    file(
+      APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
+      "Determining if the ${flag} option "
+      "is supported for ${lang} language failed with the following output:\n"
+      "${COMPILER_FLAG_OUTPUT}\n")
     if(CCCF_OUTPUT_VARIABLE)
       set(${CCCF_OUTPUT_VARIABLE} "${COMPILER_FLAG_OUTPUT}" PARENT_SCOPE)
     endif()
