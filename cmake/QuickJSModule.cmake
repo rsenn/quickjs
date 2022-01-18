@@ -107,7 +107,7 @@ function(make_module FNAME)
 
   if(WASI OR WASM OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
     set(LIBRARY_PREFIX "lib")
-    set(LIBRARY_SUFFIX ".a")  
+    set(LIBRARY_SUFFIX ".a")
   endif(WASI OR WASM OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 
   if(NOT LIBRARY_PREFIX)
@@ -117,7 +117,9 @@ function(make_module FNAME)
     set(LIBRARY_SUFFIX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
   endif(NOT LIBRARY_SUFFIX)
 
-  set_target_properties(${TARGET_NAME}-static PROPERTIES OUTPUT_NAME "${VNAME}" PREFIX "${LIBRARY_PREFIX}" SUFFIX "${LIBRARY_SUFFIX}" COMPILE_FLAGS "")
+  set_target_properties(
+    ${TARGET_NAME}-static PROPERTIES OUTPUT_NAME "${VNAME}" PREFIX "${LIBRARY_PREFIX}"
+                                     SUFFIX "${LIBRARY_SUFFIX}" COMPILE_FLAGS "")
   target_compile_definitions(
     ${TARGET_NAME}-static PRIVATE _GNU_SOURCE=1 JS_${UNAME}_MODULE=1
                                   CONFIG_PREFIX="${QUICKJS_INSTALL_PREFIX}")
