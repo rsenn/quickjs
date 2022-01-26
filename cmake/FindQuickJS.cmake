@@ -237,5 +237,7 @@ macro(configure_quickjs_module_path)
   set(QUICKJS_MODULE_PATH "${MODULE_PATH}" CACHE PATH
                                                  "QuickJS modules search path")
 
-  message(STATUS "\tmodule search path: ${MODULE_PATH}")
+  message(STATUS "\tmodule search path: ${QUICKJS_MODULE_PATH}")
 endmacro(configure_quickjs_module_path)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake)
