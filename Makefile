@@ -515,6 +515,39 @@ quickjs-debugger.c.s:
 	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-debugger.c.s
 .PHONY : quickjs-debugger.c.s
 
+quickjs-find-module.o: quickjs-find-module.c.o
+.PHONY : quickjs-find-module.o
+
+# target to build an object file
+quickjs-find-module.c.o:
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.o
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.o
+.PHONY : quickjs-find-module.c.o
+
+quickjs-find-module.i: quickjs-find-module.c.i
+.PHONY : quickjs-find-module.i
+
+# target to preprocess a source file
+quickjs-find-module.c.i:
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.i
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.i
+.PHONY : quickjs-find-module.c.i
+
+quickjs-find-module.s: quickjs-find-module.c.s
+.PHONY : quickjs-find-module.s
+
+# target to generate assembly for a file
+quickjs-find-module.c.s:
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjsc.dir/build.make quickjs/CMakeFiles/qjsc.dir/quickjs-find-module.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs.dir/build.make quickjs/CMakeFiles/quickjs.dir/quickjs-find-module.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/qjs.dir/build.make quickjs/CMakeFiles/qjs.dir/quickjs-find-module.c.s
+	cd /home/roman/Projects/plot-cv && $(MAKE) $(MAKESILENT) -f quickjs/CMakeFiles/quickjs-static.dir/build.make quickjs/CMakeFiles/quickjs-static.dir/quickjs-find-module.c.s
+.PHONY : quickjs-find-module.c.s
+
 quickjs-libc.o: quickjs-libc.c.o
 .PHONY : quickjs-libc.o
 
@@ -650,6 +683,9 @@ help:
 	@echo "... quickjs-debugger.o"
 	@echo "... quickjs-debugger.i"
 	@echo "... quickjs-debugger.s"
+	@echo "... quickjs-find-module.o"
+	@echo "... quickjs-find-module.i"
+	@echo "... quickjs-find-module.s"
 	@echo "... quickjs-libc.o"
 	@echo "... quickjs-libc.i"
 	@echo "... quickjs-libc.s"

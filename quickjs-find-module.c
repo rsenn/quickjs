@@ -4,51 +4,68 @@
 #include <string.h>
 #include <sys/stat.h>
 
-const char js_default_module_path[] = "."
+static inline size_t
+str_chrs(const char* in, const char needles[], size_t nn) {
+  const char* t;
+  for(t = in; *t; ++t)
+    if(memchr(needles, *t, nn))
+      break;
+  return (size_t)(t - in);
+}
+
+const char* js_default_module_path = "."
 #ifdef QUICKJS_MODULE_PATH
-                                      ";" QUICKJS_MODULE_PATH
+                                     ";" QUICKJS_MODULE_PATH
 #elif defined(CONFIG_PREFIX)
-                                      ";" CONFIG_PREFIX "/lib/quickjs"
+                                     ";" CONFIG_PREFIX "/lib/quickjs"
 #endif
     ;
 
-char*
-js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
-  const char *module_path, *p, *q;
-  char* filename = NULL;
-  size_t n, m;
+static char*
+js_find_module_ext_path(JSContext* ctx, const char* name, const char* ext, const char* path) {
+  const char* s;
+  char* file = NULL;
+  size_t i, j;
   struct stat st;
 
-  if((module_path = getenv("QUICKJS_MODULE_PATH")) == NULL)
-    module_path = js_default_module_path;
+  for(s = path; *s; s += i) {
+    if((i = str_chrs(s, ";:\n", 3)) == 0)
+      break;
 
-  for(p = module_path; *p; p = q) {
+    file = js_malloc(ctx, i + 1 + strlen(name) + strlen(ext) + 1);
 
-    if((q = strchr(p, ':')) == NULL)
-      q = p + strlen(p);
+    strncpy(file, s, i);
+    file[i] = '/';
+    strcpy(&file[i + 1], name);
 
-    n = q - p;
+    j = strlen(name);
 
-    filename = js_malloc(ctx, n + 1 + strlen(module_name) + 3 + 1);
+    if(!(j >= 3 && !strcmp(&name[j - 3], ext)))
+      strcpy(&file[i + 1 + j], ext);
 
-    strncpy(filename, p, n);
-    filename[n] = '/';
-    strcpy(&filename[n + 1], module_name);
+    if(!stat(file, &st))
+      break;
 
-    m = strlen(module_name);
+    js_free(ctx, file);
+    file = NULL;
 
-    if(!(m >= 3 && !strcmp(&module_name[m - 3], ext)))
-      strcpy(&filename[n + 1 + m], ext);
-
-    if(!stat(filename, &st))
-      return filename;
-
-    js_free(ctx, filename);
-
-    if(*q == ':')
-      ++q;
+    if(s[i])
+      ++i;
   }
-  return NULL;
+
+  return file;
+}
+
+char*
+js_find_module_ext(JSContext* ctx, const char* name, const char* ext) {
+  const char* module_path;
+
+  if((module_path = getenv("QUICKJS_MODULE_PATH"))) {
+    char* file;
+    if((file = js_find_module_ext_path(ctx, name, ext, module_path)))
+      return file;
+  }
+  return js_find_module_ext_path(ctx, name, ext, js_default_module_path);
 }
 
 char*
@@ -71,7 +88,11 @@ static JSModuleDef*
 js_find_module_path(JSContext* ctx, const char* module_name, void* opaque) {
   char* filename;
   JSModuleDef* ret = NULL;
-  filename = module_name[0] == '/' ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
+  if(module_name[0] == '/' || (module_name[0] == '.' && module_name[1] == '/'))
+    filename = js_strdup(ctx, module_name); 
+  else
+    filename = js_find_module(ctx, module_name);
+
   if(filename) {
     ret = js_module_loader(ctx, filename, opaque);
     js_free(ctx, filename);
@@ -79,14 +100,14 @@ js_find_module_path(JSContext* ctx, const char* module_name, void* opaque) {
   return ret;
 }
 
-static JSModuleLoaderFunc* module_loader_path = &js_find_module_path;
+JSModuleLoaderFunc* js_module_loader_path = &js_find_module_path;
 
 void
 js_std_set_module_loader_func(JSModuleLoaderFunc* func) {
-  module_loader_path = func;
+  js_module_loader_path = func;
 }
 
 JSModuleLoaderFunc*
 js_std_get_module_loader_func() {
-  return module_loader_path;
+  return js_module_loader_path;
 }
