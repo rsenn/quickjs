@@ -1,5 +1,7 @@
 #ifdef HAVE_QUICKJS_CONFIG_H
 #include "quickjs-config.h"
+#else 
+#error No quickjs-config.h
 #endif
 
 #ifdef CONFIG_DEBUGGER
@@ -8,7 +10,9 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <string.h>
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -117,16 +121,29 @@ js_debugger_parse_sockaddr(const char* address) {
     host_string[port_string - address] = 0;
   }
 
-  struct hostent* host = gethostbyname(host_string);
-  assert(host);
-  struct sockaddr_in addr;
+  {
+    struct sockaddr_in addr;
 
-  memset(&addr, 0, sizeof(addr));
-  addr.sin_family = AF_INET;
-  memcpy((char*)&addr.sin_addr.s_addr, (char*)host->h_addr, host->h_length);
-  addr.sin_port = htons(port);
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = 0;
 
-  return addr;
+#ifdef HAVE_GETHOSTBYNAME
+    {
+      struct hostent* host = gethostbyname(host_string);
+      assert(host);
+
+      memcpy((char*)&addr.sin_addr.s_addr, (char*)host->h_addr, host->h_length);
+    }
+#elif defined(HAVE_INET_PTON)
+    if(inet_pton(AF_INET, host_string, &addr.sin_addr) <= 0) 
+      perror("inet_pton");
+#else
+# error No host name lookup
+#endif
+    return addr;
+  }
 }
 
 void

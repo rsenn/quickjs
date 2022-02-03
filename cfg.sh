@@ -260,6 +260,26 @@ cfg-wasi() {
   )
 }
 
+cfg-wasienv() {
+  (
+    build=$(gcc -dumpmachine | sed 's|-pc-|-|g')
+    host=${build/-gnu/-wasienv}
+    builddir=build/wasm32-unknown-wasienv
+
+    prefix=/opt/wasienv
+    libdir=$prefix/lib
+    bindir=$prefix/bin
+
+    export TOOLCHAIN=/opt/cmake-toolchains/wasienv.cmake
+
+    CFLAGS="-w -D_WASI_EMULATED_SIGNAL" \
+      cfg \
+      -DCMAKE_INSTALL_PREFIX="$prefix" \
+      -DMODULE_{GLFW,IMGUI,NANOVG,NET,FFI}=OFF \
+      "$@"
+  )
+}
+
 cfg-clang() {
   (
     build=$(cc -dumpmachine | sed 's|-pc-|-|g')

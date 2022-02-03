@@ -23,6 +23,8 @@ if(CONFIG_WORKER)
   set(USE_WORKER "${CONFIG_WORKER}")
 endif(CONFIG_WORKER)
 
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 include(FindThreads)
 
 include(CheckIncludeFile)
@@ -74,6 +76,25 @@ if(CONFIG_DEBUGGER)
 
   set(CONFIG_DEBUGGER 1)
   #add_definitions(-DCONFIG_DEBUGGER)
+  list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_DEFAULT_SOURCE=1 -D_BSD_SOURCE=1)
+  check_include_file("netdb.h" HAVE_NETDB_H)
+  if(HAVE_NETDB_H)
+    list(APPEND CMAKE_REQUIRED_INCLUDES netdb.h)
+  endif(HAVE_NETDB_H)
+   
+  #check_function_exists(gethostbyname_r HAVE_GETHOSTBYNAME_R)
+  check_function_exists(gethostbyname HAVE_GETHOSTBYNAME)
+  if(NOT HAVE_GETHOSTBYNAME)
+    check_include_file("arpa/inet.h" HAVE_ARPA_INET_H)
+    if(HAVE_ARPA_INET_H)
+      list(APPEND CMAKE_REQUIRED_INCLUDES arpa/inet.h)
+    endif(HAVE_ARPA_INET_H)
+
+    check_function_exists(inet_pton HAVE_INET_PTON)
+    if(NOT HAVE_INET_PTON)
+      check_function_exists(inet_aton HAVE_INET_ATON)
+    endif(NOT HAVE_INET_PTON)
+  endif(NOT HAVE_GETHOSTBYNAME)
 endif(CONFIG_DEBUGGER)
 
 if(CONFIG_NODEBUG)
@@ -488,12 +509,11 @@ add_custom_target(
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 configure_file(quickjs-config.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(-DHAVE_QUICKJS_CONFIG_H=1
                 -DQUICKJS_MODULE_PATH="${QUICKJS_MODULE_PATH}")
 # add_custom_command( OUTPUT ${QUICKJS_SOURCES} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 
-add_library(${A_NAME} STATIC ${QUICKJS_SOURCES})
+add_library(${A_NAME} STATIC ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
 target_compile_definitions(
   ${A_NAME}
   PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
@@ -509,7 +529,7 @@ target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD}
 # message("target_link_libraries ${A_NAME} PRIVATE ${LIBDL} ${LIBM} ${LIBPTHREAD}")
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
-  add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES})
+  add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
   target_compile_definitions(
     ${SO_NAME}
     PRIVATE _GNU_SOURCE=1
@@ -536,7 +556,7 @@ install(FILES ${QUICKJS_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
 file(GLOB CMAKE_SCRIPTS cmake/*QuickJS*)
 install(FILES ${CMAKE_SCRIPTS} DESTINATION ${QUICKJS_PREFIX}/lib/cmake)
 
-add_executable(qjs qjs.c ${QUICKJS_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/repl.c
+add_executable(qjs qjs.c ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER} ${CMAKE_CURRENT_BINARY_DIR}/repl.c
                    ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
 
 # target_link_libraries(qjs ${QUICKJS_LIBRARY})

@@ -66,4 +66,17 @@
 
 /* DUMP_READ_OBJECT - Define this if you want to debug binary object reader */
 #cmakedefine DUMP_READ_OBJECT 1
+
+/* HAVE_GETHOSTBYNAME - Define this if you have the gethostbyname() function */
+#cmakedefine HAVE_GETHOSTBYNAME 1
+
+/* HAVE_INET_PTON - Define this if you have the inet_pton() function */
+#cmakedefine HAVE_INET_PTON 1
+
+/* HAVE_INET_ATON - Define this if you have the inet_aton() function */
+#cmakedefine HAVE_INET_ATON 1
+
+/* HAVE_NETDB_H - Define this if you have the netdb.h header file */
+#cmakedefine HAVE_NETDB_H 1
+
 @DUMP_DEFINE@

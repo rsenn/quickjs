@@ -306,8 +306,9 @@ struct JSRuntime {
   uint32_t operator_count;
 #endif
   void* user_opaque;
-
+#ifdef CONFIG_DEBUGGER
   JSDebuggerInfo debugger_info;
+#endif
 };
 
 struct JSClass {
