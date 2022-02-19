@@ -90,7 +90,7 @@ js_transport_peek(void* udata) {
 }
 
 static void
-js_transport_close(JSContext* ctx, void* udata) {
+js_transport_close(JSRuntime* rt, void* udata) {
   struct js_transport_data* data = (struct js_transport_data*)udata;
   if(data->handle <= 0)
     return;
