@@ -49,8 +49,9 @@ set(QUICKJS_SOURCES
 #message("CONFIG_DEBUGGER = ${CONFIG_DEBUGGER}")
 if(CONFIG_DEBUGGER)
   set(QUICKJS_SOURCES_DEBUGGER
-    ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
-    ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+      ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
+      ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
+  )
   #set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
   message(STATUS "Enabling quickjs-debugger")
 endif(CONFIG_DEBUGGER)

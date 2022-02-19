@@ -82,7 +82,7 @@ if(CONFIG_DEBUGGER)
   if(HAVE_NETDB_H)
     list(APPEND CMAKE_REQUIRED_INCLUDES netdb.h)
   endif(HAVE_NETDB_H)
-   
+
   #check_function_exists(gethostbyname_r HAVE_GETHOSTBYNAME_R)
   check_function_exists(gethostbyname HAVE_GETHOSTBYNAME)
   if(NOT HAVE_GETHOSTBYNAME)
@@ -556,8 +556,9 @@ install(FILES ${QUICKJS_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
 file(GLOB CMAKE_SCRIPTS cmake/*QuickJS*)
 install(FILES ${CMAKE_SCRIPTS} DESTINATION ${QUICKJS_PREFIX}/lib/cmake)
 
-add_executable(qjs qjs.c ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER} ${CMAKE_CURRENT_BINARY_DIR}/repl.c
-                   ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
+add_executable(
+  qjs qjs.c ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
+      ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
 
 # target_link_libraries(qjs ${QUICKJS_LIBRARY})
 target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
