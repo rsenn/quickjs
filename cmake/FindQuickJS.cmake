@@ -233,9 +233,8 @@ macro(configure_quickjs_module_path)
   if(NOT WIN32)
     string(REPLACE ":" ";" MODULE_PATH "${MODULE_PATH}")
   endif(NOT WIN32)
-
-  set(QUICKJS_MODULE_PATH "${MODULE_PATH}" CACHE PATH
-                                                 "QuickJS modules search path")
+ 
+  set(QUICKJS_MODULE_PATH "${MODULE_PATH}" CACHE PATH "QuickJS modules search path")
 
   message(STATUS "\tmodule search path: ${QUICKJS_MODULE_PATH}")
 endmacro(configure_quickjs_module_path)

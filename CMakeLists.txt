@@ -49,6 +49,7 @@ if(C_STANDARD_FLAG)
 endif(C_STANDARD_FLAG)
 
 configure_quickjs()
+configure_quickjs_module_path()
 
 if(NOT QUICKJS_BUILD_ROOT)
   set(QUICKJS_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}")
@@ -509,8 +510,7 @@ add_custom_target(
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 configure_file(quickjs-config.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
-add_definitions(-DHAVE_QUICKJS_CONFIG_H=1
-                -DQUICKJS_MODULE_PATH="${QUICKJS_MODULE_PATH}")
+add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
 # add_custom_command( OUTPUT ${QUICKJS_SOURCES} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 
 add_library(${A_NAME} STATIC ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
