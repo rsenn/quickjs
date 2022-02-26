@@ -1,8 +1,33 @@
 #include "quickjs.h"
 #include "quickjs-libc.h"
+#include "cutils.h"
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+typedef char* find_module_function(JSContext*, const char*);
+
+#define HL(str, codes) "\x1b[" codes "m" str "\x1b[0m"
+#define PRN "36;1"
+#define FUN "33;1"
+#define ARG "35;1"
+#define VAR "32;1"
+
+const char* js_default_module_path = "."
+#ifdef QUICKJS_MODULE_PATH
+                                     ";" QUICKJS_MODULE_PATH
+#elif defined(CONFIG_PREFIX)
+                                     ";" CONFIG_PREFIX "/lib/quickjs"
+#endif
+    ;
+
+static const char* js_optional_module_extensions[] = {
+    ".so",
+    ".js",
+    "/index.js",
+    "/package.json",
+};
 
 static inline size_t
 str_chrs(const char* in, const char needles[], size_t nn) {
@@ -13,117 +38,157 @@ str_chrs(const char* in, const char needles[], size_t nn) {
   return (size_t)(t - in);
 }
 
-const char* js_default_module_path = "."
-#ifdef QUICKJS_MODULE_PATH
-                                     ";" QUICKJS_MODULE_PATH
-#elif defined(CONFIG_PREFIX)
-                                     ";" CONFIG_PREFIX "/lib/quickjs"
-#endif
-    ;
-
-static char*
-js_find_module_ext_path(JSContext* ctx, const char* name, const char* ext, const char* path) {
-  const char* s;
-  char* file = NULL;
-  size_t i, j;
+static BOOL
+is_file(const char* module_name) {
   struct stat st;
 
+  if(stat(module_name, &st) == 0)
+    return S_ISREG(st.st_mode);
+
+  return FALSE;
+}
+
+/* clang-format off */
+static inline BOOL is_absolute(const char* path) { return path [0] == '/'; }
+static inline BOOL is_dotslash(const char* path) { return !strncmp(path, "./", 2); }
+static inline BOOL is_dotdotslash(const char* path) { return !strncmp(path, "../", 3); }
+/* clang-format on */
+
+static BOOL
+is_searchable(const char* path) {
+  return !is_absolute(path) && !is_dotslash(path) && !is_dotdotslash(path);
+}
+
+static BOOL
+is_relative(const char* path) {
+  return is_dotslash(path) || is_dotdotslash(path) || !is_absolute(path);
+}
+
+static char*
+is_module(JSContext* ctx, const char* module_name) {
+  BOOL yes = is_file(module_name);
+
+ /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\"" HL(")", PRN) "=%s\n", __func__, module_name, yes ? "TRUE" : "FALSE"); /* clang-format on */ 
+
+  return yes ? js_strdup(ctx, module_name) : 0;
+}
+
+static BOOL
+module_has_suffix(JSContext* ctx, const char* module_name) {
+  size_t i, n;
+
+  n = countof(js_optional_module_extensions);
+  for(i = 0; i < n; i++)
+    if(has_suffix(module_name, js_optional_module_extensions[i]))
+      return TRUE;
+
+  return FALSE;
+}
+
+static char*
+search_list(JSContext* ctx, const char* module_name, const char* path) {
+  const char* s;
+  char *ret = 0, *file = 0;
+  size_t i, j = strlen(module_name);
+  
+  /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\" " HL("path", ARG) "=\"%s\"" HL(")", PRN) "\n", __func__, module_name, path); /* clang-format on */
+
+  if(!(file = js_malloc(ctx, strlen(path) + 1 + strlen(module_name) + 1)))
+    return 0;
   for(s = path; *s; s += i) {
     if((i = str_chrs(s, ";:\n", 3)) == 0)
       break;
-
-    file = js_malloc(ctx, i + 1 + strlen(name) + strlen(ext) + 1);
-
     strncpy(file, s, i);
     file[i] = '/';
-    strcpy(&file[i + 1], name);
-
-    j = strlen(name);
-
-    if(!(j >= 3 && !strcmp(&name[j - 3], ext)))
-      strcpy(&file[i + 1 + j], ext);
-
-    if(!stat(file, &st))
+    strcpy(&file[i + 1], module_name);
+    if((ret = is_module(ctx, file)))
       break;
-
-    js_free(ctx, file);
-    file = NULL;
 
     if(s[i])
       ++i;
   }
-
-  return file;
+  //  if(ret != file)
+  js_free(ctx, file);
+  return ret;
 }
 
-char*
-js_find_module_ext(JSContext* ctx, const char* name, const char* ext) {
+static char*
+search_module(JSContext* ctx, const char* module_name) {
   const char* module_path;
+  char* file;
+  
+  /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\"" HL(")", PRN) "\n", __func__, module_name); /* clang-format on */ 
 
-  if((module_path = getenv("QUICKJS_MODULE_PATH"))) {
-    char* file;
-    if((file = js_find_module_ext_path(ctx, name, ext, module_path)))
-      return file;
-  }
-  return js_find_module_ext_path(ctx, name, ext, js_default_module_path);
+  assert(is_searchable(module_name));
+
+  if(!(module_path = getenv("QUICKJS_MODULE_PATH")))
+    module_path = js_default_module_path;
+
+  return search_list(ctx, module_name, module_path);
 }
 
-char*
-js_add_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
-  struct stat st;
-  char* file = NULL;
-  size_t i = strlen(module_name);
+static char*
+find_suffix(JSContext* ctx, const char* module_name, find_module_function* fn) {
+  size_t i, n, len = strlen(module_name);
+  char *file = 0, *p;
 
-  file = js_malloc(ctx, i + strlen(ext) + 1);
+  /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\" " HL("fn", ARG) "=%s" HL(")", PRN) "\n", __func__, module_name, fn == &is_module ? "is_module": fn == &search_module ? "search_module": "<unknown>"); /* clang-format on */
 
-  strcpy(file, module_name);
-  strcpy(&file[i], ext);
+  if(!(p = js_mallocz(ctx, (len + 31) & (~0xf))))
+    return 0;
 
-  if(stat(file, &st) == -1) {
-    js_free(ctx, file);
-    file = 0;
+  strcpy(p, module_name);
+  n = countof(js_optional_module_extensions);
+  for(i = 0; i < n; i++) {
+    p[len] = '\0';
+    if(has_suffix(p, js_optional_module_extensions[i]))
+      continue;
+    strcat(p, js_optional_module_extensions[i]);
+
+    if((file = fn(ctx, p)))
+      break;
   }
-
+  if(p != file)
+    js_free(ctx, p);
   return file;
 }
 
-char*
-js_find_module(JSContext* ctx, const char* module_name) {
-  char* ret = NULL;
-  size_t len;
+static char*
+locate_module(JSContext* ctx, const char* module_name) {
+  char* ret = 0;
+  BOOL searchable = is_searchable(module_name);
+  BOOL suffixed = module_has_suffix(ctx, module_name);
+  find_module_function* fn = searchable ? &search_module : &is_module;
 
-  while(!strncmp(module_name, "./", 2)) module_name += 2;
-  len = strlen(module_name);
+  if(!suffixed)
+    ret = find_suffix(ctx, module_name, fn);
+  else
+    ret = fn(ctx, module_name);
 
-  if(strchr(module_name, '/') == NULL || has_suffix(module_name, ".so"))
-    ret = js_find_module_ext(ctx, module_name, ".so");
-  else if(!has_suffix(module_name, ".js")) {
-    if(!(ret = js_add_module_ext(ctx, module_name, "/index.js")))
-      ret = js_add_module_ext(ctx, module_name, ".js");
-  }
+ /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\"" HL(")", PRN) " " HL("searchable", VAR) "=%s " HL("suffixed", VAR) "=%s " HL("fn", VAR) "=%s [result: %s]\n", __func__, module_name, searchable ? "TRUE" : "FALSE", suffixed ? "TRUE" : "FALSE", searchable ? "search_module" : "is_module", ret); /* clang-format on */ 
 
-  if(ret == NULL)
-    ret = js_find_module_ext(ctx, module_name, ".js");
   return ret;
 }
 
 static JSModuleDef*
-js_find_module_path(JSContext* ctx, const char* module_name, void* opaque) {
-  char* filename;
-  JSModuleDef* ret = NULL;
-  if(module_name[0] == '/' /*|| (module_name[0] == '.' && module_name[1] == '/')*/)
-    filename = js_strdup(ctx, module_name);
-  else
-    filename = js_find_module(ctx, module_name);
+js_search_module(JSContext* ctx, const char* module_name, void* opaque) {
+  char* file;
+  JSModuleDef* ret = 0;
 
-  if(filename) {
-    ret = js_module_loader(ctx, filename, opaque);
-    js_free(ctx, filename);
+  if(!(file = is_module(ctx, module_name)))
+    file = locate_module(ctx, module_name);
+
+ 
+
+  if(file) {
+    ret = js_module_loader(ctx, file, opaque);
+    js_free(ctx, file);
   }
+   /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\" " HL("opaque", ARG) "=%p" HL(")", PRN) " " HL("file", VAR) "=%s [result: %s]\n", __func__, module_name, opaque, file,ret); /* clang-format on */ 
   return ret;
 }
 
-JSModuleLoaderFunc* js_module_loader_path = &js_find_module_path;
+JSModuleLoaderFunc* js_module_loader_path = &js_search_module;
 
 void
 js_std_set_module_loader_func(JSModuleLoaderFunc* func) {
