@@ -69,6 +69,25 @@ js_find_module_ext(JSContext* ctx, const char* name, const char* ext) {
 }
 
 char*
+js_add_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
+  struct stat st;
+  char* file = NULL;
+  size_t i = strlen(module_name);
+
+  file = js_malloc(ctx, i + strlen(ext) + 1);
+
+  strcpy(file, module_name);
+  strcpy(&file[i], ext);
+
+  if(stat(file, &st) == -1) {
+    js_free(ctx, file);
+    file = 0;
+  }
+
+  return file;
+}
+
+char*
 js_find_module(JSContext* ctx, const char* module_name) {
   char* ret = NULL;
   size_t len;
@@ -76,8 +95,12 @@ js_find_module(JSContext* ctx, const char* module_name) {
   while(!strncmp(module_name, "./", 2)) module_name += 2;
   len = strlen(module_name);
 
-  if(strchr(module_name, '/') == NULL || (len >= 3 && !strcmp(&module_name[len - 3], ".so")))
+  if(strchr(module_name, '/') == NULL || has_suffix(module_name, ".so"))
     ret = js_find_module_ext(ctx, module_name, ".so");
+  else if(!has_suffix(module_name, ".js")) {
+    if(!(ret = js_add_module_ext(ctx, module_name, "/index.js")))
+      ret = js_add_module_ext(ctx, module_name, ".js");
+  }
 
   if(ret == NULL)
     ret = js_find_module_ext(ctx, module_name, ".js");
@@ -88,8 +111,8 @@ static JSModuleDef*
 js_find_module_path(JSContext* ctx, const char* module_name, void* opaque) {
   char* filename;
   JSModuleDef* ret = NULL;
-  if(module_name[0] == '/' || (module_name[0] == '.' && module_name[1] == '/'))
-    filename = js_strdup(ctx, module_name); 
+  if(module_name[0] == '/' /*|| (module_name[0] == '.' && module_name[1] == '/')*/)
+    filename = js_strdup(ctx, module_name);
   else
     filename = js_find_module(ctx, module_name);
 
