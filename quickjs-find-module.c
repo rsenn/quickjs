@@ -12,7 +12,8 @@ typedef char* find_module_function(JSContext*, const char*);
 #define PRN "36;1"
 #define FUN "33;1"
 #define ARG "35;1"
-#define VAR "32;1"
+#define VAR "1;34"
+#define PRT_BOOL(b) ((b) ? HL("TRUE", "0;32") : HL("FALSE", "0;31"))
 
 const char* js_default_module_path = "."
 #ifdef QUICKJS_MODULE_PATH
@@ -68,7 +69,7 @@ static char*
 is_module(JSContext* ctx, const char* module_name) {
   BOOL yes = is_file(module_name);
 
- /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\"" HL(")", PRN) "=%s\n", __func__, module_name, yes ? "TRUE" : "FALSE"); /* clang-format on */ 
+  /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\"" HL(")", PRN) "=%s\n", __func__, module_name, PRT_BOOL(yes)); /* clang-format on */
 
   return yes ? js_strdup(ctx, module_name) : 0;
 }
@@ -90,7 +91,7 @@ search_list(JSContext* ctx, const char* module_name, const char* path) {
   const char* s;
   char *ret = 0, *file = 0;
   size_t i, j = strlen(module_name);
-  
+
   /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\" " HL("path", ARG) "=\"%s\"" HL(")", PRN) "\n", __func__, module_name, path); /* clang-format on */
 
   if(!(file = js_malloc(ctx, strlen(path) + 1 + strlen(module_name) + 1)))
@@ -116,8 +117,8 @@ static char*
 search_module(JSContext* ctx, const char* module_name) {
   const char* module_path;
   char* file;
-  
-  /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\"" HL(")", PRN) "\n", __func__, module_name); /* clang-format on */ 
+
+  /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\"" HL(")", PRN) "\n", __func__, module_name); /* clang-format on */
 
   assert(is_searchable(module_name));
 
@@ -155,19 +156,19 @@ find_suffix(JSContext* ctx, const char* module_name, find_module_function* fn) {
 
 static char*
 locate_module(JSContext* ctx, const char* module_name) {
-  char* ret = 0;
+  char* path = 0;
   BOOL searchable = is_searchable(module_name);
   BOOL suffixed = module_has_suffix(ctx, module_name);
   find_module_function* fn = searchable ? &search_module : &is_module;
 
   if(!suffixed)
-    ret = find_suffix(ctx, module_name, fn);
+    path = find_suffix(ctx, module_name, fn);
   else
-    ret = fn(ctx, module_name);
+    path = fn(ctx, module_name);
 
- /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\"" HL(")", PRN) " " HL("searchable", VAR) "=%s " HL("suffixed", VAR) "=%s " HL("fn", VAR) "=%s [result: %s]\n", __func__, module_name, searchable ? "TRUE" : "FALSE", suffixed ? "TRUE" : "FALSE", searchable ? "search_module" : "is_module", ret); /* clang-format on */ 
+  /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\"" HL(")", PRN) " " HL("searchable", VAR) "=%s " HL("suffixed", VAR) "=%s " HL("fn", VAR) "=%s " HL("result", VAR) "=%s\n", __func__, module_name,  PRT_BOOL(searchable),  PRT_BOOL(suffixed), searchable ? "search_module" : "is_module", path); /* clang-format on */
 
-  return ret;
+  return path;
 }
 
 static JSModuleDef*
@@ -178,13 +179,11 @@ js_search_module(JSContext* ctx, const char* module_name, void* opaque) {
   if(!(file = is_module(ctx, module_name)))
     file = locate_module(ctx, module_name);
 
- 
-
   if(file) {
     ret = js_module_loader(ctx, file, opaque);
     js_free(ctx, file);
   }
-   /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\" " HL("opaque", ARG) "=%p" HL(")", PRN) " " HL("file", VAR) "=%s [result: %s]\n", __func__, module_name, opaque, file,ret); /* clang-format on */ 
+  /* clang-format off */ printf(HL("%16s", FUN) HL("(", PRN) HL("module_name", ARG) "=\"%s\" " HL("opaque", ARG) "=%p" HL(")", PRN) " " HL("file", VAR) "=%s " HL("result", VAR) "=%p\n", __func__, module_name, opaque, file,ret); /* clang-format on */
   return ret;
 }
 
