@@ -1,7 +1,6 @@
 function(config_module TARGET_NAME)
   if(QUICKJS_LIBRARY_DIR)
-    set_target_properties(${TARGET_NAME} PROPERTIES LINK_DIRECTORIES
-                                                    "${QUICKJS_LIBRARY_DIR}")
+    set_target_properties(${TARGET_NAME} PROPERTIES LINK_DIRECTORIES "${QUICKJS_LIBRARY_DIR}")
   endif(QUICKJS_LIBRARY_DIR)
   if(QUICKJS_MODULE_DEPENDENCIES)
     target_link_libraries(${TARGET_NAME} ${QUICKJS_MODULE_DEPENDENCIES})
