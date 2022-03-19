@@ -208,12 +208,12 @@ cfg-mingw() {
 }
 cfg-mingw32() {
  (host=i686-w64-mingw32
-  prefix=/usr/$host/sys-root/mingw32 \
+  prefix=/usr/$host/sys-root/mingw \
     cfg-mingw "$@")
 }
 cfg-mingw64() {
   (host=x86_64-w64-mingw32
-  prefix=/usr/$host/sys-root/mingw64 \
+  prefix=/usr/$host/sys-root/mingw \
     cfg-mingw "$@")
 }
 

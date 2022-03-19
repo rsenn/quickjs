@@ -35,7 +35,7 @@ function(check_flag FLAG VAR)
 endfunction(check_flag FLAG VAR)
 
 macro(check_flags FLAGS)
-  message("Checking flags ${FLAGS} ${ARGN}")
+  message(STATUS "Checking flags ${FLAGS} ${ARGN}")
   foreach(FLAG ${FLAGS})
     check_flag(${FLAG} "" ${ARGN})
   endforeach(FLAG ${FLAGS})
