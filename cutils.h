@@ -34,8 +34,13 @@
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 #define force_inline inline __attribute__((always_inline))
+#ifdef _MSC_VER
+#define no_inline __declspec(noinline)
+#define __maybe_unused
+#else
 #define no_inline __attribute__((noinline))
 #define __maybe_unused __attribute__((unused))
+#endif
 
 #define xglue(x, y) x##y
 #define glue(x, y) xglue(x, y)
@@ -257,7 +262,11 @@ static inline int
 dbuf_put_u64(DynBuf* s, uint64_t val) {
   return dbuf_put(s, (uint8_t*)&val, 8);
 }
-int __attribute__((format(printf, 2, 3))) dbuf_printf(DynBuf* s, const char* fmt, ...);
+int
+#ifndef _MSC_VER
+__attribute__((format(printf, 2, 3)))
+#endif
+	dbuf_printf(DynBuf* s, const char* fmt, ...);
 void dbuf_free(DynBuf* s);
 static inline BOOL
 dbuf_error(DynBuf* s) {
