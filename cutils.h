@@ -49,6 +49,13 @@
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
+#ifdef __GNUC__
+#define pack( st ) st __attribute__((__packed__))
+#endif
+
+#ifdef _MSC_VER
+#define pack( st ) __pragma( pack(push, 1) ) st __pragma( pack(pop))
+#endif
 typedef int BOOL;
 
 #ifndef FALSE
@@ -135,17 +142,17 @@ ctz64(uint64_t a) {
   return __builtin_ctzll(a);
 }
 
-struct __attribute__((packed)) packed_u64 {
+pack(struct packed_u64 {
   uint64_t v;
-};
+});
 
-struct __attribute__((packed)) packed_u32 {
+pack(struct packed_u32 {
   uint32_t v;
-};
+});
 
-struct __attribute__((packed)) packed_u16 {
+pack(struct packed_u16 {
   uint16_t v;
-};
+});
 
 static inline uint64_t
 get_u64(const uint8_t* tab) {
