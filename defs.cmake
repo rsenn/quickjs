@@ -65,10 +65,7 @@ string(REPLACE ";" "\n" sources "${QUICKJS_SOURCES}")
 #message("QUICKJS_SOURCES = ${QUICKJS_SOURCES}")
 # dump(QUICKJS_SOURCES)
 
-execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine
-                OUTPUT_VARIABLE SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseMultiArch.cmake)
 
 string(REGEX REPLACE "-pc-" "-" QUICKJS_HOST_ARCH "${SYSTEM_NAME}")
 
