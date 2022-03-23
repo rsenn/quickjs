@@ -1,5 +1,6 @@
 #include "quickjs.h"
 #include "quickjs-libc.h"
+#include "quickjs-config.h"
 #include "cutils.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -29,8 +30,18 @@ const char* js_default_module_path = "."
 #endif
     ;
 
+#ifndef CONFIG_SHEXT
+#ifdef _WIN32
+#define CONFIG_SHEXT ".dll"
+#elif defined(__APPLE__)
+#define CONFIG_SHEXT ".dylib"
+#else
+#define CONFIG_SHEXT ".so"
+#endif
+#endif
+
 static const char* js_optional_module_extensions[] = {
-    ".so",
+    CONFIG_SHEXT,
     ".js",
     "/index.js",
     "/package.json",

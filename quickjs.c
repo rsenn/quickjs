@@ -37623,7 +37623,7 @@ static const JSCFunctionListEntry js_number_funcs[] = {
     JS_PROP_DOUBLE_DEF("MAX_SAFE_INTEGER", 9007199254740991.0, 0),  /* ES6 */
     JS_PROP_DOUBLE_DEF("MIN_SAFE_INTEGER", -9007199254740991.0, 0), /* ES6 */
                                                                     // JS_CFUNC_DEF("__toInteger", 1, js_number___toInteger ),
-    // JS_CFUNC_DEF("__toLength", 1, js_number___toLength ),
+                                                                    // JS_CFUNC_DEF("__toLength", 1, js_number___toLength ),
 };
 
 static JSValue

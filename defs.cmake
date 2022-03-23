@@ -93,6 +93,7 @@ endif(QUICKJS_CROSS_ARCH)
 #option(USE_WORKER "Enable worker support" ON)
 
 set(CONFIG_VERSION "${QUICKJS_VERSION}" CACHE STRING "QuickJS version")
+set(CONFIG_SHEXT "${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "Shared module extension")
 
 file(
   WRITE "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc"
