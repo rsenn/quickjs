@@ -5,7 +5,7 @@ function(make_module FNAME)
   string(TOUPPER "${FNAME}" UUNAME)
   string(REGEX REPLACE "-" "_" UNAME "${UUNAME}")
 
-  set(TARGET_NAME qjs-${NAME})
+  set(TARGET_NAME quickjs-${NAME})
 
   if(ARGN)
     set(SOURCES ${ARGN})
