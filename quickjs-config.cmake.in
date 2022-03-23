@@ -22,6 +22,12 @@
 /* CONFIG_DEBUGGER - define it if you want debug protocol support */
 #cmakedefine CONFIG_DEBUGGER 1
 
+/* QUICKJS_C_MODULE_DIR - Native C module directory */
+#cmakedefine QUICKJS_C_MODULE_DIR "@QUICKJS_C_MODULE_DIR@"
+
+/* QUICKJS_JS_MODULE_DIR - JS module directory */
+#cmakedefine QUICKJS_JS_MODULE_DIR "@QUICKJS_JS_MODULE_DIR@"
+
 /* QUICKJS_MODULE_PATH - Module search path */
 #cmakedefine QUICKJS_MODULE_PATH "@QUICKJS_MODULE_PATH@"
 
