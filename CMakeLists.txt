@@ -72,8 +72,7 @@ elseif(WIN32 OR MINGW)
   set(BUILD_SHARED_LIBS TRUE)
 endif()
 
-# link_libraries(${LIBDL} ${LIBM} ${LIBPTHREAD})
-message(STATUS "LIBDL = ${LIBDL}")
+# link_libraries( ${LIBM} ${LIBPTHREAD})
 
 if(CONFIG_DEBUGGER)
   message(STATUS "Enabling quickjs-debugger")
@@ -296,7 +295,8 @@ function(check_func NAME)
   endif(RESULT)
 endfunction(check_func NAME)
 
-set(MATH_FUNCS acos acosh asin asinh atan atan2 atanh cbrt ceil cos cosh exp expm1 fabs fesetround floor fmax fmin fmod hypot isfinite log log10 log1p log2 lrint pow round sin sinh sqrt tan tanh trunc)
+set(MATH_FUNCS acos acosh asin asinh atan atan2 atanh cbrt ceil cos cosh exp expm1 fabs fesetround floor fmax fmin fmod hypot isfinite log log10 log1p log2 lrint pow round sin sinh sqrt tan tanh
+               trunc)
 foreach(MATH_FUNC ${MATH_FUNCS})
   check_func(${MATH_FUNC} ${LIBM})
 endforeach(MATH_FUNC ${MATH_FUNCS})
@@ -449,6 +449,11 @@ if(${SYSTEM_NAME} MATCHES wasi)
   set(BUILD_QJSC OFF)
 endif(${SYSTEM_NAME} MATCHES wasi)
 
+if(LIBDL)
+  message(STATUS "LIBDL = ${LIBDL}")
+  link_libraries(${LIBDL})
+endif(LIBDL)
+
 if(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
   set(QJS "qjsc")
   set(QJS_DEPS)
@@ -461,14 +466,14 @@ else(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
   set(QJSC_DEPS qjsc)
 endif(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
 
-add_custom_command(OUTPUT repl.c COMMAND "${QJSC}" -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from repl.js using qjs compiler" SOURCES
-                                                                                                                                                                                    ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
+add_custom_command(OUTPUT repl.c COMMAND "${QJSC}" -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                   COMMENT "Generate from repl.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
 
 add_custom_command(OUTPUT qjscalc.c COMMAND "${QJSC}" -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                    COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
 
-add_custom_target(hello.c COMMAND "${QJSC}" -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                  COMMENT "Generate from hello.js using qjs compiler" SOURCES examples/hello.js)
+add_custom_target(hello.c COMMAND "${QJSC}" -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js DEPENDS ${QJSC_DEPS}
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generate from hello.js using qjs compiler" SOURCES examples/hello.js)
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 configure_file(quickjs-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
@@ -482,8 +487,8 @@ set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
   set_target_properties(${A_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 endif(NOT BUILD_SHARED_LIBS)
-target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
-# message("target_link_libraries ${A_NAME} PRIVATE ${LIBDL} ${LIBM} ${LIBPTHREAD}")
+target_link_libraries(${A_NAME} PUBLIC ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
+# message("target_link_libraries ${A_NAME} PRIVATE ${LIBM} ${LIBPTHREAD}")
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
@@ -508,7 +513,7 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   endif("${CMAKE_SHARED_LIBRARY_SUFFIX}" MATCHES ".so")
   set_target_properties(${SO_NAME} PROPERTIES SUFFIX "${SOSUFFIX}")
 
-  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
+  target_link_libraries(${SO_NAME} PUBLIC ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 if(LIB_TARGETS)
@@ -523,7 +528,7 @@ install(FILES ${CMAKE_SCRIPTS} DESTINATION ${QUICKJS_PREFIX}/lib/cmake)
 add_executable(qjs qjs.c ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER} ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
 
 # target_link_libraries(qjs ${QUICKJS_LIBRARY})
-target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBDL} ${LIBWS2_32})
+target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBWS2_32})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
 target_compile_definitions(qjs PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
@@ -533,9 +538,10 @@ if(WASI)
 endif(WASI)
 if(BUILD_QJSC)
   add_executable(qjsc qjsc.c ${QUICKJS_SOURCES})
-  target_link_libraries(qjsc ${LIBM} ${LIBDL} ${LIBPTHREAD} ${LIBWS2_32})
+  target_link_libraries(qjsc ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
-  target_compile_definitions(qjsc PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_BIGNUM=1)
+  target_compile_definitions(qjsc PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" _GNU_SOURCE=1 BUILD_QUICKJS=1
+                                          HAVE_QUICKJS_CONFIG_H=1 CONFIG_BIGNUM=1)
   install(TARGETS qjsc DESTINATION ${QUICKJS_PREFIX}/bin)
 endif(BUILD_QJSC)
 
@@ -590,6 +596,7 @@ endforeach(MODULE_SUBDIR ${MODULE_SUBDIRS})
 
 file(
   WRITE "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc"
-  "prefix=${QUICKJS_PREFIX}\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: quickjs\nDescription: QuickJS\nVersion: ${QUICKJS_VERSION}\nLibs: -L\${libdir} -lquickjs\nCflags: -I\${includedir}\n")
+  "prefix=${QUICKJS_PREFIX}\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: quickjs\nDescription: QuickJS\nVersion: ${QUICKJS_VERSION}\nLibs: -L\${libdir} -lquickjs\nCflags: -I\${includedir}\n"
+)
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc" DESTINATION "${QUICKJS_PREFIX}/lib/pkgconfig")
