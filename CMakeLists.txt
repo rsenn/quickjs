@@ -536,7 +536,7 @@ target_link_libraries(${A_NAME} PUBLIC ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 # message("target_link_libraries ${A_NAME} PRIVATE ${LIBM} ${LIBPTHREAD}")
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
-  add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
+  add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_INCLUDES} ${QUICKJS_SOURCES_DEBUGGER})
   target_compile_definitions(
     ${SO_NAME}
     PRIVATE _GNU_SOURCE=1
