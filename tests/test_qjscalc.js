@@ -6,9 +6,18 @@ function assert(actual, expected, message) {
 
   if(actual === expected) return;
 
-  if(actual !== null && expected !== null && typeof actual == 'object' && typeof expected == 'object' && actual.toString() === expected.toString()) return;
+  if(
+    actual !== null &&
+    expected !== null &&
+    typeof actual == 'object' &&
+    typeof expected == 'object' &&
+    actual.toString() === expected.toString()
+  )
+    return;
 
-  throw Error('assertion failed: got |' + actual + '|' + ', expected |' + expected + '|' + (message ? ' (' + message + ')' : ''));
+  throw Error(
+    'assertion failed: got |' + actual + '|' + ', expected |' + expected + '|' + (message ? ' (' + message + ')' : '')
+  );
 }
 
 function assertThrows(err, func) {
@@ -176,11 +185,24 @@ function test_series() {
   b = a.apply(0.1);
   assert(b == 1.1111);
 
-  assert((exp((3 * X) ^ (2 + O(X ^ 10))) == 1 + 3 * X) ^ (2 + (9 / 2) * X) ^ (4 + (9 / 2) * X) ^ (6 + (27 / 8) * X) ^ (8 + O(X ^ 10)));
+  assert(
+    (exp((3 * X) ^ (2 + O(X ^ 10))) == 1 + 3 * X) ^
+      (2 + (9 / 2) * X) ^
+      (4 + (9 / 2) * X) ^
+      (6 + (27 / 8) * X) ^
+      (8 + O(X ^ 10))
+  );
   assert((sin(X + O(X ^ 6)) == X - (1 / 6) * X) ^ (3 + (1 / 120) * X) ^ (5 + O(X ^ 6)));
   assert((cos(X + O(X ^ 6)) == 1 - (1 / 2) * X) ^ (2 + (1 / 24) * X) ^ (4 + O(X ^ 6)));
   assert((tan(X + O(X ^ 8)) == X + (1 / 3) * X) ^ (3 + (2 / 15) * X) ^ (5 + (17 / 315) * X) ^ (7 + O(X ^ 8)));
-  assert((1 + X + O(X ^ 6)) ^ (2 + X == 1 + 2 * X + 2 * X) ^ (2 + (3 / 2) * X) ^ (3 + (5 / 6) * X) ^ (4 + (5 / 12) * X) ^ (5 + O(X ^ 6)));
+  assert(
+    (1 + X + O(X ^ 6)) ^
+      (2 + X == 1 + 2 * X + 2 * X) ^
+      (2 + (3 / 2) * X) ^
+      (3 + (5 / 6) * X) ^
+      (4 + (5 / 12) * X) ^
+      (5 + O(X ^ 6))
+  );
 }
 
 function test_matrix() {
@@ -221,7 +243,12 @@ function test_matrix() {
   assert(trans([1, 2, 3]) == [[1, 2, 3]]);
   assert(trace(a) == 5);
 
-  assert((charpoly(Matrix.hilbert(4)) == X) ^ (4 - (176 / 105) * X) ^ (3 + (3341 / 12600) * X) ^ (2 - (41 / 23625) * X + 1 / 6048000));
+  assert(
+    (charpoly(Matrix.hilbert(4)) == X) ^
+      (4 - (176 / 105) * X) ^
+      (3 + (3341 / 12600) * X) ^
+      (2 - (41 / 23625) * X + 1 / 6048000)
+  );
   assert(det(Matrix.hilbert(4)) == 1 / 6048000);
 
   a = [

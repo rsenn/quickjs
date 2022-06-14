@@ -718,7 +718,22 @@ function sort_bench(text) {
     if(n > 0) arr[n - 1] = def[0];
   }
 
-  var sort_cases = [random, random8, random1, jigsaw, hill, comb, crisscross, zero, increasing, decreasing, alternate, incbutone, incbutlast, incbutfirst];
+  var sort_cases = [
+    random,
+    random8,
+    random1,
+    jigsaw,
+    hill,
+    comb,
+    crisscross,
+    zero,
+    increasing,
+    decreasing,
+    alternate,
+    incbutone,
+    incbutlast,
+    incbutfirst
+  ];
 
   var n = sort_bench.array_size || 10000;
   var array_type = sort_bench.array_type || Array;
@@ -768,7 +783,9 @@ function sort_bench(text) {
     }
     while(i < n && arr[i] === void 0) i++;
     if(i < n) {
-      console.log('sort_bench: out of order error for ' + f.name + ' at offset ' + (i - 1) + ': ' + arr[i - 1] + ' > ' + arr[i]);
+      console.log(
+        'sort_bench: out of order error for ' + f.name + ' at offset ' + (i - 1) + ': ' + arr[i - 1] + ' > ' + arr[i]
+      );
     }
     if(sort_bench.verbose) log_one('sort_' + f.name, n, ti, n * 100);
   }
