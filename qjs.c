@@ -47,7 +47,7 @@
 
 #if defined(HAVE_MALLOC_USABLE_SIZE) && !defined(DONT_HAVE_MALLOC_USABLE_SIZE)
 #ifndef HAVE_MALLOC_USABLE_SIZE_DEFINITION
-extern size_t malloc_usable_size();
+//extern size_t malloc_usable_size();
 #endif
 #endif
 
