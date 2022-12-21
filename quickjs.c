@@ -15281,7 +15281,10 @@ JS_CallInternal(JSContext* caller_ctx,
 #define BREAK SWITCH(pc)
 
   const void* const* active_dispatch_table =
-      caller_ctx->rt->debugger_info.transport_close ? debugger_dispatch_table : dispatch_table;
+#ifdef CONFIG_DEBUGGER
+      caller_ctx->rt->debugger_info.transport_close ? debugger_dispatch_table : 
+#endif
+        dispatch_table;
 #endif
 
   if(js_poll_interrupts(caller_ctx))
