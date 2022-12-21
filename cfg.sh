@@ -518,7 +518,7 @@ cfg-aarch64() {
 }
 
 cfg-rpi4() {
- (: ${TOOLCHAIN=/opt/cmake-toolchains/rpi4.toolchain.cmake}
+ (TOOLCHAIN=/opt/cmake-toolchains/rpi4.toolchain.cmake
   : ${builddir=build/rpi4}
   : ${prefix=/usr/local}
   cfg "$@") 
