@@ -553,7 +553,8 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
     set(SOPREFIX "lib")
   endif()
   set_target_properties(
-    ${SO_NAME} PROPERTIES SOVERSION "${QUICKJS_SOVERSION}" PREFIX "${SOPREFIX}"
+    ${SO_NAME} PROPERTIES #SOVERSION "${QUICKJS_SOVERSION}"
+    PREFIX "${SOPREFIX}"
                           OUTPUT_NAME ${PROJECT_NAME})
   get_target_property(SOSUFFIX ${SO_NAME} SUFFIX)
 
