@@ -520,7 +520,6 @@ configure_file(quickjs-config.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
 # add_custom_command( OUTPUT ${QUICKJS_SOURCES} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
-
 add_library(${A_NAME} STATIC ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
 target_compile_definitions(
   ${A_NAME}
@@ -596,7 +595,7 @@ if(WASI)
   set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc")
 endif(WASI)
 if(BUILD_QJSC)
-  add_executable(qjsc qjsc.c ${QUICKJS_SOURCES})
+  add_executable(qjsc qjsc.c ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
   target_link_libraries(qjsc ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
   target_compile_definitions(
