@@ -791,6 +791,7 @@ struct JSModuleDef {
   JSExportEntry* export_entries;
   int export_entries_count;
   int export_entries_size;
+    JSValue promise;
 
   JSStarExportEntry* star_export_entries;
   int star_export_entries_count;
@@ -871,6 +872,14 @@ struct JSShape {
   JSObject* proto;
   JSShapeProperty prop[0]; /* prop_size elements */
 };
+
+typedef struct JSPromiseData {
+    JSPromiseStateEnum promise_state;
+    /* 0=fulfill, 1=reject, list of JSPromiseReactionData.link */
+    struct list_head promise_reactions[2];
+    BOOL is_handled; /* Note: only useful to debug */
+    JSValue promise_result;
+} JSPromiseData;
 
 struct JSObject {
   union {
@@ -1110,6 +1119,12 @@ JS_GetBigDecimal(JSValueConst val) {
 static JSValue JS_NewBigInt(JSContext* ctx);
 static inline bf_t*
 JS_GetBigInt(JSValueConst val) {
+static JSValue js_promise_all(JSContext *ctx, JSValueConst this_val,
+                              int argc, JSValueConst *argv, int magic);
+static JSValue js_promise_then(JSContext *ctx, JSValueConst this_val,
+                               int argc, JSValueConst *argv);
+static JSValue js_array_push(JSContext *ctx, JSValueConst this_val,
+                             int argc, JSValueConst *argv, int unshift);
   JSBigFloat* p = JS_VALUE_GET_PTR(val);
   return &p->num;
 }
@@ -26705,23 +26720,39 @@ js_evaluate_module(JSContext* ctx, JSModuleDef* m) {
     if(m->eval_has_exception) {
       return JS_Throw(ctx, JS_DupValue(ctx, m->eval_exception));
     } else {
-      return JS_UNDEFINED;
+      return JS_DupValue(ctx, m->promise);
     }
   }
 
   m->eval_mark = TRUE;
 
-  for(i = 0; i < m->req_module_entries_count; i++) {
+
+  JSValueConst promises = JS_NewArray(ctx);
+  if (JS_IsException(promises))
+    return JS_EXCEPTION;
+
+  BOOL async = FALSE;
+for(i = 0; i < m->req_module_entries_count; i++) {
     JSReqModuleEntry* rme = &m->req_module_entries[i];
     m1 = rme->module;
     if(!m1->eval_mark) {
       ret_val = js_evaluate_module(ctx, m1);
       if(JS_IsException(ret_val)) {
         m->eval_mark = FALSE;
-        return ret_val;
+        goto clean;
       }
-      JS_FreeValue(ctx, ret_val);
+      if (!JS_IsUndefined(ret_val)) {
+          js_array_push(ctx, promises, 1, (JSValueConst *)&ret_val, 0);
+          JS_FreeValue(ctx, ret_val);
+          async = TRUE;
+      }
     }
+  }
+
+  JSValue promise = js_promise_all(ctx, ctx->promise_ctor, 1, &promises, 0);
+  if (JS_IsException(promise)) {
+      JS_FreeValue(ctx, (JSValue)promises);
+      return JS_EXCEPTION;
   }
 
   if(m->init_func) {
@@ -26730,17 +26761,40 @@ js_evaluate_module(JSContext* ctx, JSModuleDef* m) {
       ret_val = JS_EXCEPTION;
     else
       ret_val = JS_UNDEFINED;
+  } else if (!async) {
+      ret_val = js_async_function_call(ctx, m->func_obj, JS_UNDEFINED, 0, NULL, 0);
+      JS_FreeValue(ctx, m->func_obj);
+      m->func_obj = JS_UNDEFINED;
+      JSPromiseData *s = JS_GetOpaque(ret_val, JS_CLASS_PROMISE);
+      if (s->promise_state != JS_PROMISE_PENDING) {
+          JSValue ret_val2 = ret_val;
+          if (s->promise_state == JS_PROMISE_REJECTED)
+              ret_val = JS_Throw(ctx, JS_DupValue(ctx, s->promise_result));
+          else
+              ret_val = JS_DupValue(ctx, s->promise_result);
+          JS_FreeValue(ctx, ret_val2);
+      }
   } else {
-    ret_val = JS_CallFree(ctx, m->func_obj, JS_UNDEFINED, 0, NULL);
-    m->func_obj = JS_UNDEFINED;
+      JSValueConst funcs[2];
+      funcs[0] = JS_NewCFunctionData(ctx, js_async_function_call2, 0, 0, 1, (JSValueConst *)&m->func_obj);
+      funcs[1] = JS_UNDEFINED;
+      ret_val = js_promise_then(ctx, promise, 2, funcs);
+      JS_FreeValue(ctx, (JSValue)funcs[0]);
+      JS_FreeValue(ctx, m->func_obj);
+      m->func_obj = JS_UNDEFINED;
   }
   if(JS_IsException(ret_val)) {
     /* save the thrown exception value */
     m->eval_has_exception = TRUE;
     m->eval_exception = JS_DupValue(ctx, ctx->rt->current_exception);
+  } else if (!JS_IsUndefined(ret_val)) {
+    m->promise = JS_DupValue(ctx, ret_val);
   }
   m->eval_mark = FALSE;
   m->evaluated = TRUE;
+clean:
+  JS_FreeValue(ctx, (JSValue)promises);
+  JS_FreeValue(ctx, promise);
   return ret_val;
 }
 
@@ -27046,6 +27100,7 @@ js_parse_import(JSParseState* s) {
           fail:
             JS_FreeAtom(ctx, local_name);
             JS_FreeAtom(ctx, import_name);
+    m->promise = JS_UNDEFINED;
             return -1;
           }
         } else {
@@ -27067,6 +27122,7 @@ js_parse_import(JSParseState* s) {
     module_name = js_parse_from_clause(s);
     if(module_name == JS_ATOM_NULL)
       return -1;
+    JS_MarkValue(rt, m->promise, mark_func);
   }
   idx = add_req_module_entry(ctx, m, module_name);
   JS_FreeAtom(ctx, module_name);
@@ -27102,6 +27158,7 @@ js_parse_source_element(JSParseState* s) {
 
 static JSFunctionDef*
 js_new_function_def(
+    JS_FreeValue(ctx, m->promise);
     JSContext* ctx, JSFunctionDef* parent, BOOL is_eval, BOOL is_func_expr, const char* filename, int line_num) {
   JSFunctionDef* fd;
 
@@ -28213,6 +28270,18 @@ resolve_scope_var(JSContext* ctx,
         case OP_scope_make_ref:
           if(s->closure_var[idx].var_kind == JS_VAR_FUNCTION_NAME) {
             /* Create a dummy object reference for the func_var */
+static JSValue js_dynamic_import_resolve(JSContext *ctx, JSValueConst this_val,
+                                         int argc, JSValueConst *argv, int magic, JSValue *func_data)
+{
+    return JS_Call(ctx, func_data[0], JS_UNDEFINED, 1, (JSValueConst *)&func_data[2]);
+}
+
+static JSValue js_dynamic_import_reject(JSContext *ctx, JSValueConst this_val,
+                                        int argc, JSValueConst *argv, int magic, JSValue *func_data)
+{
+    return JS_Call(ctx, func_data[1], JS_UNDEFINED, 1, (JSValueConst *)&argv[0]);
+}
+
             dbuf_putc(bc, OP_object);
             dbuf_putc(bc, OP_get_var_ref);
             dbuf_put_u16(bc, idx);
@@ -28245,6 +28314,21 @@ resolve_scope_var(JSContext* ctx,
         case OP_scope_put_var:
         case OP_scope_put_var_init:
           is_put = (op == OP_scope_put_var || op == OP_scope_put_var_init);
+    if (!JS_IsUndefined(m->promise)) {
+        JSValueConst args[] = {argv[0], argv[1], ns};
+        JSValueConst funcs[2];
+        funcs[0] = JS_NewCFunctionData(ctx, js_dynamic_import_resolve, 0, 0, 3, args);
+        funcs[1] = JS_NewCFunctionData(ctx, js_dynamic_import_reject, 0, 0, 3, args);
+        JS_FreeValue(ctx, js_promise_then(ctx, m->promise, 2, funcs));
+
+        JS_FreeValue(ctx, (JSValue)funcs[0]);
+        JS_FreeValue(ctx, (JSValue)funcs[1]);
+        JS_FreeValue(ctx, ns);
+        JS_FreeCString(ctx, basename);
+
+        return JS_UNDEFINED;
+    }
+
           if(is_put) {
             if(s->closure_var[idx].is_lexical) {
               if(op == OP_scope_put_var_init) {
@@ -28296,6 +28380,12 @@ resolve_scope_var(JSContext* ctx,
     case OP_scope_get_var:
     case OP_scope_put_var:
       dbuf_putc(bc, OP_get_var_undef + (op - OP_scope_get_var_undef));
+static JSValue js_async_function_call2(JSContext *ctx, JSValueConst this_val,
+                                       int argc, JSValueConst *argv, int magic, JSValue *func_data)
+{
+    return js_async_function_call(ctx, func_data[0], this_val, argc, argv, magic);
+}
+
       dbuf_put_u32(bc, JS_DupAtom(ctx, var_name));
       break;
     case OP_scope_put_var_init:
@@ -31669,7 +31759,7 @@ js_parse_program(JSParseState* s) {
 
     emit_op(s, OP_return);
   } else {
-    emit_op(s, OP_return_undef);
+    emit_return(s, FALSE);
   }
 
   return 0;
@@ -33632,6 +33722,10 @@ JS_ReadObjectTag(BCReaderState* s) {
     if(JS_IsException(val)) {
       JS_FreeAtom(ctx, atom);
       goto fail;
+    if (m != NULL) {
+        fd->in_function_body = TRUE;
+        fd->func_kind = JS_FUNC_ASYNC;
+    }
     }
     ret = JS_DefinePropertyValue(ctx, obj, atom, val, JS_PROP_C_W_E);
     JS_FreeAtom(ctx, atom);
@@ -43824,20 +43918,6 @@ static const JSCFunctionListEntry js_generator_proto_funcs[] = {
 
 /* Promise */
 
-typedef enum JSPromiseStateEnum {
-  JS_PROMISE_PENDING,
-  JS_PROMISE_FULFILLED,
-  JS_PROMISE_REJECTED,
-} JSPromiseStateEnum;
-
-typedef struct JSPromiseData {
-  JSPromiseStateEnum promise_state;
-  /* 0=fulfill, 1=reject, list of JSPromiseReactionData.link */
-  struct list_head promise_reactions[2];
-  BOOL is_handled; /* Note: only useful to debug */
-  JSValue promise_result;
-} JSPromiseData;
-
 typedef struct JSPromiseFunctionDataResolved {
   int ref_count;
   BOOL already_resolved;
@@ -46307,6 +46387,22 @@ js_operator_set_mark(JSRuntime* rt, JSValueConst val, JS_MarkFunc* mark_func) {
     }
   }
 }
+JSPromiseStateEnum JS_PromiseState(JSContext *ctx, JSValue promise)
+{
+    JSPromiseData *s = JS_GetOpaque(promise, JS_CLASS_PROMISE);
+    if (!s)
+        return -1;
+    return s->promise_state;
+}
+
+JSValue JS_PromiseResult(JSContext *ctx, JSValue promise)
+{
+    JSPromiseData *s = JS_GetOpaque(promise, JS_CLASS_PROMISE);
+    if (!s)
+        return JS_UNDEFINED;
+    return JS_DupValue(ctx, s->promise_result);
+}
+
 
 /* create an OperatorSet object */
 static JSValue
