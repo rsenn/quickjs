@@ -791,7 +791,7 @@ struct JSModuleDef {
   JSExportEntry* export_entries;
   int export_entries_count;
   int export_entries_size;
-    JSValue promise;
+  JSValue promise;
 
   JSStarExportEntry* star_export_entries;
   int star_export_entries_count;
@@ -1088,6 +1088,12 @@ static JSValue js_compile_regexp(JSContext* ctx, JSValueConst pattern, JSValueCo
 static JSValue js_regexp_constructor_internal(JSContext* ctx, JSValueConst ctor, JSValue pattern, JSValue bc);
 static void gc_decref(JSRuntime* rt);
 static int JS_NewClass1(JSRuntime* rt, JSClassID class_id, const JSClassDef* class_def, JSAtom name);
+static JSValue js_promise_all(JSContext *ctx, JSValueConst this_val,
+                              int argc, JSValueConst *argv, int magic);
+static JSValue js_promise_then(JSContext *ctx, JSValueConst this_val,
+                               int argc, JSValueConst *argv);
+static JSValue js_array_push(JSContext *ctx, JSValueConst this_val,
+                             int argc, JSValueConst *argv, int unshift);
 
 typedef enum JSStrictEqModeEnum {
   JS_EQ_STRICT,
@@ -1119,12 +1125,6 @@ JS_GetBigDecimal(JSValueConst val) {
 static JSValue JS_NewBigInt(JSContext* ctx);
 static inline bf_t*
 JS_GetBigInt(JSValueConst val) {
-static JSValue js_promise_all(JSContext *ctx, JSValueConst this_val,
-                              int argc, JSValueConst *argv, int magic);
-static JSValue js_promise_then(JSContext *ctx, JSValueConst this_val,
-                               int argc, JSValueConst *argv);
-static JSValue js_array_push(JSContext *ctx, JSValueConst this_val,
-                             int argc, JSValueConst *argv, int unshift);
   JSBigFloat* p = JS_VALUE_GET_PTR(val);
   return &p->num;
 }
@@ -15297,7 +15297,7 @@ JS_CallInternal(JSContext* caller_ctx,
 
   const void* const* active_dispatch_table =
 #ifdef CONFIG_DEBUGGER
-      caller_ctx->rt->debugger_info.transport_close ? debugger_dispatch_table : 
+      caller_ctx->rt->debugger_info.transport_close ? debugger_dispatch_table :
 #endif
         dispatch_table;
 #endif
@@ -25522,6 +25522,7 @@ js_mark_module_def(JSRuntime* rt, JSModuleDef* m, JS_MarkFunc* mark_func) {
     }
   }
 
+  JS_MarkValue(rt, m->promise, mark_func);
   JS_MarkValue(rt, m->module_ns, mark_func);
   JS_MarkValue(rt, m->func_obj, mark_func);
   JS_MarkValue(rt, m->eval_exception, mark_func);
@@ -25557,6 +25558,7 @@ js_free_module_def(JSContext* ctx, JSModuleDef* m) {
   }
   js_free(ctx, m->import_entries);
 
+  JS_FreeValue(ctx, m->promise);
   JS_FreeValue(ctx, m->module_ns);
   JS_FreeValue(ctx, m->func_obj);
   JS_FreeValue(ctx, m->eval_exception);
@@ -26623,6 +26625,18 @@ JS_RunModule(JSContext* ctx, const char* basename, const char* filename) {
   return m;
 }
 
+static JSValue js_dynamic_import_resolve(JSContext *ctx, JSValueConst this_val,
+                                         int argc, JSValueConst *argv, int magic, JSValue *func_data)
+{
+    return JS_Call(ctx, func_data[0], JS_UNDEFINED, 1, (JSValueConst *)&func_data[2]);
+}
+
+static JSValue js_dynamic_import_reject(JSContext *ctx, JSValueConst this_val,
+                                        int argc, JSValueConst *argv, int magic, JSValue *func_data)
+{
+    return JS_Call(ctx, func_data[1], JS_UNDEFINED, 1, (JSValueConst *)&argv[0]);
+}
+
 static JSValue
 js_dynamic_import_job(JSContext* ctx, int argc, JSValueConst* argv) {
   JSValueConst* resolving_funcs = argv;
@@ -26653,6 +26667,21 @@ js_dynamic_import_job(JSContext* ctx, int argc, JSValueConst* argv) {
   ns = js_get_module_ns(ctx, m);
   if(JS_IsException(ns))
     goto exception;
+
+  if (!JS_IsUndefined(m->promise)) {
+      JSValueConst args[] = {argv[0], argv[1], ns};
+      JSValueConst funcs[2];
+      funcs[0] = JS_NewCFunctionData(ctx, js_dynamic_import_resolve, 0, 0, 3, args);
+      funcs[1] = JS_NewCFunctionData(ctx, js_dynamic_import_reject, 0, 0, 3, args);
+      JS_FreeValue(ctx, js_promise_then(ctx, m->promise, 2, funcs));
+
+      JS_FreeValue(ctx, (JSValue)funcs[0]);
+      JS_FreeValue(ctx, (JSValue)funcs[1]);
+      JS_FreeValue(ctx, ns);
+      JS_FreeCString(ctx, basename);
+
+      return JS_UNDEFINED;
+  }
 
   ret = JS_Call(ctx, resolving_funcs[0], JS_UNDEFINED, 1, (JSValueConst*)&ns);
   JS_FreeValue(ctx, ret); /* XXX: what to do if exception ? */
@@ -26701,6 +26730,12 @@ js_dynamic_import(JSContext* ctx, JSValueConst specifier) {
   JS_FreeValue(ctx, resolving_funcs[0]);
   JS_FreeValue(ctx, resolving_funcs[1]);
   return promise;
+}
+
+static JSValue js_async_function_call2(JSContext *ctx, JSValueConst this_val,
+                                       int argc, JSValueConst *argv, int magic, JSValue *func_data)
+{
+    return js_async_function_call(ctx, func_data[0], this_val, argc, argv, magic);
 }
 
 /* Run the <eval> function of the module and of all its requested
@@ -27122,7 +27157,6 @@ js_parse_import(JSParseState* s) {
     module_name = js_parse_from_clause(s);
     if(module_name == JS_ATOM_NULL)
       return -1;
-    JS_MarkValue(rt, m->promise, mark_func);
   }
   idx = add_req_module_entry(ctx, m, module_name);
   JS_FreeAtom(ctx, module_name);
@@ -27158,7 +27192,6 @@ js_parse_source_element(JSParseState* s) {
 
 static JSFunctionDef*
 js_new_function_def(
-    JS_FreeValue(ctx, m->promise);
     JSContext* ctx, JSFunctionDef* parent, BOOL is_eval, BOOL is_func_expr, const char* filename, int line_num) {
   JSFunctionDef* fd;
 
@@ -28270,18 +28303,6 @@ resolve_scope_var(JSContext* ctx,
         case OP_scope_make_ref:
           if(s->closure_var[idx].var_kind == JS_VAR_FUNCTION_NAME) {
             /* Create a dummy object reference for the func_var */
-static JSValue js_dynamic_import_resolve(JSContext *ctx, JSValueConst this_val,
-                                         int argc, JSValueConst *argv, int magic, JSValue *func_data)
-{
-    return JS_Call(ctx, func_data[0], JS_UNDEFINED, 1, (JSValueConst *)&func_data[2]);
-}
-
-static JSValue js_dynamic_import_reject(JSContext *ctx, JSValueConst this_val,
-                                        int argc, JSValueConst *argv, int magic, JSValue *func_data)
-{
-    return JS_Call(ctx, func_data[1], JS_UNDEFINED, 1, (JSValueConst *)&argv[0]);
-}
-
             dbuf_putc(bc, OP_object);
             dbuf_putc(bc, OP_get_var_ref);
             dbuf_put_u16(bc, idx);
@@ -28314,20 +28335,6 @@ static JSValue js_dynamic_import_reject(JSContext *ctx, JSValueConst this_val,
         case OP_scope_put_var:
         case OP_scope_put_var_init:
           is_put = (op == OP_scope_put_var || op == OP_scope_put_var_init);
-    if (!JS_IsUndefined(m->promise)) {
-        JSValueConst args[] = {argv[0], argv[1], ns};
-        JSValueConst funcs[2];
-        funcs[0] = JS_NewCFunctionData(ctx, js_dynamic_import_resolve, 0, 0, 3, args);
-        funcs[1] = JS_NewCFunctionData(ctx, js_dynamic_import_reject, 0, 0, 3, args);
-        JS_FreeValue(ctx, js_promise_then(ctx, m->promise, 2, funcs));
-
-        JS_FreeValue(ctx, (JSValue)funcs[0]);
-        JS_FreeValue(ctx, (JSValue)funcs[1]);
-        JS_FreeValue(ctx, ns);
-        JS_FreeCString(ctx, basename);
-
-        return JS_UNDEFINED;
-    }
 
           if(is_put) {
             if(s->closure_var[idx].is_lexical) {
@@ -28380,12 +28387,6 @@ static JSValue js_dynamic_import_reject(JSContext *ctx, JSValueConst this_val,
     case OP_scope_get_var:
     case OP_scope_put_var:
       dbuf_putc(bc, OP_get_var_undef + (op - OP_scope_get_var_undef));
-static JSValue js_async_function_call2(JSContext *ctx, JSValueConst this_val,
-                                       int argc, JSValueConst *argv, int magic, JSValue *func_data)
-{
-    return js_async_function_call(ctx, func_data[0], this_val, argc, argv, magic);
-}
-
       dbuf_put_u32(bc, JS_DupAtom(ctx, var_name));
       break;
     case OP_scope_put_var_init:
@@ -31893,6 +31894,10 @@ __JS_EvalInternal(JSContext* ctx,
   fd = js_new_function_def(ctx, NULL, TRUE, FALSE, filename, 1);
   if(!fd)
     goto fail1;
+  if (m != NULL) {
+      fd->in_function_body = TRUE;
+      fd->func_kind = JS_FUNC_ASYNC;
+  }
   s->cur_func = fd;
   fd->eval_type = eval_type;
   fd->has_this_binding = (eval_type != JS_EVAL_TYPE_DIRECT);
@@ -33722,10 +33727,6 @@ JS_ReadObjectTag(BCReaderState* s) {
     if(JS_IsException(val)) {
       JS_FreeAtom(ctx, atom);
       goto fail;
-    if (m != NULL) {
-        fd->in_function_body = TRUE;
-        fd->func_kind = JS_FUNC_ASYNC;
-    }
     }
     ret = JS_DefinePropertyValue(ctx, obj, atom, val, JS_PROP_C_W_E);
     JS_FreeAtom(ctx, atom);
