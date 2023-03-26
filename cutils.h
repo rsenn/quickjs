@@ -49,7 +49,7 @@
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__TINYC__)
 #define pack(st) st __attribute__((__packed__))
 #endif
 
