@@ -481,7 +481,8 @@ import * as os from 'os';
     var pos = cursor_pos;
     if(cmd.length > 1 && pos > 0) {
       if(pos == cmd.length) pos--;
-      cmd = cmd.substring(0, pos - 1) + cmd.substring(pos, pos + 1) + cmd.substring(pos - 1, pos) + cmd.substring(pos + 1);
+      cmd =
+        cmd.substring(0, pos - 1) + cmd.substring(pos, pos + 1) + cmd.substring(pos - 1, pos) + cmd.substring(pos + 1);
       cursor_pos = pos + 1;
     }
   }
@@ -914,7 +915,11 @@ import * as os from 'os';
       }
       if(typeof a === 'bigfloat' && eval_mode !== 'math') {
         s += 'l';
-      } else if(eval_mode !== 'std' && s.indexOf('.') < 0 && ((radix == 16 && s.indexOf('p') < 0) || (radix == 10 && s.indexOf('e') < 0))) {
+      } else if(
+        eval_mode !== 'std' &&
+        s.indexOf('.') < 0 &&
+        ((radix == 16 && s.indexOf('p') < 0) || (radix == 10 && s.indexOf('e') < 0))
+      ) {
         /* add a decimal point so that the floating point type
                    is visible */
         s += '.0';
@@ -955,7 +960,13 @@ import * as os from 'os';
           std.puts('[circular]');
         } else if(
           has_jscalc &&
-          (a instanceof Fraction || a instanceof Complex || a instanceof Mod || a instanceof Polynomial || a instanceof PolyMod || a instanceof RationalFunction || a instanceof Series)
+          (a instanceof Fraction ||
+            a instanceof Complex ||
+            a instanceof Mod ||
+            a instanceof Polynomial ||
+            a instanceof PolyMod ||
+            a instanceof RationalFunction ||
+            a instanceof Series)
         ) {
           std.puts(a.toString());
         } else {
@@ -1047,7 +1058,15 @@ import * as os from 'os';
         .trim()
         .split(' ');
       if(param.length === 1 && param[0] === '') {
-        std.puts('BigFloat precision=' + prec + ' bits (~' + Math.floor(prec / log2_10) + ' digits), exponent size=' + expBits + ' bits\n');
+        std.puts(
+          'BigFloat precision=' +
+            prec +
+            ' bits (~' +
+            Math.floor(prec / log2_10) +
+            ' digits), exponent size=' +
+            expBits +
+            ' bits\n'
+        );
       } else if(param[0] === 'f16') {
         prec = 11;
         expBits = 5;
@@ -1149,10 +1168,20 @@ import * as os from 'os';
         '\\clear      clear the terminal\n'
     );
     if(has_jscalc) {
-      std.puts('\\a         ' + sel(algebraicMode) + 'algebraic mode\n' + '\\n         ' + sel(!algebraicMode) + 'numeric mode\n');
+      std.puts(
+        '\\a         ' +
+          sel(algebraicMode) +
+          'algebraic mode\n' +
+          '\\n         ' +
+          sel(!algebraicMode) +
+          'numeric mode\n'
+      );
     }
     if(has_bignum) {
-      std.puts("\\p [m [e]]  set the BigFloat precision to 'm' bits\n" + "\\digits n   set the BigFloat precision to 'ceil(n*log2(10))' bits\n");
+      std.puts(
+        "\\p [m [e]]  set the BigFloat precision to 'm' bits\n" +
+          "\\digits n   set the BigFloat precision to 'ceil(n*log2(10))' bits\n"
+      );
       if(!has_jscalc) {
         std.puts('\\mode [std|math] change the running mode (current = ' + eval_mode + ')\n');
       }
