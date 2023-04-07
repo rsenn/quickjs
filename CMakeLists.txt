@@ -62,7 +62,12 @@ endif(NOT QUICKJS_BUILD_ROOT)
 message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "System name: ${SYSTEM_NAME}")
 
-set(BUILD_SHARED_LIBS "${SUPPORT_SHARED_LIBS}")
+#[[if(NOT DEFINED BUILD_SHARED_LIBS)
+  set(BUILD_SHARED_LIBS "${SUPPORT_SHARED_LIBS}" CACHE BOOL "Build quickjs as shared library")
+endif(NOT DEFINED BUILD_SHARED_LIBS)]]
+
+option(BUILD_SHARED_LIBS "Build shared libraries" ${SUPPORT_SHARED_LIBS})
+
 
 if("${SYSTEM_NAME}" MATCHES ".*wasi")
   #message(STATUS "\x1b[1;31mwasienv WASM build\x1b[0m")
@@ -105,7 +110,6 @@ if(CONFIG_NODEBUG)
   add_definitions(-DNDEBUG)
 endif(CONFIG_NODEBUG)
 
-option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
   set(DEBUG ON)
@@ -520,7 +524,6 @@ configure_file(quickjs-config.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
 # add_custom_command( OUTPUT ${QUICKJS_SOURCES} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
-
 add_library(${A_NAME} STATIC ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
 target_compile_definitions(
   ${A_NAME}
@@ -534,9 +537,12 @@ if(NOT BUILD_SHARED_LIBS)
 endif(NOT BUILD_SHARED_LIBS)
 target_link_libraries(${A_NAME} PUBLIC ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 # message("target_link_libraries ${A_NAME} PRIVATE ${LIBM} ${LIBPTHREAD}")
+message("BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
+message("SUPPORT_SHARED_LIBS: ${SUPPORT_SHARED_LIBS}")
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
-  add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_INCLUDES} ${QUICKJS_SOURCES_DEBUGGER})
+ message("Building shared library: YES")
+ add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_INCLUDES} ${QUICKJS_SOURCES_DEBUGGER})
   target_compile_definitions(
     ${SO_NAME}
     PRIVATE _GNU_SOURCE=1
@@ -553,7 +559,8 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
     set(SOPREFIX "lib")
   endif()
   set_target_properties(
-    ${SO_NAME} PROPERTIES SOVERSION "${QUICKJS_SOVERSION}" PREFIX "${SOPREFIX}"
+    ${SO_NAME} PROPERTIES #SOVERSION "${QUICKJS_SOVERSION}"
+    PREFIX "${SOPREFIX}"
                           OUTPUT_NAME ${PROJECT_NAME})
   get_target_property(SOSUFFIX ${SO_NAME} SUFFIX)
 
@@ -562,11 +569,15 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   else("${CMAKE_SHARED_LIBRARY_SUFFIX}" MATCHES ".so")
     set(SOSUFFIX "-${QUICKJS_SOVERSION}${CMAKE_SHARED_LIBRARY_SUFFIX}")
   endif("${CMAKE_SHARED_LIBRARY_SUFFIX}" MATCHES ".so")
-  set_target_properties(${SO_NAME} PROPERTIES SUFFIX "${SOSUFFIX}")
+  #set_target_properties(${SO_NAME} PROPERTIES SUFFIX "${SOSUFFIX}")
 
   target_link_libraries(${SO_NAME} PUBLIC ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
+else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
+  message("Building shared library: NO")
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
+
+
 if(LIB_TARGETS)
   install(TARGETS ${LIB_TARGETS} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(LIB_TARGETS)
@@ -595,7 +606,7 @@ if(WASI)
   set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc")
 endif(WASI)
 if(BUILD_QJSC)
-  add_executable(qjsc qjsc.c ${QUICKJS_SOURCES})
+  add_executable(qjsc qjsc.c ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
   target_link_libraries(qjsc ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
   target_compile_definitions(
