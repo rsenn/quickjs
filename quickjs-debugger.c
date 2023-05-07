@@ -190,7 +190,12 @@ js_debugger_get_value(JSContext* ctx, JSValue var_val, JSValue var, const char* 
     JS_SetPropertyStr(ctx, var, value_property, JS_NewString(ctx, lenBuf));
     JS_SetPropertyStr(ctx, var, "indexedVariables", JS_NewInt32(ctx, len));
   } else {
-    JS_SetPropertyStr(ctx, var, value_property, JS_ToString(ctx, var_val));
+    JSValue v = JS_ToString(ctx, var_val);
+    if(JS_IsException(v)){
+      JS_GetException(ctx);
+      v = JS_UNDEFINED;
+    }
+    JS_SetPropertyStr(ctx, var, value_property, v);
   }
 }
 
