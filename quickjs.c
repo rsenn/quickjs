@@ -801,7 +801,6 @@ struct JSModuleDef {
     int import_entries_count;
     int import_entries_size;
 
-    JSValue promise;
     JSValue module_ns;
     JSValue func_obj; /* only used for JS modules */
     JSModuleInitFunc *init_func; /* only used for C modules */
@@ -815,6 +814,8 @@ struct JSModuleDef {
     BOOL eval_has_exception : 8;
     JSValue eval_exception;
     JSValue meta_obj; /* for import.meta */
+
+    JSValue promise; /* for top-level-await */
 };
 
 typedef struct JSJobEntry {
