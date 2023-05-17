@@ -1,3 +1,4 @@
+#include "quickjs-config.h"
 #include "quickjs.h"
 #include "quickjs-libc.h"
 #include <stdlib.h>
@@ -8,11 +9,16 @@
 #define PATHSEP_CHARS ":;"
 #define PATHSEP_STR ";"
 
-const char js_default_module_path[] = "."
+const char js_default_module_path[] = 
 #ifdef QUICKJS_MODULE_PATH
-    PATHSEP_STR QUICKJS_MODULE_PATH
+    QUICKJS_MODULE_PATH
+#elif defined(QUICKJS_C_MODULE_DIR) && defined(QUICKJS_C_MODULE_DIR)
+    QUICKJS_C_MODULE_DIR PATHSEP_STR QUICKJS_JS_MODULE_DIR
 #elif defined(CONFIG_PREFIX)
-    PATHSEP_STR CONFIG_PREFIX "/lib/quickjs"
+#ifdef SYSTEM_NAME
+    CONFIG_PREFIX "/lib/" SYSTEM_NAME "/quickjs" PATHSEP_STR
+#endif
+        CONFIG_PREFIX "/lib/quickjs"
 #endif
     ;
 
@@ -40,9 +46,9 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
 
   for(p = module_path; *p; p = q) {
 
-n = strchrs(p, PATHSEP_CHARS);
-/*    if(!p[(n = strchrs(p, PATHSEP_CHARS))])
-      n = strlen(p);*/
+    n = strchrs(p, PATHSEP_CHARS);
+    /*    if(!p[(n = strchrs(p, PATHSEP_CHARS))])
+          n = strlen(p);*/
 
     q = p + n + 1;
 
@@ -62,7 +68,7 @@ n = strchrs(p, PATHSEP_CHARS);
 
     js_free(ctx, filename);
 
-    //while(strchrs(q, PATHSEP_CHARS) == 0) ++q;
+    // while(strchrs(q, PATHSEP_CHARS) == 0) ++q;
   }
 
   return NULL;
