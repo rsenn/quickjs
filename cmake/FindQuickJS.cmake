@@ -236,6 +236,11 @@ endmacro(configure_quickjs)
 
 macro(configure_quickjs_module_path)
   set(MODULE_PATH "")
+
+  if(NOT "${SYSTEM_NAME}" STREQUAL "")
+    add_unique(MODULE_PATH "${QUICKJS_LIBRARY_DIR}/${SYSTEM_NAME}/quickjs")
+  endif()
+
   add_unique(MODULE_PATH "${QUICKJS_C_MODULE_DIR}" "${QUICKJS_JS_MODULE_DIR}")
 
   if(NOT WIN32)

@@ -19,6 +19,7 @@
 #include <poll.h>
 #include <arpa/inet.h>
 #include <signal.h>
+#include <errno.h>
 
 #ifndef SO_REUSEADDR
 #define SO_REUSEADDR 0
@@ -178,6 +179,9 @@ js_debugger_wait_connection(JSContext* ctx, const char* address) {
   assert(ret >= 0);
 
   ret = bind(server, (struct sockaddr*)&addr, sizeof(addr));
+
+  if(ret < 0)
+    fprintf(stderr, "failed to bind(): %s\n", strerror(errno));
   assert(ret >= 0);
 
   listen(server, 1);

@@ -315,12 +315,12 @@ cfg-musl() {
   : ${host=${build/-gnu/-musl}}
   : ${host=${host/-pc-/-}}
   : ${builddir=build/$host}
-  : ${prefix=/usr/lib/musl}
+  : ${prefix=/opt/musl}
   : ${includedir=$prefix/include}
   : ${libdir=$prefix/lib}
   : ${bindir=$prefix/bin}
   : ${PKG_CONFIG=musl-pkg-config}
-  : ${PKG_CONFIG_PATH=/opt/musl/lib/pkgconfig}
+  : ${PKG_CONFIG_PATH=$prefix/lib/pkgconfig}
   : ${CC=musl-gcc}
   : ${AR=ar}
   : ${RANLIB=ranlib}
