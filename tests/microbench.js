@@ -784,7 +784,14 @@ function sort_bench(text) {
     while(i < n && arr[i] === void 0) i++;
     if(i < n) {
       console.log(
-        'sort_bench: out of order error for ' + f.name + ' at offset ' + (i - 1) + ': ' + arr[i - 1] + ' > ' + arr[i]
+        'sort_bench: out of order error for ' +
+          f.name +
+          ' at offset ' +
+          (i - 1) +
+          ': ' +
+          arr[i - 1] +
+          ' > ' +
+          arr[i]
       );
     }
     if(sort_bench.verbose) log_one('sort_' + f.name, n, ti, n * 100);
