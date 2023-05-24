@@ -228,7 +228,6 @@ EXPORTS
   JS_NewBigInt64
   JS_NewBigInt64_1
   JS_NewBigUint64
-  JS_NewCClosure
   JS_NewCFunction2
   JS_NewCFunctionData
   JS_NewClass
@@ -246,7 +245,6 @@ EXPORTS
   JS_NewRuntime2
   JS_NewString
   JS_NewStringLen
-  JS_NewUncatchableError
   js_parse_error
   JS_ParseJSON
   JS_ParseJSON2
