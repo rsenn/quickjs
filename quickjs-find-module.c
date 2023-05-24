@@ -12,11 +12,11 @@
 const char js_default_module_path[] =
 #ifdef QUICKJS_MODULE_PATH
     QUICKJS_MODULE_PATH
-#elif defined(QUICKJS_C_MODULE_DIR) && defined(QUICKJS_C_MODULE_DIR)
+#elif defined(QUICKJS_C_MODULE_DIR) && defined(QUICKJS_JS_MODULE_DIR)
     QUICKJS_C_MODULE_DIR PATHSEP_STR QUICKJS_JS_MODULE_DIR
 #elif defined(CONFIG_PREFIX)
-#ifdef SYSTEM_NAME
-    CONFIG_PREFIX "/lib/" SYSTEM_NAME "/quickjs" PATHSEP_STR
+#ifdef HOST_SYSTEM_NAME
+    CONFIG_PREFIX "/lib/" HOST_SYSTEM_NAME "/quickjs" PATHSEP_STR
 #endif
         CONFIG_PREFIX "/lib/quickjs"
 #endif
@@ -43,6 +43,8 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
 
   if((module_path = getenv("QUICKJS_MODULE_PATH")) == NULL)
     module_path = js_default_module_path;
+
+  printf("module_path: %s\n", module_path);
 
   for(p = module_path; *p; p = q) {
 
@@ -79,14 +81,17 @@ js_find_module(JSContext* ctx, const char* module_name) {
   char* ret = NULL;
   size_t len;
 
-  while(!strncmp(module_name, "./", 2)) module_name += 2;
+  // while(!strncmp(module_name, "./", 2)) module_name += 2;
   len = strlen(module_name);
 
-  if(strchr(module_name, '/') == NULL || (len >= 3 && !strcmp(&module_name[len - 3], ".so")))
+  if(!strchr(module_name, ".")) {
     ret = js_find_module_ext(ctx, module_name, ".so");
+    if(ret == NULL)
+      ret = js_find_module_ext(ctx, module_name, ".js");
+  } else {
+    ret = js_find_module_ext(ctx, module_name, "");
+  }
 
-  if(ret == NULL)
-    ret = js_find_module_ext(ctx, module_name, ".js");
   return ret;
 }
 
@@ -94,12 +99,17 @@ static JSModuleDef*
 js_find_module_path(JSContext* ctx, const char* module_name, void* opaque) {
   char* filename;
   JSModuleDef* ret = NULL;
-  filename = module_name[0] == '/' ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
+  filename = module_name[strchrs(module_name, "./")] ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
   if(filename) {
     ret = js_module_loader(ctx, filename, opaque);
     js_free(ctx, filename);
   }
   return ret;
+}
+
+JSModuleDef*
+js_module_loader_path(JSContext* ctx, const char* module_name, void* opaque) {
+  return js_find_module_path(ctx, module_name, opaque);
 }
 
 static JSModuleLoaderFunc* module_loader_path = &js_find_module_path;

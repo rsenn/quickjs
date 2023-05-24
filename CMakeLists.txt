@@ -521,6 +521,9 @@ add_custom_target(
   COMMENT "Generate from hello.js using qjs compiler"
   SOURCES examples/hello.js)
 
+ execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 configure_file(quickjs-config.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
@@ -535,7 +538,7 @@ target_compile_definitions(
           CONFIG_VERSION="${QUICKJS_VERSION}"
           CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
           #QUICKJS_MODULE_PATH="${QUICKJS_MODULE_PATH}"
-        SYSTEM_NAME="${SYSTEM_NAME}"  CONFIG_BIGNUM)
+        HOST_SYSTEM_NAME="${HOST_SYSTEM_NAME}"  CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
