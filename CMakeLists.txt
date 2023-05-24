@@ -55,6 +55,8 @@ endif(C_STANDARD_FLAG)
 configure_quickjs()
 configure_quickjs_module_path()
 
+message(STATUS "!!! C module directory: ${QUICKJS_C_MODULE_DIR}")
+ 
 if(NOT QUICKJS_BUILD_ROOT)
   set(QUICKJS_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}")
 endif(NOT QUICKJS_BUILD_ROOT)
