@@ -44,8 +44,6 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
   if((module_path = getenv("QUICKJS_MODULE_PATH")) == NULL)
     module_path = js_default_module_path;
 
-  printf("module_path: %s\n", module_path);
-
   for(p = module_path; *p; p = q) {
 
     n = strchrs(p, PATHSEP_CHARS);
