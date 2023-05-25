@@ -41,7 +41,7 @@ cfg() {
     fi
     case "$host" in
     *msys*) ;;
-    *) test -n "$builddir" && builddir=$(echo $builddir | sed 's|-pc-|-|g') ;;
+    #*) test -n "$builddir" && builddir=$(echo $builddir | sed 's|-pc-|-|g') ;;
     esac
 
     case $(uname -o) in
