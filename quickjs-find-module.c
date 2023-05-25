@@ -5,10 +5,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#define PATHSEP_CHAR ';'
-#define PATHSEP_CHARS ":;"
-#define PATHSEP_STR ";"
-
 #ifndef CONFIG_SHEXT
 #ifdef _WIN32
 #define CONFIG_SHEXT ".dll"
@@ -17,8 +13,15 @@
 #endif
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__MSYS__)
 #include <io.h>
+#define PATHSEP_CHAR ';'
+#define PATHSEP_CHARS ":;"
+#define PATHSEP_STR ";"
+#else
+#define PATHSEP_CHAR ':'
+#define PATHSEP_CHARS ":"
+#define PATHSEP_STR ":"
 #endif
 
 const char js_default_module_path[] =
