@@ -55,17 +55,16 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
   char* filename = NULL;
   size_t n, m;
   struct stat st;
+  char separator = PATHSEP_CHAR;
 
   if((module_path = getenv("QUICKJS_MODULE_PATH")) == NULL)
     module_path = js_default_module_path;
 
   for(p = module_path; *p; p = q) {
+    n = (q = strchr(p, separator)) ? q - p : strlen(p);
 
-    n = strchrs(p, PATHSEP_CHARS);
-    /*    if(!p[(n = strchrs(p, PATHSEP_CHARS))])
-          n = strlen(p);*/
-
-    q = p + n + 1;
+    if(*(q = p + n))
+      ++q;
 
     filename = js_malloc(ctx, n + 1 + strlen(module_name) + 3 + 1);
 
