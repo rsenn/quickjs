@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <limits.h>
 
 #ifndef CONFIG_SHEXT
 #ifdef _WIN32
@@ -56,7 +57,7 @@ strchrs(const char* in, const char needles[]) {
 char*
 js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
   const char *module_path, *p, *q;
-  char* filename = NULL;
+  char  filename[PATH_MAX];
   size_t n, m;
   struct stat st;
   char listsep = LISTSEP_CHAR, pathsep = PATHSEP_CHAR;
@@ -75,7 +76,7 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
     if(*(q = p + n))
       ++q;
 
-    filename = js_malloc(ctx, n + 1 + strlen(module_name) + 3 + 1);
+    //filename = js_malloc(ctx, n + 1 + strlen(module_name) + 3 + 1);
 
     strncpy(filename, p, n);
     filename[n] = pathsep;
@@ -87,9 +88,7 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
       strcpy(&filename[n + 1 + m], ext);
 
     if(0 == access(filename, F_OK))
-      return filename;
-
-    js_free(ctx, filename);
+      return js_strdup(ctx, filename);
 
     // while(strchrs(q, LISTSEP_CHARS) == 0) ++q;
   }
