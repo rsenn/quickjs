@@ -17,6 +17,10 @@
 #endif
 #endif
 
+#ifdef _WIN32
+#include <shlwapi.h>
+#endif
+
 const char js_default_module_path[] =
 #ifdef QUICKJS_MODULE_PATH
     QUICKJS_MODULE_PATH
