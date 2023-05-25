@@ -9,6 +9,12 @@
 #define PATHSEP_CHARS ":;"
 #define PATHSEP_STR ";"
 
+#ifdef _WIN32
+#define CONFIG_SHEXT ".dll"
+#else
+#define CONFIG_SHEXT ".so"
+#endif
+
 const char js_default_module_path[] =
 #ifdef QUICKJS_MODULE_PATH
     QUICKJS_MODULE_PATH
@@ -83,7 +89,7 @@ js_find_module(JSContext* ctx, const char* module_name) {
   len = strlen(module_name);
 
   if(!strchr(module_name, ".")) {
-    ret = js_find_module_ext(ctx, module_name, ".so");
+    ret = js_find_module_ext(ctx, module_name, CONFIG_SHEXT);
     if(ret == NULL)
       ret = js_find_module_ext(ctx, module_name, ".js");
   } else {
