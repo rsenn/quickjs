@@ -18,7 +18,7 @@
 #endif
 
 #ifdef _WIN32
-#include <shlwapi.h>
+#include <io.h>
 #endif
 
 const char js_default_module_path[] =
@@ -75,11 +75,7 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
     if(!(m >= 3 && !strcmp(&module_name[m - 3], ext)))
       strcpy(&filename[n + 1 + m], ext);
 
-#ifdef _WIN32
-    if(PathFileExistsA(filename))
-#else
-    if(!stat(filename, &st))
-#endif
+     if(0 == access(filename,F_OK))
       return filename;
 
     js_free(ctx, filename);
