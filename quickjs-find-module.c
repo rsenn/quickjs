@@ -1,5 +1,6 @@
 #include "quickjs-config.h"
 #include "quickjs.h"
+#include "cutils.h"
 #include "quickjs-libc.h"
 #include <stdlib.h>
 #include <string.h>
@@ -15,24 +16,26 @@
 
 #if defined(_WIN32) && !defined(__MSYS__)
 #include <io.h>
-#define PATHSEP_CHAR ';'
-#define PATHSEP_CHARS ":;"
-#define PATHSEP_STR ";"
+#define PATHSEP_CHAR '\\'
+#define PATHSEP_STR "\\"
+#define LISTSEP_CHAR ';'
+#define LISTSEP_STR ";"
 #else
 #include <unistd.h>
-#define PATHSEP_CHAR ':'
-#define PATHSEP_CHARS ":"
-#define PATHSEP_STR ":"
+#define PATHSEP_CHAR '/'
+#define PATHSEP_STR "/"
+#define LISTSEP_CHAR ':'
+#define LISTSEP_STR ":"
 #endif
 
 const char js_default_module_path[] =
 #ifdef QUICKJS_MODULE_PATH
     QUICKJS_MODULE_PATH
 #elif defined(QUICKJS_C_MODULE_DIR) && defined(QUICKJS_JS_MODULE_DIR)
-    QUICKJS_C_MODULE_DIR PATHSEP_STR QUICKJS_JS_MODULE_DIR
+    QUICKJS_C_MODULE_DIR LISTSEP_STR QUICKJS_JS_MODULE_DIR
 #elif defined(CONFIG_PREFIX)
 #ifdef HOST_SYSTEM_NAME
-    CONFIG_PREFIX "/lib/" HOST_SYSTEM_NAME "/quickjs" PATHSEP_STR
+    CONFIG_PREFIX "/lib/" HOST_SYSTEM_NAME "/quickjs" LISTSEP_STR
 #endif
         CONFIG_PREFIX "/lib/quickjs"
 #endif
@@ -56,7 +59,7 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
   char* filename = NULL;
   size_t n, m;
   struct stat st;
-  char separator = PATHSEP_CHAR;
+  char separator = LISTSEP_CHAR;
 
   if((module_path = getenv("QUICKJS_MODULE_PATH")) == NULL)
     module_path = js_default_module_path;
@@ -70,7 +73,7 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
     filename = js_malloc(ctx, n + 1 + strlen(module_name) + 3 + 1);
 
     strncpy(filename, p, n);
-    filename[n] = '/';
+    filename[n] = PATHSEP_CHAR;
     strcpy(&filename[n + 1], module_name);
 
     m = strlen(module_name);
@@ -83,7 +86,7 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
 
     js_free(ctx, filename);
 
-    // while(strchrs(q, PATHSEP_CHARS) == 0) ++q;
+    // while(strchrs(q, LISTSEP_CHARS) == 0) ++q;
   }
 
   return NULL;
@@ -94,7 +97,7 @@ js_find_module(JSContext* ctx, const char* module_name) {
   char* ret = NULL;
   size_t len;
 
-  // while(!strncmp(module_name, "./", 2)) module_name += 2;
+  // while(!strncmp(module_name, "." PATHSEP_STR, 2)) module_name += 2;
   len = strlen(module_name);
 
   if(!strchr(module_name, '.')) {
@@ -112,7 +115,8 @@ static JSModuleDef*
 js_find_module_path(JSContext* ctx, const char* module_name, void* opaque) {
   char* filename;
   JSModuleDef* ret = NULL;
-  filename = module_name[strchrs(module_name, "./")] ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
+  filename =
+      module_name[strchrs(module_name, "." PATHSEP_STR)] ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
   if(filename) {
     ret = js_module_loader(ctx, filename, opaque);
     js_free(ctx, filename);
