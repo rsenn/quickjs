@@ -556,7 +556,7 @@ JSModuleDef*
 js_module_loader(JSContext* ctx, const char* module_name, void* opaque) {
   JSModuleDef* m;
 
-  if(has_suffix(module_name, ".so")) {
+  if(has_suffix(module_name, CONFIG_SHEXT)) {
     m = js_module_loader_so(ctx, module_name);
   } else {
     size_t buf_len;

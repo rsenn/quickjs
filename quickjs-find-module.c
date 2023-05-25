@@ -19,6 +19,7 @@
 #define PATHSEP_CHARS ":;"
 #define PATHSEP_STR ";"
 #else
+#include <unistd.h>
 #define PATHSEP_CHAR ':'
 #define PATHSEP_CHARS ":"
 #define PATHSEP_STR ":"
