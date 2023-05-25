@@ -64,7 +64,7 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
   if((module_path = getenv("QUICKJS_MODULE_PATH")) == NULL)
     module_path = js_default_module_path;
 
-  if(module_path[0] != PATHSEP_CHAR && module_path[1] == ':') {
+  if(module_path[0] != PATHSEP_CHAR && module_path[1] == ':' && (module_path[2] == '/' || module_path[2] == '\\')) {
     listsep = ';';
     pathsep = module_path[2];
   }
