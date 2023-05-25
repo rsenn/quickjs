@@ -59,13 +59,18 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
   char* filename = NULL;
   size_t n, m;
   struct stat st;
-  char separator = LISTSEP_CHAR;
+  char listsep = LISTSEP_CHAR, pathsep = PATHSEP_CHAR;
 
   if((module_path = getenv("QUICKJS_MODULE_PATH")) == NULL)
     module_path = js_default_module_path;
 
+  if(p[0] != PATHSEP_CHAR && p[1] == ':') {
+    listsep = ';';
+    pathsep = p[2];
+  }
+
   for(p = module_path; *p; p = q) {
-    n = (q = strchr(p, separator)) ? q - p : strlen(p);
+    n = (q = strchr(p, listsep)) ? q - p : strlen(p);
 
     if(*(q = p + n))
       ++q;
@@ -73,7 +78,7 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
     filename = js_malloc(ctx, n + 1 + strlen(module_name) + 3 + 1);
 
     strncpy(filename, p, n);
-    filename[n] = PATHSEP_CHAR;
+    filename[n] = pathsep;
     strcpy(&filename[n + 1], module_name);
 
     m = strlen(module_name);
