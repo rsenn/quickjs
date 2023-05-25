@@ -37,6 +37,11 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <dirent.h>
+
+#if CONFIG_DLFCN || !(defined(_WIN32) || defined(__wasi__))
+#include <dlfcn.h>
+#endif
+
 #if defined(_WIN32)
 #include <windows.h>
 #include <conio.h>
@@ -45,7 +50,6 @@
 #define pipe(fds) _pipe(fds, 1024, 0)
 #else
 #ifndef __wasi__
-#include <dlfcn.h>
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
