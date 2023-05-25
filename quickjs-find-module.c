@@ -9,10 +9,12 @@
 #define PATHSEP_CHARS ":;"
 #define PATHSEP_STR ";"
 
+#ifndef CONFIG_SHEXT
 #ifdef _WIN32
 #define CONFIG_SHEXT ".dll"
 #else
 #define CONFIG_SHEXT ".so"
+#endif
 #endif
 
 const char js_default_module_path[] =
@@ -88,7 +90,7 @@ js_find_module(JSContext* ctx, const char* module_name) {
   // while(!strncmp(module_name, "./", 2)) module_name += 2;
   len = strlen(module_name);
 
-  if(!strchr(module_name, ".")) {
+  if(!strchr(module_name, '.')) {
     ret = js_find_module_ext(ctx, module_name, CONFIG_SHEXT);
     if(ret == NULL)
       ret = js_find_module_ext(ctx, module_name, ".js");
