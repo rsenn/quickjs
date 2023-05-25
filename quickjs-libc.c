@@ -37,11 +37,6 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <dirent.h>
-
-#if CONFIG_DLFCN || !(defined(_WIN32) || defined(__wasi__))
-#include <dlfcn.h>
-#endif
-
 #if defined(_WIN32)
 #include <windows.h>
 #include <conio.h>
@@ -67,6 +62,10 @@ typedef sig_t sighandler_t;
 
 #ifdef HAVE_QUICKJS_CONFIG_H
 #include "quickjs-config.h"
+#endif
+
+#if CONFIG_DLFCN || !(defined(_WIN32) || defined(__wasi__))
+#include <dlfcn.h>
 #endif
 
 #if !defined(_WIN32) && !defined(USE_WORKER) && !defined(__wasi__)
