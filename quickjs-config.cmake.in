@@ -22,6 +22,9 @@
 /* CONFIG_DEBUGGER - define it if you want debug protocol support */
 #cmakedefine CONFIG_DEBUGGER 1
 
+/* CONFIG_DLFCN - Enable dlfcn module loader*/
+#cmakedefine CONFIG_DLFCN 1
+
 /* QUICKJS_C_MODULE_DIR - Native C module directory */
 #cmakedefine QUICKJS_C_MODULE_DIR "@QUICKJS_C_MODULE_DIR@"
 

@@ -13,6 +13,7 @@ endif(CACHE{CMAKE_BUILD_TYPE})
 
 option(CONFIG_NODEBUG "Disable debugging" ON)
 option(CONFIG_BIGNUM "Enable bignum support" ON)
+option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
 
 if(WASI OR EMSCRIPTEN)
   set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
@@ -528,6 +529,7 @@ configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 configure_file(quickjs-config.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
+
 # add_custom_command( OUTPUT ${QUICKJS_SOURCES} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 add_library(${A_NAME} STATIC ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
 target_compile_definitions(

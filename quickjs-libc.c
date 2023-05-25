@@ -451,7 +451,7 @@ js_std_loadFile(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* a
 
 typedef JSModuleDef*(JSInitModuleFunc)(JSContext* ctx, const char* module_name);
 
-#if defined(_WIN32) || defined(__wasi__)
+#if !CONFIG_DLFCN && (defined(_WIN32) || defined(__wasi__))
 static JSModuleDef*
 js_module_loader_so(JSContext* ctx, const char* module_name) {
   JS_ThrowReferenceError(ctx, "shared library modules are not supported yet");
