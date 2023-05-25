@@ -75,7 +75,7 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
     if(!(m >= 3 && !strcmp(&module_name[m - 3], ext)))
       strcpy(&filename[n + 1 + m], ext);
 
-     if(0 == access(filename,F_OK))
+    if(0 == access(filename, F_OK))
       return filename;
 
     js_free(ctx, filename);
