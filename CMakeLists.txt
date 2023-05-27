@@ -439,6 +439,7 @@ if(NOT HAVE_SIZEOF_SIGHANDLER_T)
 endif(NOT HAVE_SIZEOF_SIGHANDLER_T)
 
 check_function_def(poll)
+check_include_def(sys/poll.h)
 check_include_def(dlfcn.h)
 check_include_def(stdatomic.h)
 check_library_exists(pthread pthread_create "${CMAKE_LIBRARY_PATH}" PTHREADS)

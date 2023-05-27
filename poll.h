@@ -1,8 +1,10 @@
 /**
  * @file poll.h
  */
-#ifndef QJSNET_LIB_LIB_POLL_H
-#define QJSNET_LIB_LIB_POLL_H
+#ifndef WIN32_POLL_H
+#define WIN32_POLL_H
+
+#ifndef HAVE_POLL_H
 
 #include <stddef.h>
 
@@ -72,4 +74,6 @@ int ppoll(struct pollfd* fds, nfds_t nfds, const struct timespec* timeout, const
 
 #endif /* defined(__cplusplus) */
 
-#endif /* QJSNET_LIB_LIB_POLL_H */
+#endif /* defined(HAVE_POLL_H) */
+
+#endif /* WIN32_POLL_H */

@@ -50,7 +50,7 @@
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #endif
-#ifdef HAVE_POLL
+#ifdef HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif
 
@@ -2032,7 +2032,7 @@ js_os_poll(JSContext* ctx) {
   JSOSRWHandler* rh;
   struct list_head* el;
   struct pollfd* fds;
-  int i, ret, nfds;
+  int i, ret, n;
 
   /* XXX: handle signals if useful */
 
@@ -2065,20 +2065,20 @@ js_os_poll(JSContext* ctx) {
     min_delay = -1;
   }
 
-  nfds = 0;
+  n = 0;
   list_for_each(el, &ts->os_rw_handlers) {
     rh = list_entry(el, JSOSRWHandler, link);
     if(!JS_IsNull(rh->rw_func[0]) || !JS_IsNull(rh->rw_func[1]))
-      nfds++;
+      n++;
   }
 
   list_for_each(el, &ts->port_list) {
     JSWorkerMessageHandler* port = list_entry(el, JSWorkerMessageHandler, link);
     if(!JS_IsNull(rh->rw_func[0]))
-      nfds++;
+      n++;
   }
 
-  fds = alloca(sizeof(struct pollfd) * nfds);
+  fds = js_malloc(ctx, sizeof(struct pollfd) * n);
   assert(fds);
 
   i = 0;
@@ -2110,7 +2110,7 @@ js_os_poll(JSContext* ctx) {
     }
   }
   
-  ret = poll(nfds, fds, min_delay);
+  ret = poll(fds, n, min_delay);
   assert(ret >= 0);
   if(ret > 0) {
     i = 0;
@@ -2150,6 +2150,7 @@ js_os_poll(JSContext* ctx) {
     }
   }
 done:
+  js_free(ctx, fds);
   return 0;
 }
 #endif
