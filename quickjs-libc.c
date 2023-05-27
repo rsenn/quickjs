@@ -2078,7 +2078,7 @@ js_os_poll(JSContext* ctx) {
       n++;
   }
 
-  fds = js_malloc(ctx, sizeof(struct pollfd) * n);
+  fds = alloca(sizeof(struct pollfd) * n);
   assert(fds);
 
   i = 0;
@@ -2150,7 +2150,7 @@ js_os_poll(JSContext* ctx) {
     }
   }
 done:
-  js_free(ctx, fds);
+  //js_free(ctx, fds);
   return 0;
 }
 #endif
