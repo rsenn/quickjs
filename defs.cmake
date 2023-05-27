@@ -35,7 +35,7 @@ set(QUICKJS_SOURCES
     ${QUICKJS_SOURCES_ROOT}/cutils.c ${QUICKJS_SOURCES_ROOT}/libbf.c ${QUICKJS_SOURCES_ROOT}/libregexp.c ${QUICKJS_SOURCES_ROOT}/libunicode.c ${QUICKJS_SOURCES_ROOT}/quickjs.c
     ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c
     ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
-    ${QUICKJS_SOURCES_ROOT}/poll.c
+    ${QUICKJS_SOURCES_ROOT}/win32-poll.c
      ${QUICKJS_INCLUDES})
 
 #message("CONFIG_DEBUGGER = ${CONFIG_DEBUGGER}")
