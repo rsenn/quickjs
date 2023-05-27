@@ -37,7 +37,6 @@
 
 #ifndef __MSYS__
 #if defined(_WIN32) && !defined(__CYGWIN__)
-#define WINDOWS_NATIVE
 #include <winsock2.h>
 #include <windows.h>
 #include <io.h>
@@ -83,8 +82,6 @@ typedef unsigned int nfds_t;
 #ifndef MSG_PEEK
 #define MSG_PEEK 0
 #endif
-
-#ifdef WINDOWS_NATIVE
 
 /* Do *not* use the function WSAPoll
    <https://docs.microsoft.com/en-us/windows/desktop/api/winsock2/nf-winsock2-wsapoll>
@@ -339,7 +336,7 @@ compute_revents(int fd, int sought, fd_set* rfds, fd_set* wfds, fd_set* efds) {
 
 int
 poll(struct pollfd* pfd, nfds_t nfd, int timeout) {
-#ifndef WINDOWS_NATIVE
+#if !defined(_WIN32) || defined(__MSYS__)
   fd_set rfds, wfds, efds;
   struct timeval tv;
   struct timeval* ptv;
@@ -564,7 +561,5 @@ restart:
   return rc;
 #endif
 }
-
-#endif /* defined(__MSYS__) */
 
 #endif /* !defined(HAVE_POLL) */
