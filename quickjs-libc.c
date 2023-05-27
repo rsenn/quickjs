@@ -50,6 +50,9 @@
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #endif
+#ifdef HAVE_POLL
+#include <sys/poll.h>
+#endif
 
 #if defined(__APPLE__)
 typedef sig_t sighandler_t;
@@ -2016,7 +2019,7 @@ call_handler(JSContext* ctx, JSValueConst func) {
   JS_FreeValue(ctx, ret);
 }
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(HAVE_POLL)
 static int
 handle_posted_message(JSRuntime* rt, JSContext* ctx, JSWorkerMessageHandler* port);
 
@@ -2106,8 +2109,9 @@ js_os_poll(JSContext* ctx) {
       i++;
     }
   }
-
+  
   ret = poll(nfds, fds, min_delay);
+  assert(ret >= 0);
   if(ret > 0) {
     i = 0;
 
@@ -2224,7 +2228,7 @@ handle_posted_message(JSRuntime* rt, JSContext* ctx, JSWorkerMessageHandler* por
 }
 #endif
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(HAVE_POLL)
 
 static int
 js_os_poll(JSContext* ctx) {
