@@ -42,7 +42,7 @@
 #include <conio.h>
 #include <utime.h>
 #include <io.h>
-#include "poll.h"
+#include "win32-poll.h"
 #define pipe(fds) _pipe(fds, 1024, 0)
 #else
 #ifndef __wasi__
