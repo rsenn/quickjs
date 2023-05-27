@@ -42,6 +42,7 @@
 #include <conio.h>
 #include <utime.h>
 #include <io.h>
+#include "poll.h"
 #define pipe(fds) _pipe(fds, 1024, 0)
 #else
 #ifndef __wasi__
@@ -2016,15 +2017,19 @@ call_handler(JSContext* ctx, JSValueConst func) {
 }
 
 #if defined(_WIN32)
+static int
+handle_posted_message(JSRuntime* rt, JSContext* ctx, JSWorkerMessageHandler* port);
 
 static int
 js_os_poll(JSContext* ctx) {
   JSRuntime* rt = JS_GetRuntime(ctx);
   JSThreadState* ts = JS_GetRuntimeOpaque(rt);
-  int min_delay, console_fd;
+  int min_delay;
   int64_t cur_time, delay;
   JSOSRWHandler* rh;
   struct list_head* el;
+  struct pollfd* fds;
+  int i, ret, nfds;
 
   /* XXX: handle signals if useful */
 
@@ -2057,40 +2062,93 @@ js_os_poll(JSContext* ctx) {
     min_delay = -1;
   }
 
-  console_fd = -1;
+  nfds = 0;
   list_for_each(el, &ts->os_rw_handlers) {
     rh = list_entry(el, JSOSRWHandler, link);
-    if(rh->fd == 0 && !JS_IsNull(rh->rw_func[0])) {
-      console_fd = rh->fd;
-      break;
+    if(!JS_IsNull(rh->rw_func[0]) || !JS_IsNull(rh->rw_func[1]))
+      nfds++;
+  }
+
+  list_for_each(el, &ts->port_list) {
+    JSWorkerMessageHandler* port = list_entry(el, JSWorkerMessageHandler, link);
+    if(!JS_IsNull(rh->rw_func[0]))
+      nfds++;
+  }
+
+  fds = alloca(sizeof(struct pollfd) * nfds);
+  assert(fds);
+
+  i = 0;
+  list_for_each(el, &ts->os_rw_handlers) {
+    rh = list_entry(el, JSOSRWHandler, link);
+    fds[i].fd = rh->fd;
+    fds[i].events =  0;
+    fds[i].revents =  0;
+
+    if(!JS_IsNull(rh->rw_func[0]))
+      fds[i].events  |= POLLIN;
+    if(!JS_IsNull(rh->rw_func[1]))
+      fds[i].events  |= POLLOUT;
+
+    if(fds[i].events)
+      i++;
+  }
+
+  list_for_each(el, &ts->port_list) {
+    JSWorkerMessageHandler* port = list_entry(el, JSWorkerMessageHandler, link);
+    if(!JS_IsNull(port->on_message_func)) {
+      JSWorkerMessagePipe* ps = port->recv_pipe;
+
+      fds[i].fd = ps->read_fd;
+      fds[i].events =  POLLIN;
+      fds[i].revents =  0;
+
+      i++;
     }
   }
 
-  if(console_fd >= 0) {
-    DWORD ti, ret;
-    HANDLE handle;
-    if(min_delay == -1)
-      ti = INFINITE;
-    else
-      ti = min_delay;
-    handle = (HANDLE)_get_osfhandle(console_fd);
-    ret = WaitForSingleObject(handle, ti);
-    if(ret == WAIT_OBJECT_0) {
-      list_for_each(el, &ts->os_rw_handlers) {
-        rh = list_entry(el, JSOSRWHandler, link);
-        if(rh->fd == console_fd && !JS_IsNull(rh->rw_func[0])) {
-          call_handler(ctx, rh->rw_func[0]);
-          /* must stop because the list may have been modified */
-          break;
-        }
+  ret = poll(nfds, fds, min_delay);
+  if(ret > 0) {
+    i = 0;
+
+    list_for_each(el, &ts->os_rw_handlers) {
+      rh = list_entry(el, JSOSRWHandler, link);
+
+      if(JS_IsNull(rh->rw_func[0]) && JS_IsNull(rh->rw_func[1]))
+        continue;
+
+      assert(fds[i].fd == rh->fd);
+
+      if(fds[i].revents & POLLIN) {
+        call_handler(ctx, rh->rw_func[0]);
+        /* must stop because the list may have been modified */
+        goto done;
+      }
+      if(fds[i].revents & POLLOUT) {
+        call_handler(ctx, rh->rw_func[1]);
+        /* must stop because the list may have been modified */
+        goto done;
+      }
+
+      i++;
+    }
+
+    list_for_each(el, &ts->port_list) {
+      JSWorkerMessageHandler* port = list_entry(el, JSWorkerMessageHandler, link);
+      if(!JS_IsNull(port->on_message_func)) {
+        JSWorkerMessagePipe* ps = port->recv_pipe;
+        assert(fds[i] == ps->read_fd);
+        if(fds[i].revents & POLLIN)
+          if(handle_posted_message(rt, ctx, port))
+            goto done;
+        i++;
       }
     }
-  } else {
-    Sleep(min_delay);
   }
+done:
   return 0;
 }
-#else
+#endif
 
 #ifdef USE_WORKER
 
@@ -2165,6 +2223,8 @@ handle_posted_message(JSRuntime* rt, JSContext* ctx, JSWorkerMessageHandler* por
   return 0;
 }
 #endif
+
+#if !defined(_WIN32)
 
 static int
 js_os_poll(JSContext* ctx) {

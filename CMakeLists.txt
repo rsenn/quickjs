@@ -438,6 +438,15 @@ if(NOT HAVE_SIZEOF_SIGHANDLER_T)
   endif(HAVE_SIZEOF_SIGHANDLER_T)
 endif(NOT HAVE_SIZEOF_SIGHANDLER_T)
 
+check_function_def(poll)
+check_include_def(dlfcn.h)
+check_include_def(stdatomic.h)
+check_library_exists(pthread pthread_create "${CMAKE_LIBRARY_PATH}" PTHREADS)
+
+if(PTHREADS AND HAVE_STDATOMIC_H) 
+  set(USE_WORKER ON)
+endif(PTHREADS AND HAVE_STDATOMIC_H)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   option(USE_EFENCE "Enable electric fence" OFF)
   if(USE_EFENCE)
