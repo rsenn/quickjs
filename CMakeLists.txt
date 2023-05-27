@@ -13,6 +13,7 @@ endif(CACHE{CMAKE_BUILD_TYPE})
 
 option(CONFIG_NODEBUG "Disable debugging" ON)
 option(CONFIG_BIGNUM "Enable bignum support" ON)
+option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
 
 if(WASI OR EMSCRIPTEN)
   set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
@@ -55,6 +56,8 @@ endif(C_STANDARD_FLAG)
 configure_quickjs()
 configure_quickjs_module_path()
 
+message(STATUS "!!! C module directory: ${QUICKJS_C_MODULE_DIR}")
+ 
 if(NOT QUICKJS_BUILD_ROOT)
   set(QUICKJS_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}")
 endif(NOT QUICKJS_BUILD_ROOT)
@@ -519,10 +522,15 @@ add_custom_target(
   COMMENT "Generate from hello.js using qjs compiler"
   SOURCES examples/hello.js)
 
+ execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 configure_file(quickjs-config.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
+
 add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
+
 # add_custom_command( OUTPUT ${QUICKJS_SOURCES} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 add_library(${A_NAME} STATIC ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
 target_compile_definitions(
@@ -533,7 +541,7 @@ target_compile_definitions(
           CONFIG_VERSION="${QUICKJS_VERSION}"
           CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
           #QUICKJS_MODULE_PATH="${QUICKJS_MODULE_PATH}"
-        SYSTEM_NAME="${SYSTEM_NAME}"  CONFIG_BIGNUM)
+        HOST_SYSTEM_NAME="${HOST_SYSTEM_NAME}"  CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
@@ -585,6 +593,10 @@ endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 if(LIB_TARGETS)
   install(TARGETS ${LIB_TARGETS} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(LIB_TARGETS)
+
+if(NOT CMAKE_INSTALL_INCLUDEDIR)
+  set(CMAKE_INSTALL_INCLUDEDIR include)
+endif(NOT CMAKE_INSTALL_INCLUDEDIR)
 
 install(FILES ${QUICKJS_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
         DESTINATION ${QUICKJS_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/quickjs)

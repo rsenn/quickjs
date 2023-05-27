@@ -474,8 +474,9 @@ main(int argc, char** argv) {
   }
   if(memory_limit != 0)
     JS_SetMemoryLimit(rt, memory_limit);
-  // if (stack_size != 0)
-  JS_SetMaxStackSize(rt, stack_size != 0 ? stack_size : 8 * 1048576);
+  
+  if (stack_size != 0)
+    JS_SetMaxStackSize(rt, stack_size/* != 0 ? stack_size : 8 * 1048576*/);
   js_std_set_worker_new_context_func(JS_NewCustomContext);
   js_std_init_handlers(rt);
   ctx = JS_NewCustomContext(rt);
@@ -485,7 +486,7 @@ main(int argc, char** argv) {
   }
 
   /* loader for ES6 modules */
-  JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
+  JS_SetModuleLoaderFunc(rt, NULL, js_module_loader_path, NULL);
 
   if(dump_unhandled_promise_rejection) {
     JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker, NULL);

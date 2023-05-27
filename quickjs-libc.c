@@ -45,7 +45,6 @@
 #define pipe(fds) _pipe(fds, 1024, 0)
 #else
 #ifndef __wasi__
-#include <dlfcn.h>
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
@@ -63,6 +62,10 @@ typedef sig_t sighandler_t;
 
 #ifdef HAVE_QUICKJS_CONFIG_H
 #include "quickjs-config.h"
+#endif
+
+#if CONFIG_DLFCN || !(defined(_WIN32) || defined(__wasi__))
+#include <dlfcn.h>
 #endif
 
 #if !defined(_WIN32) && !defined(USE_WORKER) && !defined(__wasi__)
@@ -451,7 +454,7 @@ js_std_loadFile(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* a
 
 typedef JSModuleDef*(JSInitModuleFunc)(JSContext* ctx, const char* module_name);
 
-#if defined(_WIN32) || defined(__wasi__)
+#if !CONFIG_DLFCN && (defined(_WIN32) || defined(__wasi__))
 static JSModuleDef*
 js_module_loader_so(JSContext* ctx, const char* module_name) {
   JS_ThrowReferenceError(ctx, "shared library modules are not supported yet");
@@ -556,7 +559,7 @@ JSModuleDef*
 js_module_loader(JSContext* ctx, const char* module_name, void* opaque) {
   JSModuleDef* m;
 
-  if(has_suffix(module_name, ".so")) {
+  if(has_suffix(module_name, CONFIG_SHEXT)) {
     m = js_module_loader_so(ctx, module_name);
   } else {
     size_t buf_len;
