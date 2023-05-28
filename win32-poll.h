@@ -12,7 +12,7 @@
 extern "C" {
 #endif /* defined(__cplusplus) */
 
-#ifndef _WINSOCK2API_
+/*#ifndef _WINSOCK2API_*/
 enum {
   POLLIN = 0x0001,
 #define POLLIN POLLIN
@@ -54,7 +54,7 @@ struct pollfd {
   short revents;
 };
 #endif
-#endif /* defined _WINSOCK2API_ */
+/*#endif /* defined _WINSOCK2API_ */*/
 
 typedef unsigned int nfds_t;
 
