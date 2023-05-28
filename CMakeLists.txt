@@ -452,19 +452,14 @@ if(WIN32 OR MINGW)
 if(HAVE_WINSOCK2_H)
   include(CheckTypeSize)
 
-  set(CMAKE_REQUIRED_INCLUDES winsock2.h)
+  set(CMAKE_EXTRA_INCLUDE_FILES winsock2.h)
+  
   check_type_size(SOCKET SOCKET_SIZE)
-  check_type_size("WSAPOLLFD" pollfd_SIZE)
-  message("pollfd_SIZE: ${pollfd_SIZE}")
-
- check_type_size(size_t size_t_SIZE)
-  message("size_t_SIZE: ${size_t_SIZE}")
-  check_type_size("void*" pointer_SIZE)
-  message("pointer_SIZE: ${pointer_SIZE}")
-  check_type_size("HANDLE" HANDLE_SIZE)
-  message("HANDLE_SIZE: ${HANDLE_SIZE}")
-
-   unset(CMAKE_REQUIRED_INCLUDES)
+  message("SOCKET_SIZE: ${SOCKET_SIZE}")
+  check_type_size("WSAPOLLFD" WSAPOLLFD_SIZE)
+  message("WSAPOLLFD_SIZE: ${WSAPOLLFD_SIZE}")
+ 
+  unset(CMAKE_EXTRA_INCLUDE_FILES)
 
 
 endif(HAVE_WINSOCK2_H)
