@@ -444,6 +444,34 @@ check_include_def(dlfcn.h)
 check_include_def(stdatomic.h)
 check_library_exists(pthread pthread_create "${CMAKE_LIBRARY_PATH}" PTHREADS)
 
+
+if(WIN32 OR MINGW)
+
+  check_include_def(winsock2.h)
+
+if(HAVE_WINSOCK2_H)
+  include(CheckTypeSize)
+
+  set(CMAKE_REQUIRED_INCLUDES winsock2.h)
+  check_type_size(SOCKET SOCKET_SIZE)
+  check_type_size("WSAPOLLFD" pollfd_SIZE)
+  message("pollfd_SIZE: ${pollfd_SIZE}")
+
+ check_type_size(size_t size_t_SIZE)
+  message("size_t_SIZE: ${size_t_SIZE}")
+  check_type_size("void*" pointer_SIZE)
+  message("pointer_SIZE: ${pointer_SIZE}")
+  check_type_size("HANDLE" HANDLE_SIZE)
+  message("HANDLE_SIZE: ${HANDLE_SIZE}")
+
+   unset(CMAKE_REQUIRED_INCLUDES)
+
+
+endif(HAVE_WINSOCK2_H)
+
+
+endif(WIN32 OR MINGW)
+
 if(PTHREADS AND HAVE_STDATOMIC_H) 
   set(USE_WORKER ON)
 endif(PTHREADS AND HAVE_STDATOMIC_H)
