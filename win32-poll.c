@@ -71,6 +71,7 @@
 #if defined(_WIN32) && !defined(__MSYS__)
 
 /* Specification.  */
+#define 
 #include "win32-poll.h"
 
 typedef unsigned int nfds_t;

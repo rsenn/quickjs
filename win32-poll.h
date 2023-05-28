@@ -12,38 +12,37 @@
 extern "C" {
 #endif /* defined(__cplusplus) */
 
-/*#ifndef _WINSOCK2API_*/
-enum {
+ enum {
+#undef POLLIN
   POLLIN = 0x0001,
-#define POLLIN POLLIN
+#undef POLLPRI
   POLLPRI = 0x0002,
-#define POLLPRI POLLPRI
+#undef POLLOUT
   POLLOUT = 0x0004,
-#define POLLOUT POLLOUT
+#undef POLLERR
   POLLERR = 0x0008,
-#define POLLERR POLLERR
+#undef POLLHUP
   POLLHUP = 0x0010,
-#define POLLHUP POLLHUP
+#undef POLLNVAL
   POLLNVAL = 0x0020,
-#define POLLNVAL POLLNVAL
+#undef POLLRDNORM
   POLLRDNORM = 0x0040,
-#define POLLRDNORM POLLRDNORM
+#undef POLLRDBAND
   POLLRDBAND = 0x0080,
-#define POLLRDBAND POLLRDBAND
+#undef POLLWRNORM
+  POLLWRNORM = 0x0100,
+#undef POLLWRBAND
   POLLWRBAND = 0x0200,
-#define POLLWRBAND POLLWRBAND
+#undef POLLMSG
   POLLMSG = 0x0400,
-#define POLLMSG POLLMSG
+#undef POLLREMOVE
   /* POLLREMOVE is for /dev/epoll (/dev/misc/eventpoll),
    * a new event notification mechanism for 2.6 */
   POLLREMOVE = 0x1000,
-#define POLLREMOVE POLLREMOVE
 };
 
 #if defined(__sparc__) || defined(__mips__)
 #define POLLWRNORM POLLOUT
-#else
-#define POLLWRNORM 0x0100
 #endif
 
 #ifndef struct_pollfd_defined
@@ -54,7 +53,6 @@ struct pollfd {
   short revents;
 };
 #endif
-/*#endif /* defined _WINSOCK2API_ */*/
 
 typedef unsigned int nfds_t;
 
