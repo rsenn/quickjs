@@ -39,6 +39,9 @@
 #elif defined(__FreeBSD__)
 #include <malloc_np.h>
 #endif
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 
 #ifdef HAVE_QUICKJS_CONFIG_H
 #include "quickjs-config.h"
