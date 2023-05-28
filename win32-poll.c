@@ -35,18 +35,21 @@
 #include <errno.h>
 #include <limits.h>
 
-#ifndef __MSYS__
-#if defined(_WIN32) && !defined(__CYGWIN__)
+//#ifndef __MSYS__
+
+#if defined(_WIN32) && !defined(__MSYS__)
 #include <winsock2.h>
 #include <windows.h>
 #include <io.h>
 #include <stdio.h>
 #include <conio.h>
+
 #if GNULIB_MSVC_NOTHROW
 #include "msvc-nothrow.h"
 #else
 #include <io.h>
 #endif
+
 #else
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -65,11 +68,11 @@
 
 #include <time.h>
 
+#if defined(_WIN32) && !defined(__MSYS__)
+
 /* Specification.  */
-/*#ifdef _WINSOCK2API_
-#define struct_pollfd_defined 1
-#endif
-#include "poll.h"*/
+#include "win32-poll.h"
+
 typedef unsigned int nfds_t;
 
 #include <assert.h>
@@ -154,6 +157,8 @@ typedef DWORD(WINAPI* PNtQueryInformationFile)(HANDLE, IO_STATUS_BLOCK*, VOID*, 
 #ifndef PIPE_BUF
 #define PIPE_BUF 512
 #endif
+
+
 
 /* Compute revents values for file handle H.  If some events cannot happen
    for the handle, eliminate them from *P_SOUGHT.  */
