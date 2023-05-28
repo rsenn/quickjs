@@ -2034,6 +2034,22 @@ js_os_poll(JSContext* ctx) {
   struct pollfd* fds;
   int i, ret, n;
 
+  /* only check signals in the main thread */
+  if(!ts->recv_pipe && unlikely(os_pending_signals != 0)) {
+    JSOSSignalHandler* sh;
+    uint64_t mask;
+
+    list_for_each(el, &ts->os_signal_handlers) {
+      sh = list_entry(el, JSOSSignalHandler, link);
+      mask = (uint64_t)1 << sh->sig_num;
+      if(os_pending_signals & mask) {
+        os_pending_signals &= ~mask;
+        call_handler(ctx, sh->func);
+        return 0;
+      }
+    }
+  }
+
   /* XXX: handle signals if useful */
 
   if(list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers))
