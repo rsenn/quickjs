@@ -57,7 +57,7 @@ configure_quickjs()
 configure_quickjs_module_path()
 
 message(STATUS "!!! C module directory: ${QUICKJS_C_MODULE_DIR}")
- 
+
 if(NOT QUICKJS_BUILD_ROOT)
   set(QUICKJS_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}")
 endif(NOT QUICKJS_BUILD_ROOT)
@@ -70,7 +70,6 @@ message(STATUS "System name: ${SYSTEM_NAME}")
 endif(NOT DEFINED BUILD_SHARED_LIBS)]]
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ${SUPPORT_SHARED_LIBS})
-
 
 if("${SYSTEM_NAME}" MATCHES ".*wasi")
   #message(STATUS "\x1b[1;31mwasienv WASM build\x1b[0m")
@@ -112,7 +111,6 @@ endif(CONFIG_DEBUGGER)
 if(CONFIG_NODEBUG)
   add_definitions(-DNDEBUG)
 endif(CONFIG_NODEBUG)
-
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
   set(DEBUG ON)
@@ -446,30 +444,27 @@ check_include_def(alloca.h)
 check_include_def(malloc.h)
 check_library_exists(pthread pthread_create "${CMAKE_LIBRARY_PATH}" PTHREADS)
 
-
 if(WIN32 OR MINGW)
 
   check_include_def(winsock2.h)
 
-if(HAVE_WINSOCK2_H)
-  include(CheckTypeSize)
+  if(HAVE_WINSOCK2_H)
+    include(CheckTypeSize)
 
-  set(CMAKE_EXTRA_INCLUDE_FILES winsock2.h)
-  
-  check_type_size(SOCKET SOCKET_SIZE)
-  message("SOCKET_SIZE: ${SOCKET_SIZE}")
-  check_type_size("WSAPOLLFD" WSAPOLLFD_SIZE)
-  message("WSAPOLLFD_SIZE: ${WSAPOLLFD_SIZE}")
- 
-  unset(CMAKE_EXTRA_INCLUDE_FILES)
+    set(CMAKE_EXTRA_INCLUDE_FILES winsock2.h)
 
+    check_type_size(SOCKET SOCKET_SIZE)
+    message("SOCKET_SIZE: ${SOCKET_SIZE}")
+    check_type_size("WSAPOLLFD" WSAPOLLFD_SIZE)
+    message("WSAPOLLFD_SIZE: ${WSAPOLLFD_SIZE}")
 
-endif(HAVE_WINSOCK2_H)
+    unset(CMAKE_EXTRA_INCLUDE_FILES)
 
+  endif(HAVE_WINSOCK2_H)
 
 endif(WIN32 OR MINGW)
 
-if(PTHREADS AND HAVE_STDATOMIC_H) 
+if(PTHREADS AND HAVE_STDATOMIC_H)
   set(USE_WORKER ON)
 endif(PTHREADS AND HAVE_STDATOMIC_H)
 
@@ -557,8 +552,9 @@ add_custom_target(
   COMMENT "Generate from hello.js using qjs compiler"
   SOURCES examples/hello.js)
 
- execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(
+  COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 configure_file(quickjs-config.cmake.in
@@ -576,7 +572,8 @@ target_compile_definitions(
           CONFIG_VERSION="${QUICKJS_VERSION}"
           CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
           #QUICKJS_MODULE_PATH="${QUICKJS_MODULE_PATH}"
-        HOST_SYSTEM_NAME="${HOST_SYSTEM_NAME}"  CONFIG_BIGNUM)
+          HOST_SYSTEM_NAME="${HOST_SYSTEM_NAME}"
+          CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
@@ -588,7 +585,7 @@ message("BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 message("SUPPORT_SHARED_LIBS: ${SUPPORT_SHARED_LIBS}")
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
- message("Building shared library: YES")
+  message("Building shared library: YES")
   add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_INCLUDES}
                                 ${QUICKJS_SOURCES_DEBUGGER})
   target_compile_definitions(
@@ -599,7 +596,8 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
             CONFIG_VERSION="${QUICKJS_VERSION}"
             #CONFIG_SOVERSION="${QUICKJS_SOVERSION}"
             CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
-           SYSTEM_NAME="${SYSTEM_NAME}" CONFIG_BIGNUM)
+            SYSTEM_NAME="${SYSTEM_NAME}"
+            CONFIG_BIGNUM)
   target_include_directories(${SO_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
   if(MSYS)
     set(SOPREFIX "msys-")
@@ -623,7 +621,6 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   message("Building shared library: NO")
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
-
 
 if(LIB_TARGETS)
   install(TARGETS ${LIB_TARGETS} DESTINATION ${CMAKE_INSTALL_LIBDIR})
