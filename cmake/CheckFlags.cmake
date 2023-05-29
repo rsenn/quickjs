@@ -119,7 +119,11 @@ endmacro(check_debug_gdb_flag)
 
 macro(check_c_standard_flag)
   if(NOT C_STANDARD_FLAG)
-    foreach(C_STANDARD c2x c11 c99)
+    if(NOT ARGN)
+    set(ARGN 
+      c2x c11 c99)
+    endif(NOT ARGN)
+    foreach(C_STANDARD ${ARGN})
       string(REPLACE "c" "C" C_STANDARD_NUM "${C_STANDARD}")
       set(CMAKE_REQUIRED_QUIET TRUE)
       check_c_compiler_flag("-std=${C_STANDARD}" C_STANDARD_${C_STANDARD_NUM})

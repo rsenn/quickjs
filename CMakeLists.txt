@@ -45,7 +45,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-shared.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/defs.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindQuickJS.cmake)
 
-check_c_standard_flag()
+check_c_standard_flag(c99)
 
 if(C_STANDARD_FLAG)
   set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${C_STANDARD_FLAG})
