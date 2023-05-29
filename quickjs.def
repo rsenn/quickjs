@@ -217,6 +217,7 @@ EXPORTS
   js_mallocz_rt
   JS_MarkValue
   js_module_loader
+  js_module_loader_path
   js_module_set_import_meta
   JS_NewArray
   JS_NewArrayBuffer

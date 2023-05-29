@@ -637,11 +637,10 @@ file(GLOB CMAKE_SCRIPTS cmake/*QuickJS*)
 install(FILES ${CMAKE_SCRIPTS} DESTINATION ${QUICKJS_PREFIX}/lib/cmake)
 
 add_executable(
-  qjs qjs.c ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
+  qjs qjs.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
       ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
 
-# target_link_libraries(qjs ${QUICKJS_LIBRARY})
-target_link_libraries(qjs ${LIBPTHREAD} ${LIBM} ${LIBWS2_32})
+target_link_libraries(qjs ${QUICKJS_LIBRARY} ${LIBPTHREAD} ${LIBM} ${LIBWS2_32})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
 target_compile_definitions(

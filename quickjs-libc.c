@@ -489,7 +489,7 @@ js_module_loader_so(JSContext* ctx, const char* module_name) {
   if(filename != module_name)
     js_free(ctx, filename);
   if(!hd) {
-    JS_ThrowReferenceError(ctx, "could not load module filename '%s' as shared library", module_name);
+    JS_ThrowReferenceError(ctx, "could not load module filename '%s' as shared library: %s", module_name, dlerror());
     goto fail;
   }
 
