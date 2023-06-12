@@ -461,6 +461,8 @@ if(WIN32 OR MINGW)
     unset(CMAKE_EXTRA_INCLUDE_FILES)
 
   endif(HAVE_WINSOCK2_H)
+  
+  check_include_def(process.h)
 
 endif(WIN32 OR MINGW)
 

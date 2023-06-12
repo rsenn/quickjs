@@ -2139,7 +2139,7 @@ js_os_poll(JSContext* ctx) {
 
       assert(fds[i].fd == rh->fd);
 
-      if(fds[i].revents & POLLIN) {
+      if(fds[i].revents & (POLLIN|POLLHUP)) {
         call_handler(ctx, rh->rw_func[0]);
         /* must stop because the list may have been modified */
         goto done;
