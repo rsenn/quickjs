@@ -31,6 +31,7 @@
 
 const char js_default_module_path[] =
 #ifdef QUICKJS_MODULE_PATH
+#warning QUICKJS_MODULE_PATH
     QUICKJS_MODULE_PATH
 #elif defined(QUICKJS_C_MODULE_DIR) && defined(QUICKJS_JS_MODULE_DIR)
     QUICKJS_C_MODULE_DIR LISTSEP_STR QUICKJS_JS_MODULE_DIR
@@ -60,18 +61,19 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
   char  filename[PATH_MAX];
   size_t n, m;
   struct stat st;
-  char listsep = LISTSEP_CHAR, pathsep = PATHSEP_CHAR;
+  char listsep[3] = { LISTSEP_CHAR, ';', 0}, pathsep = PATHSEP_CHAR;
 
   if((module_path = getenv("QUICKJS_MODULE_PATH")) == NULL)
     module_path = js_default_module_path;
 
   if(module_path[0] != PATHSEP_CHAR && module_path[1] == ':' && (module_path[2] == '/' || module_path[2] == '\\')) {
-    listsep = ';';
+    listsep[0] = ';';
     pathsep = module_path[2];
   }
 
   for(p = module_path; *p; p = q) {
-    n = (q = strchr(p, listsep)) ? q - p : strlen(p);
+    n =  strchrs(p, listsep);
+    //n = (q = strchr(p, listsep)) ? q - p : strlen(p);
 
     if(*(q = p + n))
       ++q;
