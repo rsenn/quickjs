@@ -2019,7 +2019,7 @@ call_handler(JSContext* ctx, JSValueConst func) {
   JS_FreeValue(ctx, ret);
 }
 
-#if defined(_WIN32) //|| defined(HAVE_POLL)
+#if defined(_WIN32) || defined(HAVE_POLL)
 static int
 handle_posted_message(JSRuntime* rt, JSContext* ctx, JSWorkerMessageHandler* port);
 
@@ -2245,7 +2245,7 @@ handle_posted_message(JSRuntime* rt, JSContext* ctx, JSWorkerMessageHandler* por
 }
 #endif
 
-#if !defined(_WIN32) //&& !defined(HAVE_POLL)
+#if !defined(_WIN32) && !defined(HAVE_POLL)
 
 static int
 js_os_poll(JSContext* ctx) {
