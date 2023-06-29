@@ -130,6 +130,10 @@ js_debugger_parse_sockaddr(const char* address) {
 
 void
 js_debugger_connect(JSContext* ctx, const char* address) {
+  WSADATA d;
+  int err = WSAStartup(MAKEWORD(2, 3), &d);
+  assert(!err);
+
   struct sockaddr_in addr = js_debugger_parse_sockaddr(address);
 
   int client = socket(AF_INET, SOCK_STREAM, 0);
@@ -145,6 +149,10 @@ js_debugger_connect(JSContext* ctx, const char* address) {
 
 void
 js_debugger_wait_connection(JSContext* ctx, const char* address) {
+  WSADATA d;
+  int err = WSAStartup(MAKEWORD(2, 3), &d);
+  assert(!err);
+
   struct sockaddr_in addr = js_debugger_parse_sockaddr(address);
 
   int server = socket(AF_INET, SOCK_STREAM, 0);
