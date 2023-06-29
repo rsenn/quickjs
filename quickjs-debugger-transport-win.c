@@ -113,12 +113,16 @@ js_debugger_parse_sockaddr(const char* address) {
   host_string[port_string - address] = 0;
 
   struct hostent* host = gethostbyname(host_string);
-  assert(host);
   struct sockaddr_in addr;
 
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
-  memcpy((char*)&addr.sin_addr.s_addr, (char*)host->h_addr, host->h_length);
+
+  if(host)
+    memcpy((char*)&addr.sin_addr.s_addr, (char*)host->h_addr, host->h_length);
+  else
+    inet_pton(AF_INET, host_string, &addr.sin_addr);
+
   addr.sin_port = htons(port);
 
   return addr;
