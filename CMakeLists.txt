@@ -545,13 +545,19 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
                                                 QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" SYSTEM_NAME="${SYSTEM_NAME}" CONFIG_BIGNUM)
   target_include_directories(${SO_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
   if(MSYS)
-    set(SOPREFIX "msys-")
+    set(SO_PREFIX "msys-")
   else()
-    set(SOPREFIX "lib")
+    set(SO_PREFIX "lib")
   endif()
   set_target_properties(${SO_NAME} PROPERTIES #SOVERSION "${QUICKJS_SOVERSION}"
-                                              PREFIX "${SOPREFIX}" OUTPUT_NAME ${PROJECT_NAME})
-  get_target_property(SOSUFFIX ${SO_NAME} SUFFIX)
+                                              PREFIX "${SO_PREFIX}" OUTPUT_NAME ${PROJECT_NAME})
+  
+  get_target_property(SO_OUTPUT ${SO_NAME} OUTPUT_NAME)
+  get_target_property(SO_PREFIX ${SO_NAME} PREFIX)
+
+set(SHARED_LIBRARY_NAME "${SO_PREFIX}${SO_OUTPUT}${CONFIG_SHEXT}")
+
+  #dump(SHARED_LIBRARY_NAME)
 
   if("${CMAKE_SHARED_LIBRARY_SUFFIX}" MATCHES ".so")
     set(SOSUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}.${QUICKJS_SOVERSION}")
