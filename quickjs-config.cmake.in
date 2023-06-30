@@ -19,6 +19,9 @@
 /* CONFIG_CHECK_JSVALUE - define it if printf uses the RNDN rounding mode instead of RNDNA */
 #cmakedefine CONFIG_PRINTF_RNDN 1
 
+/* CONFIG_LTO - define it if your compiler supports -flto */
+#cmakedefine CONFIG_LTO 1
+
 /* CONFIG_DEBUGGER - define it if you want debug protocol support */
 #cmakedefine CONFIG_DEBUGGER 1
 

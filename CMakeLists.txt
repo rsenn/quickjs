@@ -10,9 +10,9 @@ if(CACHE{CMAKE_BUILD_TYPE})
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel RelWithDebInfo)
 endif(CACHE{CMAKE_BUILD_TYPE})
 
-option(CONFIG_NODEBUG "Disable debugging" ON)
 option(CONFIG_BIGNUM "Enable bignum support" ON)
 option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
+option(CONFIG_ATOMICS "Enable atomics" ON)
 
 if(WASI OR EMSCRIPTEN)
   set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
@@ -26,6 +26,14 @@ endif(WASI OR EMSCRIPTEN)
 if(CONFIG_WORKER)
   set(USE_WORKER "${CONFIG_WORKER}")
 endif(CONFIG_WORKER)
+
+option(CONFIG_ALL_UNICODE "Enable all-Unicode support" OFF)
+option(CONFIG_CHECK_JSVALUE "JSValue consistency mode" OFF)
+option(CONFIG_LTO "" OFF)
+option(CONFIG_PRINTF_RNDN "" OFF)
+option(CONFIG_SHEXT "" OFF)
+option(CONFIG_STACK_CHECK "" OFF)
+
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
@@ -107,14 +115,11 @@ if(CONFIG_DEBUGGER)
   endif(NOT HAVE_GETHOSTBYNAME)
 endif(CONFIG_DEBUGGER)
 
-if(CONFIG_NODEBUG)
-  add_definitions(-DNDEBUG)
-endif(CONFIG_NODEBUG)
-
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
   set(DEBUG ON)
 else(CMAKE_BUILD_TYPE MATCHES "Debug")
   set(DEBUG OFF)
+  add_definitions(-DNDEBUG)
 endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 
 string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
@@ -377,7 +382,6 @@ check_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings" CMAKE_C_
 
 check_flags("-Wall;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation" CMAKE_C_FLAGS_DEBUG)
 
-if(NOT CONFIG_NODEBUG)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     check_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
   endif(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
@@ -386,19 +390,22 @@ if(NOT CONFIG_NODEBUG)
     check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
   endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
-endif(NOT CONFIG_NODEBUG)
-
 check_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
+  set(CONFIG_LTO TRUE CACHE BOOL "Define if your compiler supports link-time optimization")
   option(ENABLE_LTO "Enable link-time optimization" OFF)
 endif(HAVE_LTO_FLAG)
+
+
+if(CONFIG_LTO)
+  add_definitions(-DCONFIG_LTO)
+endif(CONFIG_LTO)
 
 if(ENABLE_LTO)
   message(STATUS "Enabling link-time optimization")
   #append_vars("-flto" CMAKE_C_FLAGS CMAKE_EXE_LINKER_FLAGS)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
-  add_definitions(-DCONFIG_LTO)
 endif(ENABLE_LTO)
 
 if(WASI OR WASM)
@@ -527,7 +534,7 @@ add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
 add_library(${A_NAME} STATIC ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
 target_compile_definitions(
   ${A_NAME}
-  PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
+  PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_VERSION="${QUICKJS_VERSION}" QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}"
           #QUICKJS_MODULE_PATH="${QUICKJS_MODULE_PATH}"
           HOST_SYSTEM_NAME="${HOST_SYSTEM_NAME}" CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
@@ -544,8 +551,7 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   target_compile_definitions(
     ${SO_NAME}
     PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_VERSION="${QUICKJS_VERSION}"
-            #CONFIG_SOVERSION="${QUICKJS_SOVERSION}"
-            CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" SYSTEM_NAME="${SYSTEM_NAME}" CONFIG_BIGNUM)
+            QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" SYSTEM_NAME="${SYSTEM_NAME}" CONFIG_BIGNUM)
   target_include_directories(${SO_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
   if(MSYS)
     set(SOPREFIX "msys-")
@@ -588,7 +594,7 @@ add_executable(qjs qjs.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
 target_link_libraries(qjs ${QUICKJS_LIBRARY} ${LIBPTHREAD} ${LIBM} ${LIBWS2_32})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 
-target_compile_definitions(qjs PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}"
+target_compile_definitions(qjs PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_VERSION="${QUICKJS_VERSION}" QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}"
                                        CONFIG_BIGNUM=1)
 
 if(WASI)
@@ -598,7 +604,8 @@ if(BUILD_QJSC)
   add_executable(qjsc qjsc.c ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
   target_link_libraries(qjsc ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
-  target_compile_definitions(qjsc PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" CONFIG_PREFIX="${CMAKE_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" _GNU_SOURCE=1 BUILD_QUICKJS=1
+  target_compile_definitions(qjsc PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" 
+    CONFIG_CC="${CMAKE_C_COMPILER}" _GNU_SOURCE=1 BUILD_QUICKJS=1
                                           HAVE_QUICKJS_CONFIG_H=1 CONFIG_BIGNUM=1)
   install(TARGETS qjsc DESTINATION ${QUICKJS_PREFIX}/bin)
 endif(BUILD_QJSC)

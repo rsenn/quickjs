@@ -35,11 +35,11 @@ const char js_default_module_path[] =
     QUICKJS_MODULE_PATH
 #elif defined(QUICKJS_C_MODULE_DIR) && defined(QUICKJS_JS_MODULE_DIR)
     QUICKJS_C_MODULE_DIR LISTSEP_STR QUICKJS_JS_MODULE_DIR
-#elif defined(CONFIG_PREFIX)
+#elif defined(QUICKJS_PREFIX)
 #ifdef HOST_SYSTEM_NAME
-    CONFIG_PREFIX "/lib/" HOST_SYSTEM_NAME "/quickjs" LISTSEP_STR
+    QUICKJS_PREFIX "/lib/" HOST_SYSTEM_NAME "/quickjs" LISTSEP_STR
 #endif
-        CONFIG_PREFIX "/lib/quickjs"
+        QUICKJS_PREFIX "/lib/quickjs"
 #endif
     ;
 
