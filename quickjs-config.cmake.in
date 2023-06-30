@@ -1,8 +1,8 @@
 /* CONFIG_VERSION - QuickJS version */
-#cmakedefine CONFIG_VERSION "@CONFIG_VERSION@"
+#define CONFIG_VERSION "@CONFIG_VERSION@"
 
 /* CONFIG_SHEXT - Shared module extension */
-#cmakedefine CONFIG_SHEXT "@CONFIG_SHEXT@"
+#define CONFIG_SHEXT "@CONFIG_SHEXT@"
 
 /* CONFIG_ALL_UNICODE - Define this if you want all-Unicode support */
 #cmakedefine CONFIG_ALL_UNICODE 1
