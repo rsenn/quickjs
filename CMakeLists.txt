@@ -377,20 +377,19 @@ check_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings" CMAKE_C_
 
 check_flags("-Wall;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation" CMAKE_C_FLAGS_DEBUG)
 
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    check_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
-  endif(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+  check_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
+endif(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
-  endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
+endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
 check_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
   set(CONFIG_LTO TRUE CACHE BOOL "Define if your compiler supports link-time optimization")
   option(ENABLE_LTO "Enable link-time optimization" OFF)
 endif(HAVE_LTO_FLAG)
-
 
 if(CONFIG_LTO)
   add_definitions(-DCONFIG_LTO)
@@ -521,9 +520,9 @@ add_custom_target(hello.c COMMAND "${QJSC}" -e -o ${CMAKE_CURRENT_BINARY_DIR}/he
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
-configure_file(quickjs-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 
-add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
+dump(CONFIG_SHEXT)
+configure_file(quickjs-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 
 # add_custom_command( OUTPUT ${QUICKJS_SOURCES} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 add_library(${A_NAME} STATIC ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
@@ -543,10 +542,8 @@ target_link_libraries(${A_NAME} PUBLIC ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   message("Building shared library: YES")
   add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_INCLUDES} ${QUICKJS_SOURCES_DEBUGGER})
-  target_compile_definitions(
-    ${SO_NAME}
-    PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_VERSION="${QUICKJS_VERSION}"
-            QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" SYSTEM_NAME="${SYSTEM_NAME}" CONFIG_BIGNUM)
+  target_compile_definitions(${SO_NAME} PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_VERSION="${QUICKJS_VERSION}"
+                                                QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" SYSTEM_NAME="${SYSTEM_NAME}" CONFIG_BIGNUM)
   target_include_directories(${SO_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
   if(MSYS)
     set(SOPREFIX "msys-")
@@ -599,9 +596,8 @@ if(BUILD_QJSC)
   add_executable(qjsc qjsc.c ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
   target_link_libraries(qjsc ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
-  target_compile_definitions(qjsc PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" 
-    CONFIG_CC="${CMAKE_C_COMPILER}" _GNU_SOURCE=1 BUILD_QUICKJS=1
-                                          HAVE_QUICKJS_CONFIG_H=1 CONFIG_BIGNUM=1)
+  target_compile_definitions(qjsc PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" _GNU_SOURCE=1
+                                          BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_BIGNUM=1)
   install(TARGETS qjsc DESTINATION ${QUICKJS_PREFIX}/bin)
 endif(BUILD_QJSC)
 
