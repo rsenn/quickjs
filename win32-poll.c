@@ -43,13 +43,6 @@
 #include <io.h>
 #include <stdio.h>
 #include <conio.h>
-
-#if GNULIB_MSVC_NOTHROW
-#include "msvc-nothrow.h"
-#else
-#include <io.h>
-#endif
-
 #else
 #include <sys/time.h>
 #include <sys/socket.h>
