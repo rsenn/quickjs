@@ -184,10 +184,9 @@ else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 
-set(QUICKJS_LIBRARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" CACHE PATH "QuickJS library directory")
-set(QUICKJS_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "QuickJS include directory")
+link_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories( "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}")
 
-#dump(QUICKJS_LIBRARY QUICKJS_LIBRARY_DIR QUICKJS_INCLUDE_DIR)
 
 set(get_quickjs_cmake_in ${CMAKE_CURRENT_LIST_DIR}/get_quickjs.cmake.in)
 set(get_quickjs_cmake ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake)
@@ -525,12 +524,10 @@ configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 
 configure_file(quickjs-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 
-# add_custom_command( OUTPUT ${QUICKJS_SOURCES} DEPENDS ${get_quickjs_cmake} COMMENT Get quickjs sources. COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake )
 add_library(${A_NAME} STATIC ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
 target_compile_definitions(
   ${A_NAME}
   PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 CONFIG_VERSION="${QUICKJS_VERSION}" QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}"
-          #QUICKJS_MODULE_PATH="${QUICKJS_MODULE_PATH}"
           HOST_SYSTEM_NAME="${HOST_SYSTEM_NAME}" CONFIG_BIGNUM)
 target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
 set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
