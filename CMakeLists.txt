@@ -437,9 +437,7 @@ if(WIN32 OR MINGW)
     set(CMAKE_EXTRA_INCLUDE_FILES winsock2.h)
 
     check_type_size(SOCKET SOCKET_SIZE)
-    message("SOCKET_SIZE: ${SOCKET_SIZE}")
     check_type_size("WSAPOLLFD" WSAPOLLFD_SIZE)
-    message("WSAPOLLFD_SIZE: ${WSAPOLLFD_SIZE}")
 
     unset(CMAKE_EXTRA_INCLUDE_FILES)
 
@@ -539,8 +537,6 @@ if(NOT BUILD_SHARED_LIBS)
 endif(NOT BUILD_SHARED_LIBS)
 target_link_libraries(${A_NAME} PUBLIC ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 # message("target_link_libraries ${A_NAME} PRIVATE ${LIBM} ${LIBPTHREAD}")
-message("BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
-message("SUPPORT_SHARED_LIBS: ${SUPPORT_SHARED_LIBS}")
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   message("Building shared library: YES")
