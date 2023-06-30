@@ -67,8 +67,6 @@
 #define pollfd win32_pollfd
 #include "win32-poll.h"
 
-typedef unsigned int nfds_t;
-
 #include <assert.h>
 
 #ifndef INFTIM
