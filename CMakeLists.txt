@@ -661,3 +661,6 @@ file(
 )
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc" DESTINATION "${QUICKJS_PREFIX}/lib/pkgconfig")
+
+
+dump(MSYS MINGW WIN32 UNIX)
