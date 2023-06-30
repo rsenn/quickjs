@@ -82,6 +82,8 @@ endif(QUICKJS_CROSS_ARCH)
 #option(USE_WORKER "Enable worker support" ON)
 
 set(CONFIG_VERSION "${QUICKJS_VERSION}" CACHE STRING "QuickJS version")
+
+dump(CMAKE_SHARED_LIBRARY_SUFFIX)
 set(CONFIG_SHEXT "${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "Shared module extension")
 
 file(

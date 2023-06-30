@@ -377,13 +377,13 @@ check_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings" CMAKE_C_
 
 check_flags("-Wall;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation" CMAKE_C_FLAGS_DEBUG)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
   check_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
-endif(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
-endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
 check_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
@@ -452,12 +452,12 @@ if(PTHREADS AND HAVE_STDATOMIC_H)
   set(USE_WORKER ON)
 endif(PTHREADS AND HAVE_STDATOMIC_H)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   option(USE_EFENCE "Enable electric fence" OFF)
   if(USE_EFENCE)
     check_library_exists(efence malloc /usr/lib HAVE_EFENCE)
   endif(USE_EFENCE)
-endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
 if(HAVE_EFENCE)
   set(ELECTRICFENCE_LIBRARY efence)
