@@ -1,8 +1,8 @@
 /* CONFIG_VERSION - QuickJS version */
-#cmakedefine CONFIG_VERSION "@CONFIG_VERSION@"
+#define CONFIG_VERSION "@CONFIG_VERSION@"
 
 /* CONFIG_SHEXT - Shared module extension */
-#cmakedefine CONFIG_SHEXT "@CONFIG_SHEXT@"
+#define CONFIG_SHEXT "@CONFIG_SHEXT@"
 
 /* CONFIG_ALL_UNICODE - Define this if you want all-Unicode support */
 #cmakedefine CONFIG_ALL_UNICODE 1
@@ -18,6 +18,9 @@
 
 /* CONFIG_CHECK_JSVALUE - define it if printf uses the RNDN rounding mode instead of RNDNA */
 #cmakedefine CONFIG_PRINTF_RNDN 1
+
+/* CONFIG_LTO - define it if your compiler supports -flto */
+#cmakedefine CONFIG_LTO 1
 
 /* CONFIG_DEBUGGER - define it if you want debug protocol support */
 #cmakedefine CONFIG_DEBUGGER 1

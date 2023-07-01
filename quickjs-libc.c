@@ -2157,7 +2157,7 @@ js_os_poll(JSContext* ctx) {
       JSWorkerMessageHandler* port = list_entry(el, JSWorkerMessageHandler, link);
       if(!JS_IsNull(port->on_message_func)) {
         JSWorkerMessagePipe* ps = port->recv_pipe;
-        assert(fds[i] == ps->read_fd);
+        assert(fds[i].fd == ps->read_fd);
         if(fds[i].revents & POLLIN)
           if(handle_posted_message(rt, ctx, port))
             goto done;

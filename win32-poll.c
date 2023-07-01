@@ -43,13 +43,6 @@
 #include <io.h>
 #include <stdio.h>
 #include <conio.h>
-
-#if GNULIB_MSVC_NOTHROW
-#include "msvc-nothrow.h"
-#else
-#include <io.h>
-#endif
-
 #else
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -73,8 +66,6 @@
 /* Specification.  */
 #define pollfd win32_pollfd
 #include "win32-poll.h"
-
-typedef unsigned int nfds_t;
 
 #include <assert.h>
 
@@ -159,8 +150,6 @@ typedef DWORD(WINAPI* PNtQueryInformationFile)(HANDLE, IO_STATUS_BLOCK*, VOID*, 
 #define PIPE_BUF 512
 #endif
 
-
-
 /* Compute revents values for file handle H.  If some events cannot happen
    for the handle, eliminate them from *P_SOUGHT.  */
 
@@ -178,7 +167,8 @@ windows_compute_revents(HANDLE h, int* p_sought) {
   switch(GetFileType(h)) {
     case FILE_TYPE_PIPE:
       if(!once_only) {
-        NtQueryInformationFile = (PNtQueryInformationFile)GetProcAddress(GetModuleHandle("ntdll.dll"), "NtQueryInformationFile");
+        NtQueryInformationFile =
+            (PNtQueryInformationFile)GetProcAddress(GetModuleHandle("ntdll.dll"), "NtQueryInformationFile");
         once_only = TRUE;
       }
 
@@ -201,7 +191,8 @@ windows_compute_revents(HANDLE h, int* p_sought) {
         memset(&iosb, 0, sizeof(iosb));
         memset(&fpli, 0, sizeof(fpli));
 
-        if(!NtQueryInformationFile || NtQueryInformationFile(h, &iosb, &fpli, sizeof(fpli), FilePipeLocalInformation) || fpli.WriteQuotaAvailable >= PIPE_BUF ||
+        if(!NtQueryInformationFile || NtQueryInformationFile(h, &iosb, &fpli, sizeof(fpli), FilePipeLocalInformation) ||
+           fpli.WriteQuotaAvailable >= PIPE_BUF ||
            (fpli.OutboundQuota < PIPE_BUF && fpli.WriteQuotaAvailable == fpli.OutboundQuota))
           happened |= *p_sought & (POLLOUT | POLLWRNORM | POLLWRBAND);
       }
@@ -318,7 +309,8 @@ compute_revents(int fd, int sought, fd_set* rfds, fd_set* wfds, fd_set* efds) {
       happened |= (POLLIN | POLLRDNORM) & sought;
 
     /* Distinguish hung-up sockets from other errors.  */
-    else if(socket_errno == ESHUTDOWN || socket_errno == ECONNRESET || socket_errno == ECONNABORTED || socket_errno == ENETRESET)
+    else if(socket_errno == ESHUTDOWN || socket_errno == ECONNRESET || socket_errno == ECONNABORTED ||
+            socket_errno == ENETRESET)
       happened |= POLLHUP;
 
     /* some systems can't use recv() on non-socket, including HP NonStop */
