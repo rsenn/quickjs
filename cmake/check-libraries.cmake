@@ -11,7 +11,7 @@ if(HAVE_LIBM)
   set(LIBM m)
   link_libraries(${LIBM})
   list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIBM})
-  message("Math library: ${LIBM}")
+  #message("Math library: ${LIBM}")
 endif(HAVE_LIBM)
 
 if(NOT LIBDL)
