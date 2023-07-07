@@ -531,7 +531,7 @@ set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if(NOT BUILD_SHARED_LIBS)
   set_target_properties(${A_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 endif(NOT BUILD_SHARED_LIBS)
-target_link_libraries(${A_NAME} PUBLIC ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
+target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 # message("target_link_libraries ${A_NAME} PRIVATE ${LIBM} ${LIBPTHREAD}")
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
@@ -556,7 +556,7 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   endif("${CMAKE_SHARED_LIBRARY_SUFFIX}" MATCHES ".so")
   #set_target_properties(${SO_NAME} PROPERTIES SUFFIX "${SOSUFFIX}")
 
-  target_link_libraries(${SO_NAME} PUBLIC ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
+  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
 
 else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   message("Building shared library: NO")
