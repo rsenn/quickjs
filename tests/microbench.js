@@ -1,3 +1,4 @@
+import * as std from 'std';
 /*
  * Javascript Micro benchmark
  *
@@ -22,8 +23,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-import * as std from 'std';
-
 function pad(str, n) {
   str += '';
   while(str.length < n) str += ' ';

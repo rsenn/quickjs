@@ -1,3 +1,5 @@
+import * as os from 'os';
+import * as std from 'std';
 /*
  * QuickJS Read Eval Print Loop
  *
@@ -23,10 +25,6 @@
  * THE SOFTWARE.
  */
 'use strip';
-
-import * as std from 'std';
-import * as os from 'os';
-
 (function (g) {
   /* add 'os' and 'std' bindings */
   g.os = os;

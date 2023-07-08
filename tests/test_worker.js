@@ -1,7 +1,5 @@
-/* os.Worker API test */
-import * as std from 'std';
 import * as os from 'os';
-
+/* os.Worker API test */
 function assert(actual, expected, message) {
   if(arguments.length == 1) expected = true;
 

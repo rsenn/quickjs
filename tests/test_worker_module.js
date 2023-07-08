@@ -1,7 +1,5 @@
-/* Worker code for test_worker.js */
-import * as std from 'std';
 import * as os from 'os';
-
+/* Worker code for test_worker.js */
 var parent = os.Worker.parent;
 
 function handle_msg(e) {

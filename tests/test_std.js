@@ -1,6 +1,5 @@
-import * as std from 'std';
 import * as os from 'os';
-
+import * as std from 'std';
 function assert(actual, expected, message) {
   if(arguments.length == 1) expected = true;
 
@@ -252,6 +251,7 @@ function test_timer() {
 }
 
 test_printf();
+
 test_file1();
 test_file2();
 test_getline();
