@@ -56,6 +56,7 @@ cfg() {
     esac
 
     [ -n "$PKG_CONFIG_PATH" ] && echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" 1>&2
+    [ -n "$PKG_CONFIG_PATH" ] && export "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
     [ -n "$PKG_CONFIG" ] && case "$PKG_CONFIG" in
     */*) ;;
     *) PKG_CONFIG=$(which "$PKG_CONFIG") ;;

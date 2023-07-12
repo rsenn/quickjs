@@ -1,6 +1,6 @@
 # Copyright (c) 2020 Kosaki Mezumona This cmake script is distributed under the MIT License. See LICENSE for more details.
 cmake_minimum_required(VERSION 3.1)
-project(quickjs)
+project(quickjs C)
 
 message("Building project [1;31m${PROJECT_NAME}[0m")
 
@@ -638,7 +638,7 @@ if(WASI)
 endif(WASI)
 if(BUILD_QJSC)
   add_executable(qjsc qjsc.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
-    )
+  )
   target_link_libraries(qjsc ${QUICKJS_LIBRARY} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
   set_target_properties(qjsc PROPERTIES RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}" INSTALL_RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}")
 

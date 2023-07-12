@@ -2052,7 +2052,7 @@ js_os_poll(JSContext* ctx) {
 
   /* XXX: handle signals if useful */
 
-  if(list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers))
+  if(list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers) && list_empty(&ts->port_list))
     return -1; /* no more events */
 
   /* XXX: only timers and basic console input are supported */
