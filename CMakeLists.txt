@@ -78,9 +78,10 @@ if("${SYSTEM_NAME}" MATCHES ".*wasi")
   set(BUILD_SHARED_LIBS FALSE)
   set(ENABLE_SHARED FALSE)
 elseif(WIN32 OR MINGW)
-  set(LIBWS2_32 ws2_32)
+  set(SOCKET_LIBRARIES ws2_32)
   set(BUILD_SHARED_LIBS TRUE)
 endif()
+set(SOCKET_LIBRARIES "${SOCKET_LIBRARIES}" CACHE STRING "Socket libraries")
 
 # link_libraries( ${LIBM} ${LIBPTHREAD})
 
@@ -539,7 +540,7 @@ if(BUILD_STATIC_LIBS)
   if(NOT BUILD_SHARED_LIBS)
     set_target_properties(${A_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
   endif(NOT BUILD_SHARED_LIBS)
-  target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
+  target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${SOCKET_LIBRARIES})
 
 endif(BUILD_STATIC_LIBS)
 
@@ -569,7 +570,7 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   endif("${CMAKE_SHARED_LIBRARY_SUFFIX}" MATCHES ".so")
   #set_target_properties(${SO_NAME} PROPERTIES SUFFIX "${SOSUFFIX}")
 
-  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
+  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${SOCKET_LIBRARIES})
 
 else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   message("Building shared library: NO")
@@ -628,7 +629,7 @@ install(FILES ${CMAKE_SCRIPTS} DESTINATION ${QUICKJS_PREFIX}/lib/cmake)
 add_executable(qjs qjs.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
                    ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
 
-target_link_libraries(qjs ${QUICKJS_LIBRARY} ${LIBPTHREAD} ${LIBM} ${LIBWS2_32})
+target_link_libraries(qjs ${QUICKJS_LIBRARY} ${LIBPTHREAD} ${LIBM} ${SOCKET_LIBRARIES})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}" RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}" INSTALL_RPATH
                                                                                                                             "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}")
 
@@ -641,7 +642,7 @@ endif(WASI)
 if(BUILD_QJSC)
   add_executable(qjsc qjsc.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
   )
-  target_link_libraries(qjsc ${QUICKJS_LIBRARY} ${LIBM} ${LIBPTHREAD} ${LIBWS2_32})
+  target_link_libraries(qjsc ${QUICKJS_LIBRARY} ${LIBM} ${LIBPTHREAD} ${SOCKET_LIBRARIES})
   set_target_properties(qjsc PROPERTIES RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}" INSTALL_RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}")
 
   target_compile_definitions(qjsc PRIVATE CONFIG_VERSION="${QUICKJS_VERSION}" QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}" _GNU_SOURCE=1

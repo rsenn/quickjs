@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-int inet_pton(int, const void*, void*);
+__stdcall int inet_pton(int, const void*, void*);
 
 struct js_transport_data {
   int handle;
