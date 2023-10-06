@@ -117,10 +117,11 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
   }
 
   var small_primes = [
-    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109,
-    113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239,
-    241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379,
-    383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499
+    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
+    101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193,
+    197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307,
+    311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421,
+    431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499
   ];
 
   function miller_rabin_test(n, t) {
@@ -912,7 +913,12 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
   };
 
   function number_need_paren(c) {
-    return !(Integer.isInteger(c) || Float.isFloat(c) || c instanceof Fraction || (c instanceof Complex && c.re == 0));
+    return !(
+      Integer.isInteger(c) ||
+      Float.isFloat(c) ||
+      c instanceof Fraction ||
+      (c instanceof Complex && c.re == 0)
+    );
   }
 
   /* string for c*X^i */
@@ -1364,7 +1370,8 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
   RationalFunction = function RationalFunction(a, b) {
     var t, r, d, obj;
     if(new.target) throw TypeError('not a constructor');
-    if(!(a instanceof Polynomial) || !(b instanceof Polynomial)) throw TypeError('polynomial expected');
+    if(!(a instanceof Polynomial) || !(b instanceof Polynomial))
+      throw TypeError('polynomial expected');
     t = Polynomial.divrem(a, b);
     r = t[1];
     if(r.deg() < 0) return t[0]; /* no need for a fraction */
@@ -2223,7 +2230,18 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       }
     },
     {
-      right: [Number, BigInt, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunction, Series],
+      right: [
+        Number,
+        BigInt,
+        Float,
+        Fraction,
+        Complex,
+        Mod,
+        Polynomial,
+        PolyMod,
+        RationalFunction,
+        Series
+      ],
       '*': array_scalar_mul,
       '/'(a, b) {
         return a * b.inverse();
@@ -2231,7 +2249,18 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '**': generic_pow /* XXX: only for integer */
     },
     {
-      left: [Number, BigInt, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunction, Series],
+      left: [
+        Number,
+        BigInt,
+        Float,
+        Fraction,
+        Complex,
+        Mod,
+        Polynomial,
+        PolyMod,
+        RationalFunction,
+        Series
+      ],
       '*'(a, b) {
         return array_scalar_mul(b, a);
       },

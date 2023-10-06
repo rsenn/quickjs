@@ -149,7 +149,6 @@ function(remake_module SOURCE)
   list(FILTER DEFLIST EXCLUDE REGEX "^${NAME}$")
   list(FILTER DEFLIST EXCLUDE REGEX "^${BASE}$")
 
-
   include_definitions(INC "${DEFLIST}")
 
   extract_definition("${SOURCE}" DEF "${NAME}")

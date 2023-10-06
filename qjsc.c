@@ -626,12 +626,16 @@ main(int argc, char** argv) {
     fprintf(fo,
             "#include \"quickjs-libc.h\"\n"
             "\n");
+    fprintf(fo, 
+            "extern JSModuleLoaderFunc* js_std_get_module_loader_func();\n"
+            "\n");
+
   } else {
     fprintf(fo,
             "#include <inttypes.h>\n"
             "\n");
   }
-
+  
   for(i = optind; i < argc; i++) {
     const char* filename = argv[i];
     compile_file(ctx, fo, filename, cname, module);
@@ -701,7 +705,7 @@ main(int argc, char** argv) {
 
     /* add the module loader if necessary */
     if(feature_bitmap & (1 << FE_MODULE_LOADER)) {
-      fprintf(fo, "  JS_SetModuleLoaderFunc(rt, NULL, js_module_loader_path, NULL);\n");
+      fprintf(fo, "  JS_SetModuleLoaderFunc(rt, NULL, js_std_get_module_loader_func(), NULL);\n");
     }
 
     fprintf(fo,

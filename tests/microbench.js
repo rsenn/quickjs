@@ -793,6 +793,7 @@ function sort_bench(text) {
   total_scale = save_total_scale;
   return total / n / 1000;
 }
+
 sort_bench.bench = true;
 sort_bench.verbose = false;
 
