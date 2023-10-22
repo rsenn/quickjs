@@ -24,7 +24,7 @@ import * as std from 'std';
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-'use strip';
+('use strip');
 (function (g) {
   /* add 'os' and 'std' bindings */
   g.os = os;
