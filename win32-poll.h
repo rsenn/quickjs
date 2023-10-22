@@ -12,7 +12,7 @@
 extern "C" {
 #endif /* defined(__cplusplus) */
 
- enum {
+enum {
 #undef POLLIN
   POLLIN = 0x0001,
 #undef POLLPRI
