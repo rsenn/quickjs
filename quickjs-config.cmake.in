@@ -30,6 +30,7 @@
 
 /* QUICKJS_PREFIX - Installation prefix */
 #cmakedefine QUICKJS_PREFIX "@QUICKJS_PREFIX@"
+#define CONFIG_PREFIX QUICKJS_PREFIX
 
 /* QUICKJS_C_MODULE_DIR - Native C module directory */
 #cmakedefine QUICKJS_C_MODULE_DIR "@QUICKJS_C_MODULE_DIR@"
