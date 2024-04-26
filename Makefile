@@ -111,7 +111,7 @@ CFLAGS+=-fwrapv # ensure that signed overflows behave as expected
 ifdef CONFIG_WERROR
 CFLAGS+=-Werror
 endif
-DEFINES:=-D_GNU_SOURCE -DCONFIG_VERSION=\"$(shell cat VERSION)\"
+DEFINES:=-D_GNU_SOURCE -DCONFIG_VERSION=\"$(shell cat VERSION)\" -DCONFIG_DEBUGGER=1 -DQUICKJS_PREFIX=\"/usr/local\"
 ifdef CONFIG_BIGNUM
 DEFINES+=-DCONFIG_BIGNUM
 endif

@@ -55572,7 +55572,6 @@ void JS_AddIntrinsicTypedArrays(JSContext *ctx)
 #endif
 }
 
-
 JSClassID JS_GetClassID(JSValueConst v) {
     JSObject *p;
 
@@ -55902,7 +55901,7 @@ static JSValue js_debugger_eval(JSContext *ctx, JSValueConst this_obj, JSStackFr
 
     js_parse_init(ctx, s, input, input_len, filename);
     skip_shebang(&s->buf_ptr, s->buf_end);
- 
+    
     JSObject *p;
     assert(sf != NULL);
     assert(JS_VALUE_GET_TAG(sf->cur_func) == JS_TAG_OBJECT);
