@@ -309,8 +309,9 @@ struct JSRuntime {
     uint32_t operator_count;
 #endif
     void *user_opaque;
-
+#ifdef CONFIG_DEBUGGER
     JSDebuggerInfo debugger_info;
+#endif
 };
 
 struct JSClass {
@@ -27358,6 +27359,17 @@ void JS_SetModuleLoaderFunc(JSRuntime *rt,
     rt->module_normalize_func = module_normalize;
     rt->module_loader_func = module_loader;
     rt->module_loader_opaque = opaque;
+}
+
+
+JSModuleLoaderFunc* JS_GetModuleLoaderFunc(JSRuntime *rt)
+{
+    return rt->module_loader_func;
+}
+
+void* JS_GetModuleLoaderOpaque(JSRuntime *rt)
+{
+    return rt->module_loader_opaque;
 }
 
 /* default module filename normalizer */
