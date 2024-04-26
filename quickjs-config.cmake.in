@@ -1,0 +1,100 @@
+/* CONFIG_VERSION - QuickJS version */
+#define CONFIG_VERSION "@CONFIG_VERSION@"
+
+/* CONFIG_SHEXT - Shared module extension */
+#define CONFIG_SHEXT "@CONFIG_SHEXT@"
+
+/* CONFIG_ALL_UNICODE - Define this if you want all-Unicode support */
+#cmakedefine CONFIG_ALL_UNICODE 1
+
+/* CONFIG_ATOMICS - Define this if you want 'Atomics' object [https://tc39.es/ecma262/#sec-atomics-object] */
+#cmakedefine CONFIG_ATOMICS 1
+
+/* CONFIG_BIGNUM - Define this if you want BigNum support */
+#cmakedefine CONFIG_BIGNUM 1
+
+/* CONFIG_PRINTF_RNDN - define it if printf uses the RNDN rounding mode instead of RNDNA */
+#cmakedefine CONFIG_PRINTF_RNDN 1
+
+/* CONFIG_CHECK_JSVALUE - define it if printf uses the RNDN rounding mode instead of RNDNA */
+#cmakedefine CONFIG_PRINTF_RNDN 1
+
+/* CONFIG_LTO - define it if your compiler supports -flto */
+#cmakedefine CONFIG_LTO 1
+
+/* CONFIG_DEBUGGER - define it if you want debug protocol support */
+#cmakedefine CONFIG_DEBUGGER 1
+
+/* CONFIG_DLFCN - Enable dlfcn module loader*/
+#cmakedefine CONFIG_DLFCN 1
+
+/* QUICKJS_C_MODULE_DIR - Native C module directory */
+#cmakedefine QUICKJS_C_MODULE_DIR "@QUICKJS_C_MODULE_DIR@"
+
+/* QUICKJS_JS_MODULE_DIR - JS module directory */
+#cmakedefine QUICKJS_JS_MODULE_DIR "@QUICKJS_JS_MODULE_DIR@"
+
+/* QUICKJS_MODULE_PATH - Module search path */
+#cmakedefine QUICKJS_MODULE_PATH "@QUICKJS_MODULE_PATH@"
+
+/* HAVE_MALLOC_USABLE_SIZE - Define this if you have a working malloc_usable_size() function */
+#cmakedefine HAVE_MALLOC_USABLE_SIZE 1
+
+/* PROFILE - Define this if you want to profile the code */
+#cmakedefine PROFILE 1
+
+/* USE_WORKER - Define this if you want to add support for a worker thread */
+#cmakedefine USE_WORKER 1
+
+/* USE_BIGNUM - Enable BigFloat, BigDecimal by default */
+#cmakedefine USE_BIGNUM 1
+
+/* DUMP_ATOMS - Define this if you want to dump atoms when freeing context */
+#cmakedefine DUMP_ATOMS 1
+
+/* DUMP_SHAPES - Define this if you want to dump shapes when freeing context */
+#cmakedefine DUMP_SHAPES 1
+
+/* DUMP_OBJECTS - Define this if you want to dump objects when freeing context */
+#cmakedefine DUMP_OBJECTS 1
+
+/* DUMP_MEM - Define this if you want to dump memory when freeing context */
+#cmakedefine DUMP_MEM 1
+
+/* DUMP_BYTECODE - Define this if you want to be able to dump bytecode */
+#cmakedefine DUMP_BYTECODE 1
+
+/* DUMP_FREE - Define this if you want to dump a message on freeing objects */
+#cmakedefine DUMP_FREE 1
+
+/* DUMP_GC - Define this if you want to dump a message on garbage collection */
+#cmakedefine DUMP_GC 1
+
+/* DUMP_GC_FREE - Define this if you want to dump a message when the garbage collector free's a resource */
+#cmakedefine DUMP_GC_FREE 1
+
+/* DUMP_LEAKS - Define this if you want to dump memory leaks */
+#cmakedefine DUMP_LEAKS 1
+
+/* DUMP_MODULE_RESOLVE - Define this if you want to debug module resolution */
+#cmakedefine DUMP_MODULE_RESOLVE 1
+
+/* DUMP_PROMISE - Define this if you want to debug promises */
+#cmakedefine DUMP_PROMISE 1
+
+/* DUMP_READ_OBJECT - Define this if you want to debug binary object reader */
+#cmakedefine DUMP_READ_OBJECT 1
+
+/* HAVE_GETHOSTBYNAME - Define this if you have the gethostbyname() function */
+#cmakedefine HAVE_GETHOSTBYNAME 1
+
+/* HAVE_INET_PTON - Define this if you have the inet_pton() function */
+#cmakedefine HAVE_INET_PTON 1
+
+/* HAVE_INET_ATON - Define this if you have the inet_aton() function */
+#cmakedefine HAVE_INET_ATON 1
+
+/* HAVE_NETDB_H - Define this if you have the netdb.h header file */
+#cmakedefine HAVE_NETDB_H 1
+
+@DUMP_DEFINE@
