@@ -19,7 +19,8 @@ set(CMAKE_RANLIB /opt/wasienv/bin/wasiranlib)
 set(CMAKE_AR /opt/wasienv/bin/wasiar)
 
 # here is the target environment located
-set(CMAKE_FIND_ROOT_PATH /opt/wasienv /usr/wasm32-unknown-wasi/sysroot/usr /usr/wasm32-unknown-wasi/sysroot/usr /usr/wasm32-unknown-wasi)
+set(CMAKE_FIND_ROOT_PATH /opt/wasienv /usr/wasm32-unknown-wasi/sysroot/usr
+                         /usr/wasm32-unknown-wasi/sysroot/usr /usr/wasm32-unknown-wasi)
 set(CMAKE_MODULE_PATH /opt/wasienv/lib/cmake)
 set(CMAKE_PREFIX_PATH /opt/wasienv)
 set(CMAKE_SYSTEM_PREFIX_PATH /opt/wasienv)
