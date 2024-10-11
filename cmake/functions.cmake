@@ -88,8 +88,7 @@ macro(CHECK_FUNCTION_DEF FUNC)
   endif(ARGC GREATER_EQUAL 2)
   check_function_exists("${FUNC}" "${RESULT_VAR}")
   if(${${RESULT_VAR}})
-    set("${RESULT_VAR}" TRUE
-        CACHE BOOL "Define this if you have the '${FUNC}' function")
+    set("${RESULT_VAR}" TRUE CACHE BOOL "Define this if you have the '${FUNC}' function")
     if(NOT "${PREPROC_DEF}" STREQUAL "")
       add_definitions(-D${PREPROC_DEF})
     endif(NOT "${PREPROC_DEF}" STREQUAL "")
@@ -126,8 +125,7 @@ macro(CHECK_INCLUDE_DEF INC)
   endif(ARGC GREATER_EQUAL 2)
   check_include_file("${INC}" "${RESULT_VAR}")
   if(${${RESULT_VAR}})
-    set("${RESULT_VAR}" TRUE
-        CACHE BOOL "Define this if you have the '${INC}' header file")
+    set("${RESULT_VAR}" TRUE CACHE BOOL "Define this if you have the '${INC}' header file")
     if(NOT "${PREPROC_DEF}" STREQUAL "")
       add_definitions(-D${PREPROC_DEF})
     endif(NOT "${PREPROC_DEF}" STREQUAL "")
@@ -231,13 +229,9 @@ function(TRY_CODE FILE CODE RESULT_VAR OUTPUT_VAR LIBS LDFLAGS)
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${FILE}" "${CODE}")
 
     try_compile(
-      RESULT "${CMAKE_CURRENT_BINARY_DIR}"
-      "${CMAKE_CURRENT_BINARY_DIR}/${FILE}"
-      CMAKE_FLAGS "${CMAKE_REQUIRED_FLAGS}"
-      COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}"
-      LINK_OPTIONS "${LDFLAGS}"
-      LINK_LIBRARIES "${LIBS}"
-      OUTPUT_VARIABLE OUTPUT)
+      RESULT "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/${FILE}"
+      CMAKE_FLAGS "${CMAKE_REQUIRED_FLAGS}" COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}"
+      LINK_OPTIONS "${LDFLAGS}" LINK_LIBRARIES "${LIBS}" OUTPUT_VARIABLE OUTPUT)
     dump(FILE RESULT OUTPUT)
 
     set(${RESULT_VAR} "${RESULT}" PARENT_SCOPE)
