@@ -210,11 +210,13 @@ cfg-mingw() {
 cfg-mingw32() {
  (host=i686-w64-mingw32
   prefix=/usr/$host/sys-root/mingw \
+    TOOLCHAIN=/opt/cmake-toolchains/mingw32.cmake \
     cfg-mingw "$@")
 }
 cfg-mingw64() {
   (host=x86_64-w64-mingw32
   prefix=/usr/$host/sys-root/mingw \
+    TOOLCHAIN=/opt/cmake-toolchains/mingw64.cmake \
     cfg-mingw "$@")
 }
 
@@ -373,8 +375,8 @@ cfg-msys() {
     export PKG_CONFIG_PATH
 
     case "$host" in
-    x86_64*) TOOLCHAIN=/opt/cmake-toolchains/msys64.cmake ;;
-    *) TOOLCHAIN=/opt/cmake-toolchains/msys32.cmake ;;
+    x86_64*) : ${TOOLCHAIN=/opt/cmake-toolchains/msys64.cmake} ;;
+    *) : ${TOOLCHAIN=/opt/cmake-toolchains/msys32.cmake} ;;
     esac
     export TOOLCHAIN
     echo "builddir: $builddir"
@@ -392,11 +394,13 @@ cfg-msys() {
 
 cfg-msys32() {
   host=i686-pc-msys \
+    TOOLCHAIN=/opt/cmake-toolchains/msys32.cmake \
     cfg-msys "$@"
 }
 
 cfg-msys64() {
   host=x86_64-pc-msys \
+    TOOLCHAIN=/opt/cmake-toolchains/msys64.cmake \
     cfg-msys "$@"
 }
 
