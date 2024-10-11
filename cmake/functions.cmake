@@ -1,3 +1,15 @@
+function(ABBREVIATE OUTPUT_VAR STR MAX)
+  if(NOT MAX)
+    set(MAX 30)
+  endif(NOT MAX)
+  string(LENGTH "${STR}" LEN)
+  if(LEN GREATER "${MAX}")
+    string(SUBSTRING "${STR}" 0 "${MAX}" STR)
+    set(STR "${STR}...")
+  endif(LEN GREATER "${MAX}")
+  set("${OUTPUT_VAR}" "${STR}" PARENT_SCOPE)
+endfunction(ABBREVIATE OUTPUT_VAR STR MAX)
+
 function(DUMP)
   foreach(VAR ${ARGN})
     if("${SEPARATOR}" STREQUAL "")
@@ -7,7 +19,8 @@ function(DUMP)
     string(REGEX REPLACE "[ \t\n]+" "\n" A "${${VAR}}")
     string(REGEX REPLACE "\n" ";" A "${A}")
     string(REGEX REPLACE ";" "${SEPARATOR}" A "${A}")
-    message("  ${VAR} = ${A}")
+    abbreviate(B "${A}" 80)
+    message("DUMP[${VAR}] = ${B}")
   endforeach(VAR ${ARGN})
 endfunction(DUMP)
 
@@ -75,7 +88,8 @@ macro(CHECK_FUNCTION_DEF FUNC)
   endif(ARGC GREATER_EQUAL 2)
   check_function_exists("${FUNC}" "${RESULT_VAR}")
   if(${${RESULT_VAR}})
-    set("${RESULT_VAR}" TRUE CACHE BOOL "Define this if you have the '${FUNC}' function")
+    set("${RESULT_VAR}" TRUE
+        CACHE BOOL "Define this if you have the '${FUNC}' function")
     if(NOT "${PREPROC_DEF}" STREQUAL "")
       add_definitions(-D${PREPROC_DEF})
     endif(NOT "${PREPROC_DEF}" STREQUAL "")
@@ -112,7 +126,8 @@ macro(CHECK_INCLUDE_DEF INC)
   endif(ARGC GREATER_EQUAL 2)
   check_include_file("${INC}" "${RESULT_VAR}")
   if(${${RESULT_VAR}})
-    set("${RESULT_VAR}" TRUE CACHE BOOL "Define this if you have the '${INC}' header file")
+    set("${RESULT_VAR}" TRUE
+        CACHE BOOL "Define this if you have the '${INC}' header file")
     if(NOT "${PREPROC_DEF}" STREQUAL "")
       add_definitions(-D${PREPROC_DEF})
     endif(NOT "${PREPROC_DEF}" STREQUAL "")
@@ -179,7 +194,8 @@ endfunction(ADD_UNIQUE LIST)
 
 macro(SYMLINK TARGET LINK_NAME)
   install(
-    CODE "message(\"Create symlink '$ENV{DESTDIR}${LINK_NAME}' to '${TARGET}'\")\nexecute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${TARGET} $ENV{DESTDIR}${LINK_NAME})")
+    CODE "message(\"Create symlink '$ENV{DESTDIR}${LINK_NAME}' to '${TARGET}'\")\nexecute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${TARGET} $ENV{DESTDIR}${LINK_NAME})"
+  )
 endmacro(SYMLINK TARGET LINK_NAME)
 
 macro(RPATH_APPEND VAR)
@@ -209,3 +225,23 @@ function(CHECK_FLAG FLAG VAR)
 
   endif(RESULT)
 endfunction(CHECK_FLAG FLAG VAR)
+
+function(TRY_CODE FILE CODE RESULT_VAR OUTPUT_VAR LIBS LDFLAGS)
+  if(NOT DEFINED "${RESULT_VAR}" OR NOT DEFINED "${OUTPUT_VAR}")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${FILE}" "${CODE}")
+
+    try_compile(
+      RESULT "${CMAKE_CURRENT_BINARY_DIR}"
+      "${CMAKE_CURRENT_BINARY_DIR}/${FILE}"
+      CMAKE_FLAGS "${CMAKE_REQUIRED_FLAGS}"
+      COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}"
+      LINK_OPTIONS "${LDFLAGS}"
+      LINK_LIBRARIES "${LIBS}"
+      OUTPUT_VARIABLE OUTPUT)
+    dump(FILE RESULT OUTPUT)
+
+    set(${RESULT_VAR} "${RESULT}" PARENT_SCOPE)
+    set(${OUTPUT_VAR} "${OUTPUT}" PARENT_SCOPE)
+    dump(RESULT_VAR OUTPUT_VAR)
+  endif(NOT DEFINED "${RESULT_VAR}" OR NOT DEFINED "${OUTPUT_VAR}")
+endfunction()

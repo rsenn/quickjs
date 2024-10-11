@@ -1716,7 +1716,7 @@ static inline size_t js_def_malloc_usable_size(void *ptr)
     return malloc_size(ptr);
 #elif defined(_WIN32)
     return _msize(ptr);
-#elif defined(EMSCRIPTEN) || defined(__wasi__) || defined(__dietlibc__) || defined(__ANDROID__)
+#elif defined(EMSCRIPTEN) || defined(__wasi__) || defined(__dietlibc__) || defined(__ANDROID__) || defined(__MSYS__)
     return 0;
 #elif defined(__linux__)
     return malloc_usable_size(ptr);
@@ -1790,7 +1790,7 @@ static const JSMallocFunctions def_malloc_funcs = {
     malloc_size,
 #elif defined(_WIN32)
     (size_t (*)(const void *))_msize,
-#elif defined(EMSCRIPTEN) || defined(__wasi__) || defined(__dietlibc__) || defined(__ANDROID__)
+#elif defined(EMSCRIPTEN) || defined(__wasi__) || defined(__dietlibc__) || defined(__ANDROID__) || defined(__MSYS__)
     NULL,
 #elif defined(__linux__)
     (size_t (*)(const void *))malloc_usable_size,
@@ -5146,7 +5146,11 @@ static JSValue js_c_function_data_call(JSContext *ctx, JSValueConst func_obj,
 
     /* XXX: could add the function on the stack for debug */
     if (unlikely(argc < s->length)) {
+#ifdef HAVE_ALLOCA
         arg_buf = alloca(sizeof(arg_buf[0]) * s->length);
+#else
+        arg_buf = malloc(sizeof(arg_buf[0]) * s->length);
+#endif
         for(i = 0; i < argc; i++)
             arg_buf[i] = argv[i];
         for(i = argc; i < s->length; i++)
@@ -5155,7 +5159,14 @@ static JSValue js_c_function_data_call(JSContext *ctx, JSValueConst func_obj,
         arg_buf = argv;
     }
 
-    return s->func(ctx, this_val, argc, arg_buf, s->magic, s->data);
+    JSValue ret = s->func(ctx, this_val, argc, arg_buf, s->magic, s->data);
+
+#ifndef HAVE_ALLOCA
+    if(arg_buf != argv)
+      free(arg_buf);
+#endif
+ 
+    return ret;
 }
 
 JSValue JS_NewCFunctionData(JSContext *ctx, JSCFunctionData *func,
@@ -16214,7 +16225,11 @@ static JSValue js_call_c_function(JSContext *ctx, JSValueConst func_obj,
 
     if (unlikely(argc < arg_count)) {
         /* ensure that at least argc_count arguments are readable */
+#ifdef HAVE_ALLOCA
         arg_buf = alloca(sizeof(arg_buf[0]) * arg_count);
+#else
+        arg_buf = alloca(sizeof(arg_buf[0]) * arg_count);
+#endif
         for(i = 0; i < argc; i++)
             arg_buf[i] = argv[i];
         for(i = argc; i < arg_count; i++)
@@ -16306,6 +16321,10 @@ static JSValue js_call_c_function(JSContext *ctx, JSValueConst func_obj,
     default:
         abort();
     }
+#ifndef HAVE_ALLOCA
+    if(arg_buf != argv)
+      free(arg_buf);
+#endif
 
     rt->current_stack_frame = sf->prev_frame;
     return ret_val;
@@ -16319,13 +16338,18 @@ static JSValue js_call_bound_function(JSContext *ctx, JSValueConst func_obj,
     JSBoundFunction *bf;
     JSValueConst *arg_buf, new_target;
     int arg_count, i;
+    JSValue result;
 
     p = JS_VALUE_GET_OBJ(func_obj);
     bf = p->u.bound_function;
     arg_count = bf->argc + argc;
     if (js_check_stack_overflow(ctx->rt, sizeof(JSValue) * arg_count))
         return JS_ThrowStackOverflow(ctx);
+#ifdef HAVE_ALLOCA
     arg_buf = alloca(sizeof(JSValue) * arg_count);
+#else
+    arg_buf = malloc(sizeof(JSValue) * arg_count);
+#endif
     for(i = 0; i < bf->argc; i++) {
         arg_buf[i] = bf->argv[i];
     }
@@ -16336,12 +16360,16 @@ static JSValue js_call_bound_function(JSContext *ctx, JSValueConst func_obj,
         new_target = this_obj;
         if (js_same_value(ctx, func_obj, new_target))
             new_target = bf->func_obj;
-        return JS_CallConstructor2(ctx, bf->func_obj, new_target,
+        result = JS_CallConstructor2(ctx, bf->func_obj, new_target,
                                    arg_count, arg_buf);
     } else {
-        return JS_Call(ctx, bf->func_obj, bf->this_val,
+        result = JS_Call(ctx, bf->func_obj, bf->this_val,
                        arg_count, arg_buf);
     }
+#ifndef HAVE_ALLOCA
+    free(arg_buf);
+#endif
+    return result;
 }
 
 /* argument of OP_special_object */
@@ -16477,7 +16505,12 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
     init_list_head(&sf->var_ref_list);
     var_refs = p->u.func.var_refs;
 
+#ifdef HAVE_ALLOCA
     local_buf = alloca(alloca_size);
+#else
+    local_buf = malloc(alloca_size);
+#endif
+
     if (unlikely(arg_allocated_size)) {
         int n = min_int(argc, b->arg_count);
         arg_buf = local_buf;
@@ -18891,6 +18924,9 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
             JS_FreeValue(ctx, *pval);
         }
     }
+#ifndef HAVE_ALLOCA
+    free(local_buf);
+#endif
     rt->current_stack_frame = sf->prev_frame;
     return ret_val;
 }

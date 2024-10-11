@@ -2094,7 +2094,11 @@ js_os_poll(JSContext* ctx) {
       n++;
   }
 
+#ifdef HAVE_ALLOCA
   fds = alloca(sizeof(struct pollfd) * n);
+#else
+  fds = malloc(sizeof(struct pollfd) * n);
+#endif
   assert(fds);
 
   i = 0;
@@ -2166,6 +2170,10 @@ js_os_poll(JSContext* ctx) {
     }
   }
 done:
+#ifndef HAVE_ALLOCA
+free(fds);
+#endif
+
   //js_free(ctx, fds);
   return 0;
 }

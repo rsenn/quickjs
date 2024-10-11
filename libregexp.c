@@ -2435,9 +2435,16 @@ lre_exec(uint8_t** capture, const uint8_t* bc_buf, const uint8_t* cbuf, int cind
 
   for(i = 0; i < s->capture_count * 2; i++) capture[i] = NULL;
   alloca_size = s->stack_size_max * sizeof(stack_buf[0]);
+#ifdef HAVE_ALLOCA
   stack_buf = alloca(alloca_size);
+#else
+  stack_buf = malloc(alloca_size);
+#endif
   ret = lre_exec_backtrack(s, capture, stack_buf, 0, bc_buf + RE_HEADER_LEN, cbuf + (cindex << cbuf_type), FALSE);
   lre_realloc(s->opaque, s->state_stack, 0);
+#ifndef HAVE_ALLOCA
+  free(stack_buf);
+#endif
   return ret;
 }
 
