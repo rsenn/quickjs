@@ -2053,7 +2053,7 @@ void JS_FreeRuntime(JSRuntime *rt)
                                    "ID", "REFCNT", "NAME");
                         }
                     }
-                    if (rt->rt_info) {
+                    if (rt->rt_info) {  
                         printf(" ");
                     } else {
                         printf("    %6u %6u ", i, p->header.ref_count);
@@ -54744,9 +54744,12 @@ JSDebuggerLocation js_debugger_current_location(JSContext *ctx, const uint8_t *c
         return location;
 
     location.line = find_line_num(ctx, b, (cur_pc ? cur_pc : sf->cur_pc) - b->byte_code_buf - 1);
+    location.column = find_column_num(ctx, b, (cur_pc ? cur_pc : sf->cur_pc) - b->byte_code_buf - 1);
+
+if(location.column!= -1)
+    ++location.column;
+
     location.filename = b->debug.filename;
-    // quickjs has no column info.
-    location.column = 0;
     return location;
 }
 
@@ -54788,7 +54791,7 @@ JSValue js_debugger_build_backtrace(JSContext *ctx, const uint8_t *cur_pc)
         p = JS_VALUE_GET_OBJ(sf->cur_func);
         if (p && js_class_has_bytecode(p->class_id)) {
             JSFunctionBytecode *b;
-            int line_num1;
+            int line_num1, column_num1;
 
             b = p->u.func.function_bytecode;
             if (b->has_debug) {
@@ -54797,6 +54800,9 @@ JSValue js_debugger_build_backtrace(JSContext *ctx, const uint8_t *cur_pc)
                 JS_SetPropertyStr(ctx, current_frame, "filename", JS_AtomToString(ctx, b->debug.filename));
                 if (line_num1 != -1)
                     JS_SetPropertyStr(ctx, current_frame, "line", JS_NewUint32(ctx, line_num1));
+                column_num1 = find_column_num(ctx, b, pc - b->byte_code_buf - 1);
+                if (column_num1 != -1)
+                    JS_SetPropertyStr(ctx, current_frame, "column", JS_NewUint32(ctx, column_num1 + 1));
             }
         } else {
             JS_SetPropertyStr(ctx, current_frame, "name", JS_NewString(ctx, "(native)"));
@@ -54853,20 +54859,24 @@ int js_debugger_check_breakpoint(JSContext *ctx, uint32_t current_dirty, const u
     JS_FreeValue(ctx, breakpoints_length_property);
 
     const uint8_t *p_end, *p;
-    int new_line_num, line_num, pc, v, ret;
+    int new_line_num, line_num, new_column_num, column_num, pc, v, ret;
     unsigned int op;
 
     p = b->debug.pc2line_buf;
     p_end = p + b->debug.pc2line_len;
     pc = 0;
     line_num = b->debug.line_num;
+    column_num = b->debug.column_num;
 
     for (uint32_t i = 0; i < breakpoints_length; i++) {
         JSValue breakpoint = JS_GetPropertyUint32(ctx, breakpoints, i);
         JSValue breakpoint_line_prop = JS_GetPropertyStr(ctx, breakpoint, "line");
-        uint32_t breakpoint_line;
+        JSValue breakpoint_column_prop = JS_GetPropertyStr(ctx, breakpoint, "column");
+        uint32_t breakpoint_line, breakpoint_column;
         JS_ToUint32(ctx, &breakpoint_line, breakpoint_line_prop);
+        JS_ToUint32(ctx, &breakpoint_column, breakpoint_column_prop);
         JS_FreeValue(ctx, breakpoint_line_prop);
+        JS_FreeValue(ctx, breakpoint_column_prop);
         JS_FreeValue(ctx, breakpoint);
 
         // breakpoint is before the current line.
@@ -54878,8 +54888,8 @@ int js_debugger_check_breakpoint(JSContext *ctx, uint32_t current_dirty, const u
         if (b->debugger.last_line_num && breakpoint_line > b->debugger.last_line_num)
             break;
 
-        int last_line_num = line_num;
-        int line_pc = pc;
+        int last_line_num = line_num, last_column_num = column_num;
+        int line_pc = pc, column_pc = pc;
 
         // scan until we find the start pc for the breakpoint
         while (p < p_end && line_num <= breakpoint_line) {

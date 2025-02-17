@@ -429,8 +429,9 @@ js_debugger_file_breakpoints(JSContext* ctx, const char* path) {
 #ifndef _WIN32
   if(JS_IsUndefined(path_data) && path[0] != '/') {
     char buf[PATH_MAX];
-    realpath(path, buf);
-    path_data = JS_GetPropertyStr(ctx, info->breakpoints, buf);
+    
+    if(realpath(path, buf))
+      path_data = JS_GetPropertyStr(ctx, info->breakpoints, buf);
   }
 #endif
   return path_data;
@@ -608,8 +609,8 @@ js_debugger_check(JSContext* ctx, const uint8_t* cur_pc) {
     // may be on a breakpoint.
     location = js_debugger_current_location(ctx, cur_pc);
     depth = js_debugger_stack_depth(ctx);
-    if(info->step_depth == depth && location.filename == info->step_over.filename && location.line == info->step_over.line &&
-       location.column == info->step_over.column)
+    if(info->step_depth == depth && location.filename == info->step_over.filename && location.line == info->step_over.line /*&&
+       location.column == info->step_over.column*/)
       goto done;
   }
 
@@ -635,8 +636,8 @@ js_debugger_check(JSContext* ctx, const uint8_t* cur_pc) {
       // break if the stack unwinds
       if(info->step_depth == depth) {
         struct JSDebuggerLocation location = js_debugger_current_location(ctx, cur_pc);
-        if(location.filename == info->step_over.filename && location.line == info->step_over.line &&
-           location.column == info->step_over.column)
+        if(location.filename == info->step_over.filename && location.line == info->step_over.line /*&&
+           location.column == info->step_over.column*/)
           goto done;
       }
       info->stepping = 0;
@@ -653,8 +654,7 @@ js_debugger_check(JSContext* ctx, const uint8_t* cur_pc) {
       struct JSDebuggerLocation location = js_debugger_current_location(ctx, cur_pc);
       // to step over, need to make sure the location changes,
       // and that the location change isn't into a function call (deeper stack).
-      if((location.filename == info->step_over.filename && location.line == info->step_over.line &&
-          location.column == info->step_over.column) ||
+      if((location.filename == info->step_over.filename && location.line == info->step_over.line /*&& location.column == info->step_over.column*/) ||
          js_debugger_stack_depth(ctx) > info->step_depth)
         goto done;
       info->stepping = 0;
