@@ -55,6 +55,9 @@ enum {
   PROP_SAMPLERATE,
   PROP_DESTINATION_NODE,
   PROP_LISTENER,
+  PROP_CURRENTTIME,
+  PROP_CURRENTSAMPLEFRAME,
+  PROP_PREDICTED_CURRENTTIME,
 };
 
 static JSValue
@@ -96,6 +99,20 @@ js_audiocontext_get(JSContext* ctx, JSValueConst this_val, int magic) {
       JS_SetOpaque(ret, ptr);
       break;
     }
+
+    case PROP_CURRENTTIME: {
+      ret = JS_NewFloat64(ctx, (*sac)->currentTime());
+      break;
+    }
+    case PROP_CURRENTSAMPLEFRAME: {
+      ret = JS_NewInt64(ctx, (*sac)->currentSampleFrame());
+      break;
+    }
+
+    case PROP_PREDICTED_CURRENTTIME: {
+      ret = JS_NewFloat64(ctx, (*sac)->predictedCurrentTime());
+      break;
+    }
   }
 
   return ret;
@@ -120,6 +137,9 @@ static const JSCFunctionListEntry js_audiocontext_funcs[] = {
     JS_CGETSET_MAGIC_DEF("sampleRate", js_audiocontext_get, 0, PROP_SAMPLERATE),
     JS_CGETSET_MAGIC_DEF("destinationNode", js_audiocontext_get, 0, PROP_DESTINATION_NODE),
     JS_CGETSET_MAGIC_DEF("listener", js_audiocontext_get, 0, PROP_LISTENER),
+    JS_CGETSET_MAGIC_DEF("currentTime", js_audiocontext_get, 0, PROP_CURRENTTIME),
+    JS_CGETSET_MAGIC_DEF("currentSampleFrame", js_audiocontext_get, 0, PROP_CURRENTSAMPLEFRAME),
+    JS_CGETSET_MAGIC_DEF("predictedCurrentTime", js_audiocontext_get, 0, PROP_PREDICTED_CURRENTTIME),
     JS_PROP_STRING_DEF("[Symbol.toStringTag]", "AudioContext", JS_PROP_CONFIGURABLE),
 };
 
@@ -137,6 +157,7 @@ js_audiodestinationnode_constructor(JSContext* ctx, JSValueConst new_target, int
 
     ac = acptr->get();
   }
+
   if(argc > 1) {
     AudioDevicePtr* adptr;
 
