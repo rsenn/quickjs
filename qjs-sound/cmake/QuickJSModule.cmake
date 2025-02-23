@@ -186,7 +186,14 @@ function(make_script OUTPUT_FILE TEXT INCLUDES)
   file(WRITE "${OUTPUT_FILE}" "${S}")
 endfunction(make_script OUTPUT_FILE TEXT INCLUDES)
 
+
 function(make_module FNAME)
+  set(EXT "${ARGN}")
+
+  if("${EXT}" STREQUAL "")
+    set(EXT "c")
+  endif()  
+  
   string(REGEX REPLACE "_" "-" NAME "${FNAME}")
   string(REGEX REPLACE "-" "_" VNAME "${FNAME}")
   string(TOUPPER "${FNAME}" UUNAME)
@@ -196,15 +203,9 @@ function(make_module FNAME)
   set(DEPS ${${VNAME}_DEPS})
   set(LIBS ${${VNAME}_LIBRARIES})
 
-  if(ARGN)
-    set(SOURCES ${ARGN} #${${VNAME}_SOURCES}
-                ${COMMON_SOURCES})
-    add_unique(DEPS ${${VNAME}_DEPS})
-  else(ARGN)
-    set(SOURCES quickjs-${NAME}.c #${${VNAME}_SOURCES}
-                ${COMMON_SOURCES})
-    add_unique(LIBS ${${VNAME}_LIBRARIES})
-  endif(ARGN)
+  set(SOURCES quickjs-${NAME}.${EXT} ${COMMON_SOURCES})
+  add_unique(LIBS ${${VNAME}_LIBRARIES})
+
   add_unique(LIBS ${COMMON_LIBRARIES})
 
   set(MSG "Building QuickJS module: ${FNAME}")
@@ -267,7 +268,7 @@ function(make_module FNAME)
 
   endif(BUILD_SHARED_MODULES)
 
-  list(APPEND MODULES_SOURCES quickjs-${NAME}.c)
+  list(APPEND MODULES_SOURCES quickjs-${NAME}.${EXT})
   set(MODULES_SOURCES "${MODULES_SOURCES}" PARENT_SCOPE)
 
   #[[add_library(${TARGET_NAME}-static STATIC ${SOURCES})
