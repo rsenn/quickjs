@@ -89,7 +89,8 @@ macro(CHECK_FUNCTION_DEF FUNC)
   endif(ARGC GREATER_EQUAL 2)
   check_function_exists("${FUNC}" "${RESULT_VAR}")
   if(${${RESULT_VAR}})
-    set("${RESULT_VAR}" TRUE CACHE BOOL "Define this if you have the '${FUNC}' function")
+    set("${RESULT_VAR}" TRUE
+        CACHE BOOL "Define this if you have the '${FUNC}' function")
     if(NOT "${PREPROC_DEF}" STREQUAL "")
       add_definitions(-D${PREPROC_DEF})
     endif(NOT "${PREPROC_DEF}" STREQUAL "")
@@ -130,7 +131,13 @@ macro(CHECK_LIBRARY_FUNCTIONS LIB)
 
   foreach(FUNC ${ARGN})
     string(TOUPPER "HAVE_${FUNC}" RESULT_VAR)
-    run_code("check-${FUNC}.c" "#include <stdio.h>\n\nextern int ${FUNC}();\n\nint main() {\n  printf(\"${FUNC}()=%p\\n\", ${FUNC}); return 0;\n}" RUN_RESULT RUN_OUTPUT "${QUICKJS_LIBRARY}" "")
+    run_code(
+      "check-${FUNC}.c"
+      "#include <stdio.h>\n\nextern int ${FUNC}();\n\nint main() {\n  printf(\"${FUNC}()=%p\\n\", ${FUNC}); return 0;\n}"
+      RUN_RESULT
+      RUN_OUTPUT
+      "${QUICKJS_LIBRARY}"
+      "")
     # dump(RUN_RESULT RUN_OUTPUT)
 
     if(NOT RUN_RESULT AND NOT RUN_OUTPUT STREQUAL "")
@@ -171,7 +178,8 @@ macro(CHECK_INCLUDE_DEF INC)
   endif(ARGC GREATER_EQUAL 2)
   check_include_file("${INC}" "${RESULT_VAR}")
   if(${${RESULT_VAR}})
-    set("${RESULT_VAR}" TRUE CACHE BOOL "Define this if you have the '${INC}' header file")
+    set("${RESULT_VAR}" TRUE
+        CACHE BOOL "Define this if you have the '${INC}' header file")
     if(NOT "${PREPROC_DEF}" STREQUAL "")
       add_definitions(-D${PREPROC_DEF})
     endif(NOT "${PREPROC_DEF}" STREQUAL "")
@@ -237,7 +245,9 @@ function(ADD_UNIQUE LIST)
 endfunction(ADD_UNIQUE LIST)
 
 macro(SYMLINK TARGET LINK_NAME)
-  install(CODE "message(\"Create symlink '$ENV{DESTDIR}${LINK_NAME}' to '${TARGET}'\")\nexecute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${TARGET} $ENV{DESTDIR}${LINK_NAME})")
+  install(
+    CODE "message(\"Create symlink '$ENV{DESTDIR}${LINK_NAME}' to '${TARGET}'\")\nexecute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${TARGET} $ENV{DESTDIR}${LINK_NAME})"
+  )
 endmacro(SYMLINK TARGET LINK_NAME)
 
 macro(RPATH_APPEND VAR)
@@ -272,7 +282,14 @@ function(TRY_CODE FILE CODE RESULT_VAR OUTPUT_VAR LIBS LDFLAGS)
   if(NOT DEFINED "${RESULT_VAR}" OR NOT DEFINED "${OUTPUT_VAR}")
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${FILE}" "${CODE}")
 
-    try_compile(RESULT "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/${FILE}" CMAKE_FLAGS "${CMAKE_REQUIRED_FLAGS}" COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}" LINK_OPTIONS "${LDFLAGS}" LINK_LIBRARIES "${LIBS}" OUTPUT_VARIABLE OUTPUT)
+    try_compile(
+      RESULT "${CMAKE_CURRENT_BINARY_DIR}"
+      "${CMAKE_CURRENT_BINARY_DIR}/${FILE}"
+      CMAKE_FLAGS "${CMAKE_REQUIRED_FLAGS}"
+      COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}"
+      LINK_OPTIONS "${LDFLAGS}"
+      LINK_LIBRARIES "${LIBS}"
+      OUTPUT_VARIABLE OUTPUT)
 
     set(${RESULT_VAR} "${RESULT}" PARENT_SCOPE)
     set(${OUTPUT_VAR} "${OUTPUT}" PARENT_SCOPE)
@@ -288,9 +305,16 @@ function(RUN_CODE FILE CODE RESULT_VAR OUTPUT_VAR LIBS LDFLAGS)
 
   # dump(FN)
 
-  try_run(RUN_RESULT COMPILE_RESULT SOURCES "${FN}" COMPILE_OUTPUT_VARIABLE COMPILE_OUTPUT RUN_OUTPUT_VARIABLE RUN_OUTPUT CMAKE_FLAGS "${CMAKE_REQUIRED_FLAGS}" COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}" LINK_OPTIONS "${LDFLAGS}" LINK_LIBRARIES "${LIBS}")
+  try_run(
+    RUN_RESULT COMPILE_RESULT SOURCES "${FN}"
+    COMPILE_OUTPUT_VARIABLE COMPILE_OUTPUT
+    RUN_OUTPUT_VARIABLE RUN_OUTPUT
+    CMAKE_FLAGS "${CMAKE_REQUIRED_FLAGS}"
+    COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}" LINK_OPTIONS
+                        "${LDFLAGS}" LINK_LIBRARIES "${LIBS}")
 
-  file(WRITE "${LOG}" "Compile output:\n${COMPILE_OUTPUT}\n\nRun output:\n${RUN_OUTPUT}\n")
+  file(WRITE "${LOG}"
+       "Compile output:\n${COMPILE_OUTPUT}\n\nRun output:\n${RUN_OUTPUT}\n")
   unset(LOG)
 
   set(${RESULT_VAR} "${COMPILE_RESULT}" PARENT_SCOPE)

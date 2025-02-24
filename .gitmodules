@@ -26,12 +26,12 @@
 	path = qjs-net
 	url = git@github.com:rsenn/qjs-net.git
 	branch = main
-[submodule "qjs-sound/LabSound"]
-	path = qjs-sound/LabSound
-	url = git@github.com:LabSound/LabSound
 [submodule "qjs-sound/stk"]
 	path = qjs-sound/stk
 	url = git@github.com:rsenn/stk
 [submodule "qjs-sound/sndobj"]
 	path = qjs-sound/sndobj
 	url = git@github.com:rsenn/sndobj
+[submodule "qjs-sound/LabSound"]
+	path = qjs-sound/LabSound
+	url = git@github.com:rsenn/LabSound

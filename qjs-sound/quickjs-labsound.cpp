@@ -118,6 +118,30 @@ js_audiocontext_get(JSContext* ctx, JSValueConst this_val, int magic) {
   return ret;
 }
 
+static JSValue
+js_audiocontext_set(JSContext* ctx, JSValueConst this_val, JSValueConst value, int magic) {
+  AudioContextPtr* sac;
+  JSValue ret = JS_UNDEFINED;
+
+  if(!(sac = static_cast<AudioContextPtr*>(JS_GetOpaque2(ctx, this_val, js_audiocontext_class_id))))
+    return JS_EXCEPTION;
+
+  switch(magic) {
+    case PROP_DESTINATION_NODE: {
+      AudioDestinationNodePtr* sadn;
+
+      if(!(sadn = static_cast<AudioDestinationNodePtr*>(JS_GetOpaque2(ctx, value, js_audiodestinationnode_class_id))))
+        return JS_ThrowInternalError(ctx, "value must be AudioDestinationNode");
+
+      (*sac)->setDestinationNode(*sadn);
+
+      break;
+    }
+  }
+
+  return ret;
+}
+
 static void
 js_audiocontext_finalizer(JSRuntime* rt, JSValue val) {
   AudioContextPtr* sac;
@@ -135,7 +159,7 @@ static JSClassDef js_audiocontext_class = {
 
 static const JSCFunctionListEntry js_audiocontext_funcs[] = {
     JS_CGETSET_MAGIC_DEF("sampleRate", js_audiocontext_get, 0, PROP_SAMPLERATE),
-    JS_CGETSET_MAGIC_DEF("destinationNode", js_audiocontext_get, 0, PROP_DESTINATION_NODE),
+    JS_CGETSET_MAGIC_DEF("destinationNode", js_audiocontext_get, js_audiocontext_set, PROP_DESTINATION_NODE),
     JS_CGETSET_MAGIC_DEF("listener", js_audiocontext_get, 0, PROP_LISTENER),
     JS_CGETSET_MAGIC_DEF("currentTime", js_audiocontext_get, 0, PROP_CURRENTTIME),
     JS_CGETSET_MAGIC_DEF("currentSampleFrame", js_audiocontext_get, 0, PROP_CURRENTSAMPLEFRAME),
@@ -158,6 +182,10 @@ js_audiodestinationnode_constructor(JSContext* ctx, JSValueConst new_target, int
     ac = acptr->get();
   }
 
+  if(!ac) {
+    return JS_ThrowInternalError(ctx, "argument 1 must be AudioContext");
+  }
+
   if(argc > 1) {
     AudioDevicePtr* adptr;
 
@@ -165,6 +193,10 @@ js_audiodestinationnode_constructor(JSContext* ctx, JSValueConst new_target, int
       return JS_EXCEPTION;
 
     device = *adptr;
+  }
+
+  if(!device.get()) {
+    return JS_ThrowInternalError(ctx, "argument 2 must be AudioDevice");
   }
 
   AudioDestinationNodePtr* sadn = static_cast<AudioDestinationNodePtr*>(js_mallocz(ctx, sizeof(AudioDestinationNodePtr)));
@@ -196,6 +228,7 @@ fail:
 
 enum {
   PROP_NAME,
+  PROP_DEVICE,
 };
 
 static JSValue
@@ -206,9 +239,47 @@ js_audiodestinationnode_get(JSContext* ctx, JSValueConst this_val, int magic) {
   if(!(sadn = static_cast<AudioDestinationNodePtr*>(JS_GetOpaque2(ctx, this_val, js_audiodestinationnode_class_id))))
     return JS_EXCEPTION;
 
+  if(sadn->get() == nullptr)
+    return JS_UNDEFINED;
+
   switch(magic) {
     case PROP_NAME: {
       ret = JS_NewString(ctx, (*sadn)->name());
+      break;
+    }
+
+      /* case PROP_DEVICE: {
+          lab::AudioDevice* ad = (*sadn)->device();
+
+         ret = JS_NewObjectProtoClass(ctx, audiodevice_proto, js_audiodevice_class_id);
+
+         AudioDevicePtr* ptr = static_cast<AudioDevicePtr*>(js_mallocz(ctx, sizeof(AudioDevicePtr)));
+
+         new(ptr) AudioDevicePtr(*ad);
+
+         JS_SetOpaque(ret, ptr);
+         break;
+       }*/
+  }
+
+  return ret;
+}
+
+enum {
+  AUDIODESTINATION_RESET,
+};
+
+static JSValue
+js_audiodestinationnode_method(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst argv[], int magic) {
+  AudioDestinationNodePtr* sadn;
+  JSValue ret = JS_UNDEFINED;
+
+  if(!(sadn = static_cast<AudioDestinationNodePtr*>(JS_GetOpaque2(ctx, this_val, js_audiodestinationnode_class_id))))
+    return JS_EXCEPTION;
+
+  switch(magic) {
+    case AUDIODESTINATION_RESET: {
+      sadn->reset();
       break;
     }
   }
@@ -233,6 +304,8 @@ static JSClassDef js_audiodestinationnode_class = {
 
 static const JSCFunctionListEntry js_audiodestinationnode_funcs[] = {
     JS_CGETSET_MAGIC_DEF("name", js_audiodestinationnode_get, 0, PROP_NAME),
+    JS_CFUNC_MAGIC_DEF("reset", 0, js_audiodestinationnode_method, AUDIODESTINATION_RESET),
+    // JS_CGETSET_MAGIC_DEF("device", js_audiodestinationnode_get, 0, PROP_DEVICE),
     JS_PROP_STRING_DEF("[Symbol.toStringTag]", "AudioDestinationNode", JS_PROP_CONFIGURABLE),
 };
 
@@ -285,9 +358,11 @@ js_audiolistener_get(JSContext* ctx, JSValueConst this_val, int magic) {
     case PROP_POSITION_X: {
       break;
     }
+
     case PROP_POSITION_Y: {
       break;
     }
+
     case PROP_POSITION_Z: {
       break;
     }
@@ -358,7 +433,7 @@ fail:
   return JS_EXCEPTION;
 }
 
-enum {};
+enum { DEVICE_DESTINATION_NODE };
 
 static JSValue
 js_audiodevice_get(JSContext* ctx, JSValueConst this_val, int magic) {
@@ -369,6 +444,29 @@ js_audiodevice_get(JSContext* ctx, JSValueConst this_val, int magic) {
     return JS_EXCEPTION;
 
   switch(magic) {}
+
+  return ret;
+}
+
+static JSValue
+js_audiodevice_set(JSContext* ctx, JSValueConst this_val, JSValueConst value, int magic) {
+  AudioDevicePtr* sad;
+  JSValue ret = JS_UNDEFINED;
+
+  if(!(sad = static_cast<AudioDevicePtr*>(JS_GetOpaque2(ctx, this_val, js_audiodevice_class_id))))
+    return JS_EXCEPTION;
+
+  switch(magic) {
+    case DEVICE_DESTINATION_NODE: {
+      AudioDestinationNodePtr* sadn;
+
+      if(!(sadn = static_cast<AudioDestinationNodePtr*>(JS_GetOpaque2(ctx, value, js_audiodestinationnode_class_id))))
+        return JS_ThrowInternalError(ctx, "value must be AudioDestinationNode");
+
+      (*sad)->setDestinationNode(*sadn);
+      break;
+    }
+  }
 
   return ret;
 }
@@ -389,6 +487,8 @@ static JSClassDef js_audiodevice_class = {
 };
 
 static const JSCFunctionListEntry js_audiodevice_funcs[] = {
+    JS_CGETSET_MAGIC_DEF("destinationNode", 0, js_audiodevice_set, DEVICE_DESTINATION_NODE),
+
     JS_PROP_STRING_DEF("[Symbol.toStringTag]", "AudioDevice", JS_PROP_CONFIGURABLE),
 };
 
