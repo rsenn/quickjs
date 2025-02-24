@@ -58,7 +58,7 @@ set(labsound_LINK_DIRECTORIES
 set(labsound_LIBRARIES
     ${LABSOUND_BINARY_DIR}/bin/libLabSound_d.a
     ${LABSOUND_BINARY_DIR}/bin/libLabSoundRtAudio_d.a
-    ${LABSOUND_BINARY_DIR}/third_party/libnyquist/lib/liblibnyquist_d.a
+    ${LABSOUND_BINARY_DIR}/third_party/libnyquist/lib/liblibnyquist.a
     #LabSound_d libnyquist_d
     pulse-simple
     samplerate)
