@@ -763,13 +763,13 @@ set(QUICKJS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(MODULE_SUBDIRS "")
 
-option(MODULE_GLFW "Enable GLFW module" ON)
-option(MODULE_NANOVG "Enable NanoVG module" ON)
-option(MODULE_IMGUI "Enable ImGui module" ON)
+option(MODULE_GLFW "Enable GLFW module" OFF)
+option(MODULE_NANOVG "Enable NanoVG module" OFF)
+option(MODULE_IMGUI "Enable ImGui module" OFF)
 option(MODULE_FFI "Enable FFI module" ON)
-option(MODULE_NET "Enable NET module" ON)
-#option(MODULE_HTTP "Enable HTTP module" ON)
 option(MODULE_MODULES "Enable MODULES module" ON)
+option(MODULE_NET "Enable NET module" OFF)
+#option(MODULE_HTTP "Enable HTTP module" ON)
 
 if(MODULE_GLFW)
   list(APPEND MODULE_SUBDIRS qjs-glfw)
