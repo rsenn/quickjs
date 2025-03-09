@@ -34,6 +34,7 @@
 
 #include "cutils.h"
 #include "libbf.h"
+#include "quickjs-config.h"
 
 /* enable it to check the multiplication result */
 //#define USE_MUL_CHECK

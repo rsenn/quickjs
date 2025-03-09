@@ -46,6 +46,8 @@
 #include "libregexp.h"
 #include "libbf.h"
 
+#include "quickjs-config.h"
+
 #define OPTIMIZE         1
 #define SHORT_OPCODES    1
 #if defined(EMSCRIPTEN)

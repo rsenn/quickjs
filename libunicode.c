@@ -30,6 +30,7 @@
 #include "cutils.h"
 #include "libunicode.h"
 #include "libunicode-table.h"
+#include "quickjs-config.h"
 
 enum {
     RUN_TYPE_U,

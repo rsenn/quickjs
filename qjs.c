@@ -40,6 +40,7 @@
 
 #include "cutils.h"
 #include "quickjs-libc.h"
+#include "quickjs-config.h"
 
 extern const uint8_t qjsc_repl[];
 extern const uint32_t qjsc_repl_size;

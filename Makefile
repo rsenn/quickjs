@@ -154,6 +154,10 @@ CONFIG_SHARED_LIBS=y # building shared libraries is supported
 endif
 endif
 
+DEFINES+=-Ibuild/x86_64-linux-gnu
+CFLAGS+=-Ibuild/x86_64-linux-gnu
+CFLAGS_DEBUG+=-Ibuild/x86_64-linux-gnu
+
 PROGS=qjs$(EXE) qjsc$(EXE) run-test262
 ifneq ($(CROSS_PREFIX),)
 QJSC_CC=gcc
@@ -193,6 +197,7 @@ QJS_OBJS=$(OBJDIR)/qjs.o $(OBJDIR)/repl.o $(QJS_LIB_OBJS)
 ifdef CONFIG_BIGNUM
 QJS_OBJS+=$(OBJDIR)/qjscalc.o
 endif
+QJS_OBJS+=$(OBJDIR)/quickjs-find-module.o
 
 HOST_LIBS=-lm -ldl -lpthread
 LIBS=-lm

@@ -30,6 +30,7 @@
 
 #include "cutils.h"
 #include "libregexp.h"
+#include "quickjs-config.h"
 
 /*
   TODO:

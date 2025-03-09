@@ -35,6 +35,7 @@
 
 #include "cutils.h"
 #include "quickjs-libc.h"
+#include "quickjs-config.h"
 
 typedef struct {
     char *name;

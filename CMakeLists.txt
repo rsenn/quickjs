@@ -610,6 +610,10 @@ add_custom_target(
 
 configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 
+#set(QUICKJS_INSTALL_PREFIX  "${CMAKE_INSTALL_PREFIX}")
+set(QUICKJS_PREFIX "${QUICKJS_INSTALL_PREFIX}"
+    CACHE PATH "QuickJS installation prefix")
+
 configure_file(quickjs-config.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 
