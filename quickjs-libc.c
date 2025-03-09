@@ -3211,7 +3211,11 @@ static JSContext *(*js_worker_new_context_func)(JSRuntime *rt);
 
 static int atomic_add_int(int *ptr, int v)
 {
-    return atomic_fetch_add((_Atomic(uint32_t) *)ptr, v) + v;
+#ifndef __MSYS__ 
+  return atomic_fetch_add((_Atomic(uint32_t) *)ptr, v) + v;
+#else
+    return atomic_fetch_add((volatile uint32_t*)ptr, v) + v;
+#endif
 }
 
 /* shared array buffer allocator */

@@ -97,7 +97,6 @@ EXPORTS
   dbuf_realloc
   dbuf_write
   has_suffix
-  JS_AddIntrinsicAtomics
   JS_AddIntrinsicBaseObjects
   JS_AddIntrinsicBigDecimal
   JS_AddIntrinsicBigFloat
@@ -171,14 +170,11 @@ EXPORTS
   __JS_FreeValue
   __JS_FreeValueRT
   JS_GetArrayBuffer
-  JS_GetClassID
   JS_GetClassProto
   JS_GetContextOpaque
   JS_GetException
   JS_GetGlobalObject
   JS_GetImportMeta
-  JS_GetModuleLoaderFunc
-  JS_GetModuleLoaderOpaque
   JS_GetModuleName
   JS_GetOpaque
   JS_GetOpaque2
@@ -257,7 +253,6 @@ EXPORTS
   JS_ResetUncatchableError
   JS_ResolveModule
   JS_RunGC
-  JS_RunModule
   JS_SetCanBlock
   JS_SetClassProto
   JS_SetConstructor
