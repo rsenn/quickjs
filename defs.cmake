@@ -43,6 +43,7 @@ if(CONFIG_DEBUGGER)
   set(QUICKJS_SOURCES_DEBUGGER ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
   #set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
   message(STATUS "Enabling quickjs-debugger")
+  set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
 endif(CONFIG_DEBUGGER)
 
 if(WIN32)
@@ -52,7 +53,6 @@ endif(WIN32)
 string(REPLACE ";" "\n" sources "${QUICKJS_SOURCES}")
 
 #message("QUICKJS_SOURCES = ${QUICKJS_SOURCES}")
-# dump(QUICKJS_SOURCES)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseMultiArch.cmake)
 

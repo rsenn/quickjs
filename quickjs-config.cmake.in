@@ -7,9 +7,6 @@
 /* CONFIG_ALL_UNICODE - Define this if you want all-Unicode support */
 #cmakedefine CONFIG_ALL_UNICODE 1
 
-/* CONFIG_ATOMICS - Define this if you want 'Atomics' object [https://tc39.es/ecma262/#sec-atomics-object] */
-#cmakedefine CONFIG_ATOMICS 1
-
 /* CONFIG_BIGNUM - Define this if you want BigNum support */
 #cmakedefine CONFIG_BIGNUM 1
 

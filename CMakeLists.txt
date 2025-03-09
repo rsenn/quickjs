@@ -31,10 +31,7 @@ endif(CONFIG_WORKER)
 option(CONFIG_ALL_UNICODE "Enable all-Unicode support" OFF)
 option(CONFIG_CHECK_JSVALUE "JSValue consistency mode" OFF)
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 include(FindThreads)
-
 include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(CheckSymbolExists)
