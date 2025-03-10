@@ -133,7 +133,12 @@ else(CMAKE_BUILD_TYPE MATCHES "Debug")
 endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 
 string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+
+if(ANDROID)
+string(REPLACE "-O3" "-O1" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+else(ANDROID)
 string(REPLACE "-O3" "-O0" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+endif(ANDROID)
 
 set(DUMP OFF)
 
@@ -414,7 +419,11 @@ endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL
                                                 "RelWithDebInfo")
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
+  if(ANDROID)
+    check_flag("-O1" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
+  else(ANDROID)
+    check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
+  endif(ANDROID)
 endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
 check_flag("-flto" HAVE_LTO_FLAG)

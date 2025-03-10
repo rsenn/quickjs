@@ -100,6 +100,23 @@ macro(check_opt_none_flag)
   endif(OPT_CXX_OPT_NONE)
 endmacro(check_opt_none_flag)
 
+macro(check_opt_1_flag)
+  check_c_compiler_flag("-O1" OPT_C_OPT_1)
+  check_c_compiler_flag("-O1" OPT_CXX_OPT_1)
+  if(OPT_C_OPT_1)
+    if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O1")
+      set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O1"
+          CACHE STRING "C compiler options")
+    endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O1")
+  endif(OPT_C_OPT_1)
+  if(OPT_CXX_OPT_1)
+    if(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-O1")
+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O1"
+          CACHE STRING "C++ compiler options")
+    endif(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-O1")
+  endif(OPT_CXX_OPT_1)
+endmacro(check_opt_1_flag)
+
 macro(check_debug_gdb_flag)
   check_c_compiler_flag("-ggdb" OPT_C_G_GDB)
   check_c_compiler_flag("-ggdb" OPT_CXX_G_GDB)
