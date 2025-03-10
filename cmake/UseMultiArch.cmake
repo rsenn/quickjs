@@ -49,8 +49,8 @@ if(NOT CMAKE_ARCH_LIBDIR)
                                                      "Cross compiling target")
   endif()
 
-  string(REGEX REPLACE unknown-android android SYSTEM_NAME "${SYSTEM_NAME}")
-  string(REGEX REPLACE android[0-9]* android SYSTEM_NAME "${SYSTEM_NAME}")
+  string(REGEX REPLACE "-unknown-" "-" SYSTEM_NAME "${SYSTEM_NAME}")
+  string(REGEX REPLACE "android[0-9]*" android SYSTEM_NAME "${SYSTEM_NAME}")
 
   if(SYSTEM_NAME AND NOT "${SYSTEM_NAME}" STREQUAL "")
     set(CMAKE_INSTALL_LIBDIR lib/${SYSTEM_NAME})
