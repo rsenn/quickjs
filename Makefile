@@ -28,7 +28,7 @@ endif
 # Windows cross compilation from Linux
 #CONFIG_WIN32=y
 # use link time optimization (smaller and faster executables but slower build)
-CONFIG_LTO=y
+#CONFIG_LTO=y
 # consider warnings as errors (for development)
 #CONFIG_WERROR=y
 # force 32 bit build for some utilities
@@ -118,6 +118,7 @@ endif
 ifdef CONFIG_WIN32
 DEFINES+=-D__USE_MINGW_ANSI_STDIO # for standard snprintf behavior
 endif
+DEFINES+=-DHAVE_QUICKJS_CONFIG_H=1 -Ibuild/x86_64-linux-gnu
 
 CFLAGS+=$(DEFINES)
 CFLAGS_DEBUG=$(CFLAGS) -O0
@@ -192,6 +193,8 @@ endif
 all: $(OBJDIR) $(OBJDIR)/quickjs.check.o $(OBJDIR)/qjs.check.o $(PROGS)
 
 QJS_LIB_OBJS=$(OBJDIR)/quickjs.o $(OBJDIR)/libregexp.o $(OBJDIR)/libunicode.o $(OBJDIR)/cutils.o $(OBJDIR)/quickjs-libc.o $(OBJDIR)/libbf.o 
+QJS_LIB_OBJS+=$(OBJDIR)/quickjs-debugger.o $(OBJDIR)/quickjs-debugger-transport-unix.o
+QJS_LIB_OBJS+=$(OBJDIR)/quickjs-find-module.o
 
 QJS_OBJS=$(OBJDIR)/qjs.o $(OBJDIR)/repl.o $(QJS_LIB_OBJS)
 ifdef CONFIG_BIGNUM

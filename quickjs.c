@@ -70,7 +70,7 @@
 
 /* define to include Atomics.* operations which depend on the OS
    threads */
-#if !defined(EMSCRIPTEN) && !defined(__MSYS__)
+#if !defined(EMSCRIPTEN) && !defined(__MSYS__) && !defined(__TINYC__)
 #define CONFIG_ATOMICS
 #endif
 
