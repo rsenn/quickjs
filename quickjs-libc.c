@@ -453,7 +453,7 @@ typedef JSModuleDef *(JSInitModuleFunc)(JSContext *ctx,
                                         const char *module_name);
 
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__dietlibc__)
 static JSModuleDef *js_module_loader_so(JSContext *ctx,
                                         const char *module_name)
 {
@@ -2590,7 +2590,7 @@ static JSValue js_os_stat(JSContext *ctx, JSValueConst this_val,
                                   JS_NewInt64(ctx, st.st_blocks),
                                   JS_PROP_C_W_E);
 #endif
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__dietlibc__)
         JS_DefinePropertyValueStr(ctx, obj, "atime",
                                   JS_NewInt64(ctx, (int64_t)st.st_atime * 1000),
                                   JS_PROP_C_W_E);

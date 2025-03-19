@@ -61,3 +61,13 @@ endif(NOT CMAKE_ARCH_LIBDIR)
 
 #message("${CMAKE_C_COMPILER}: ${CMAKE_C_COMPILER}")
 message("Architecture-specific library directory: ${CMAKE_ARCH_LIBDIR}")
+
+if(SYSTEM_NAME MATCHES "diet")
+  set(DIET TRUE CACHE BOOL "dietlibc")
+  set(LIBDL "" CACHE STRING "dl library" FORCE)
+endif(SYSTEM_NAME MATCHES "diet")
+if(DIET)
+  set(BUILD_SHARED_LIBS OFF)
+endif(DIET)
+
+

@@ -296,6 +296,17 @@ function(TRY_CODE FILE CODE RESULT_VAR OUTPUT_VAR LIBS LDFLAGS)
   endif(NOT DEFINED "${RESULT_VAR}" OR NOT DEFINED "${OUTPUT_VAR}")
 endfunction()
 
+function(CHECK_EXTERNAL NAME LIBS LDFLAGS OUTPUT_VAR)
+  try_code("test-${NAME}.c" "
+  extern int ${NAME}(void);
+  int main() {
+    ${NAME}();
+    return 0;
+  }
+  " "${OUTPUT_VAR}" OUT "${LIBS}" "${LDFLAGS}")
+  dump(OUTPUT_VAR OUT) 
+endfunction(CHECK_EXTERNAL NAME LIBS LDFLAGS OUTPUT_VAR)
+
 function(RUN_CODE FILE CODE RESULT_VAR OUTPUT_VAR LIBS LDFLAGS)
   # if(NOT DEFINED "${RESULT_VAR}" OR NOT DEFINED "${OUTPUT_VAR}")
   string(RANDOM LENGTH 8 RND)
