@@ -70,6 +70,7 @@ typedef sig_t sighandler_t;
 #include "cutils.h"
 #include "list.h"
 #include "quickjs-libc.h"
+#include "poll.h"
 
 /* TODO:
    - add socket calls
@@ -2133,83 +2134,6 @@ static void call_handler(JSContext *ctx, JSValueConst func)
     JS_FreeValue(ctx, ret);
 }
 
-#if defined(_WIN32)
-
-static int js_os_poll(JSContext *ctx)
-{
-    JSRuntime *rt = JS_GetRuntime(ctx);
-    JSThreadState *ts = JS_GetRuntimeOpaque(rt);
-    int min_delay, console_fd;
-    int64_t cur_time, delay;
-    JSOSRWHandler *rh;
-    struct list_head *el;
-    
-    /* XXX: handle signals if useful */
-
-    if (list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers))
-        return -1; /* no more events */
-    
-    /* XXX: only timers and basic console input are supported */
-    if (!list_empty(&ts->os_timers)) {
-        cur_time = get_time_ms();
-        min_delay = 10000;
-        list_for_each(el, &ts->os_timers) {
-            JSOSTimer *th = list_entry(el, JSOSTimer, link);
-            delay = th->timeout - cur_time;
-            if (delay <= 0) {
-                JSValue func;
-                /* the timer expired */
-                func = th->func;
-                th->func = JS_UNDEFINED;
-                unlink_timer(rt, th);
-                if (!th->has_object)
-                    free_timer(rt, th);
-                call_handler(ctx, func);
-                JS_FreeValue(ctx, func);
-                return 0;
-            } else if (delay < min_delay) {
-                min_delay = delay;
-            }
-        }
-    } else {
-        min_delay = -1;
-    }
-
-    console_fd = -1;
-    list_for_each(el, &ts->os_rw_handlers) {
-        rh = list_entry(el, JSOSRWHandler, link);
-        if (rh->fd == 0 && !JS_IsNull(rh->rw_func[0])) {
-            console_fd = rh->fd;
-            break;
-        }
-    }
-
-    if (console_fd >= 0) {
-        DWORD ti, ret;
-        HANDLE handle;
-        if (min_delay == -1)
-            ti = INFINITE;
-        else
-            ti = min_delay;
-        handle = (HANDLE)_get_osfhandle(console_fd);
-        ret = WaitForSingleObject(handle, ti);
-        if (ret == WAIT_OBJECT_0) {
-            list_for_each(el, &ts->os_rw_handlers) {
-                rh = list_entry(el, JSOSRWHandler, link);
-                if (rh->fd == console_fd && !JS_IsNull(rh->rw_func[0])) {
-                    call_handler(ctx, rh->rw_func[0]);
-                    /* must stop because the list may have been modified */
-                    break;
-                }
-            }
-        }
-    } else {
-        Sleep(min_delay);
-    }
-    return 0;
-}
-#else
-
 #ifdef USE_WORKER
 
 static void js_free_message(JSWorkerMessage *msg);
@@ -2286,6 +2210,165 @@ static int handle_posted_message(JSRuntime *rt, JSContext *ctx,
     return 0;
 }
 #endif
+
+
+#ifdef HAVE_POLL
+static int
+js_os_poll(JSContext* ctx) {
+  JSRuntime* rt = JS_GetRuntime(ctx);
+  JSThreadState* ts = JS_GetRuntimeOpaque(rt);
+  int min_delay;
+  int64_t cur_time, delay;
+  JSOSRWHandler* rh;
+  struct list_head* el;
+  struct pollfd* fds;
+  int i, ret, n;
+
+  /* only check signals in the main thread */
+  if(!ts->recv_pipe && unlikely(os_pending_signals != 0)) {
+    JSOSSignalHandler* sh;
+    uint64_t mask;
+
+    list_for_each(el, &ts->os_signal_handlers) {
+      sh = list_entry(el, JSOSSignalHandler, link);
+      mask = (uint64_t)1 << sh->sig_num;
+      if(os_pending_signals & mask) {
+        os_pending_signals &= ~mask;
+        call_handler(ctx, sh->func);
+        return 0;
+      }
+    }
+  }
+
+  /* XXX: handle signals if useful */
+
+  if(list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers) && list_empty(&ts->port_list))
+    return -1; /* no more events */
+
+  /* XXX: only timers and basic console input are supported */
+  if(!list_empty(&ts->os_timers)) {
+    cur_time = get_time_ms();
+    min_delay = 10000;
+    list_for_each(el, &ts->os_timers) {
+      JSOSTimer* th = list_entry(el, JSOSTimer, link);
+      delay = th->timeout - cur_time;
+      if(delay <= 0) {
+        JSValue func;
+        /* the timer expired */
+        func = th->func;
+        th->func = JS_UNDEFINED;
+        unlink_timer(rt, th);
+        if(!th->has_object)
+          free_timer(rt, th);
+        call_handler(ctx, func);
+        JS_FreeValue(ctx, func);
+        return 0;
+      } else if(delay < min_delay) {
+        min_delay = delay;
+      }
+    }
+  } else {
+    min_delay = -1;
+  }
+
+  n = 0;
+  list_for_each(el, &ts->os_rw_handlers) {
+    rh = list_entry(el, JSOSRWHandler, link);
+    if(!JS_IsNull(rh->rw_func[0]) || !JS_IsNull(rh->rw_func[1]))
+      n++;
+  }
+
+  list_for_each(el, &ts->port_list) {
+    JSWorkerMessageHandler* port = list_entry(el, JSWorkerMessageHandler, link);
+    if(!JS_IsNull(rh->rw_func[0]))
+      n++;
+  }
+
+#ifdef HAVE_ALLOCA
+  fds = alloca(sizeof(struct pollfd) * n);
+#else
+  fds = malloc(sizeof(struct pollfd) * n);
+#endif
+  assert(fds);
+
+  i = 0;
+  list_for_each(el, &ts->os_rw_handlers) {
+    rh = list_entry(el, JSOSRWHandler, link);
+    fds[i].fd = rh->fd;
+    fds[i].events =  0;
+    fds[i].revents =  0;
+
+    if(!JS_IsNull(rh->rw_func[0]))
+      fds[i].events  |= POLLIN;
+    if(!JS_IsNull(rh->rw_func[1]))
+      fds[i].events  |= POLLOUT;
+
+    if(fds[i].events)
+      i++;
+  }
+
+  list_for_each(el, &ts->port_list) {
+    JSWorkerMessageHandler* port = list_entry(el, JSWorkerMessageHandler, link);
+    if(!JS_IsNull(port->on_message_func)) {
+      JSWorkerMessagePipe* ps = port->recv_pipe;
+
+      fds[i].fd = ps->read_fd;
+      fds[i].events =  POLLIN;
+      fds[i].revents =  0;
+
+      i++;
+    }
+  }
+  
+  ret = poll(fds, n, min_delay);
+  assert(ret >= 0);
+  if(ret > 0) {
+    i = 0;
+
+    list_for_each(el, &ts->os_rw_handlers) {
+      rh = list_entry(el, JSOSRWHandler, link);
+
+      if(JS_IsNull(rh->rw_func[0]) && JS_IsNull(rh->rw_func[1]))
+        continue;
+
+      assert(fds[i].fd == rh->fd);
+
+      if(fds[i].revents & (POLLIN|POLLHUP)) {
+        call_handler(ctx, rh->rw_func[0]);
+        /* must stop because the list may have been modified */
+        goto done;
+      }
+      if(fds[i].revents & POLLOUT) {
+        call_handler(ctx, rh->rw_func[1]);
+        /* must stop because the list may have been modified */
+        goto done;
+      }
+
+      i++;
+    }
+
+    list_for_each(el, &ts->port_list) {
+      JSWorkerMessageHandler* port = list_entry(el, JSWorkerMessageHandler, link);
+      if(!JS_IsNull(port->on_message_func)) {
+        JSWorkerMessagePipe* ps = port->recv_pipe;
+        assert(fds[i].fd == ps->read_fd);
+        if(fds[i].revents & POLLIN)
+          if(handle_posted_message(rt, ctx, port))
+            goto done;
+        i++;
+      }
+    }
+  }
+done:
+#ifndef HAVE_ALLOCA
+free(fds);
+#endif
+
+  //js_free(ctx, fds);
+  return 0;
+}
+
+#else
 
 static int js_os_poll(JSContext *ctx)
 {
@@ -2400,7 +2483,7 @@ static int js_os_poll(JSContext *ctx)
     done:
     return 0;
 }
-#endif /* !_WIN32 */
+#endif /* !HAVE_POLL */
 
 static JSValue make_obj_error(JSContext *ctx,
                               JSValue obj,
