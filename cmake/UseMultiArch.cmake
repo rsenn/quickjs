@@ -69,5 +69,3 @@ endif(SYSTEM_NAME MATCHES "diet")
 if(DIET)
   set(BUILD_SHARED_LIBS OFF)
 endif(DIET)
-
-

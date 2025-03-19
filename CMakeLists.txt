@@ -52,7 +52,8 @@ execute_process(
 string(REGEX REPLACE "-unknown-" "-" SYSTEM_NAME "${SYSTEM_NAME}")
 string(REGEX REPLACE "android[0-9]*" "android" SYSTEM_NAME "${SYSTEM_NAME}")
 string(REGEX REPLACE "-unknown-" "-" HOST_SYSTEM_NAME "${HOST_SYSTEM_NAME}")
-string(REGEX REPLACE "android[0-9]*" "android" HOST_SYSTEM_NAME "${HOST_SYSTEM_NAME}")
+string(REGEX REPLACE "android[0-9]*" "android" HOST_SYSTEM_NAME
+                     "${HOST_SYSTEM_NAME}")
 
 set(HOST_SYSTEM "${HOST_SYSTEM_NAME}")
 set(TARGET_SYSTEM "${HOST_SYSTEM_NAME}")
@@ -135,9 +136,9 @@ endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
 if(ANDROID)
-string(REPLACE "-O3" "-O1" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+  string(REPLACE "-O3" "-O1" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
 else(ANDROID)
-string(REPLACE "-O3" "-O0" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+  string(REPLACE "-O3" "-O0" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
 endif(ANDROID)
 
 set(DUMP OFF)
@@ -750,11 +751,13 @@ add_executable(
 
 target_link_libraries(qjs ${QUICKJS_LIBRARY} ${LIBPTHREAD} ${LIBM}
                       ${SOCKET_LIBRARIES})
-set_target_properties(
-  qjs
-  PROPERTIES LINK_OPTIONS "${LINK_EXPORT}"
-             RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}"
-             INSTALL_RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}")
+set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
+if(BUILD_SHARED_LIBS)
+  set_target_properties(
+    qjs
+    PROPERTIES RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}"
+               INSTALL_RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}")
+endif(BUILD_SHARED_LIBS)
 
 target_compile_definitions(
   qjs PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
@@ -763,15 +766,21 @@ target_compile_definitions(
 if(WASI)
   set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc")
 endif(WASI)
+
+dump(LIBPTHREAD)
+
 if(BUILD_QJSC)
   add_executable(qjsc qjsc.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
   )
   target_link_libraries(qjsc ${QUICKJS_LIBRARY} ${LIBM} ${LIBPTHREAD}
                         ${SOCKET_LIBRARIES})
-  set_target_properties(
-    qjsc
-    PROPERTIES RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}"
-               INSTALL_RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}")
+  if(BUILD_SHARED_LIBS)
+    set_target_properties(
+      qjsc
+      PROPERTIES RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}"
+                 INSTALL_RPATH
+                 "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}")
+  endif(BUILD_SHARED_LIBS)
 
   target_compile_definitions(
     qjsc
