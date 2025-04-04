@@ -42,6 +42,8 @@
 #include "quickjs-libc.h"
 #include "quickjs-config.h"
 
+JSModuleDef* js_module_loader_path(JSContext* ctx, const char* module_name, void* opaque);
+
 extern const uint8_t qjsc_repl[];
 extern const uint32_t qjsc_repl_size;
 #ifdef CONFIG_BIGNUM
@@ -472,7 +474,7 @@ int main(int argc, char **argv)
     }
 
     /* loader for ES6 modules */
-    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
+    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader_path, NULL);
 
     if (dump_unhandled_promise_rejection) {
         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,
