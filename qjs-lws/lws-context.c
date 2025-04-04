@@ -18,16 +18,22 @@ value_to_string(JSContext* ctx, JSValueConst value) {
   return x;
 }
 
+static const int64_t
+value_to_integer(JSContext* ctx, JSValueConst value) {
+  int64_t i = -1;
+  JS_ToInt64(ctx, &i, value);
+  return i;
+}
+
 static const void*
-lws_context_getarray(JSContext* ctx,
-                     JSValueConst value,
-                     void* get_fn(JSContext*, JSValueConst)) {
+lws_context_getarray(JSContext* ctx, JSValueConst value, void* fn(JSContext*, JSValueConst)) {
   const void** arr = 0;
 
   if(JS_IsArray(ctx, value)) {
     int32_t len = -1;
     JS_GetPropertyStr(ctx, value, "length");
     JS_ToInt32(ctx, &len, value);
+    JS_FreeValue(ctx, value);
 
     if(len > 0) {
       arr = js_mallocz(ctx, (len + 1) * sizeof(void*));
@@ -35,7 +41,7 @@ lws_context_getarray(JSContext* ctx,
       for(int32_t i = 0; i < len; len++) {
         JSValue item = JS_GetPropertyUint32(ctx, value, i);
 
-        if(!(arr[i] = get_fn(ctx, item)))
+        if(!(arr[i] = fn(ctx, item)))
           break;
 
         JS_FreeValue(ctx, item);
@@ -51,13 +57,23 @@ lws_context_getarray(JSContext* ctx,
 struct lws_context_protocols_closure {
   JSContext* ctx;
   JSValue fn_obj;
+  JSValue user;
 };
 
 static int
-protocol_callback(
-    struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
+protocol_callback(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
   struct lws_context_protocols_closure* closure = user;
-  JSValue ret = JS_Call(closure->ctx, closure->fn_obj, closure->this_obj, 0, 0);
+  JSValue argv[] = {
+      JS_NewInt32(closure->ctx, reason),
+      JS_DupValue(closure->ctx, closure->user),
+      in ? JS_NewArrayBufferCopy(closure->ctx, in, len) : JS_NULL,
+      JS_NewInt64(closure->ctx, len),
+  };
+  JSValue ret = JS_Call(closure->ctx, closure->fn_obj, JS_NULL, countof(argv), argv);
+  JS_FreeValue(closure->ctx, argv[0]);
+  JS_FreeValue(closure->ctx, argv[1]);
+  JS_FreeValue(closure->ctx, argv[2]);
+  JS_FreeValue(closure->ctx, argv[3]);
 
   int32_t i = -1;
   JS_ToInt32(closure->ctx, &i, ret);
@@ -66,52 +82,100 @@ protocol_callback(
   return i;
 }
 
-static void*
-lws_context_protocols(JSContext* ctx, JSValueConst obj) {
-  struct lws_protocols* pro;
+static void
+lws_context_protocol_free(JSRuntime* rt, struct lws_protocols* pro) {
+  struct lws_context_protocols_closure* closure = pro->user;
 
-  if(!(pro = js_mallocz(ctx,
-                        sizeof(struct lws_protocols) +
-                            sizeof(struct lws_context_protocols_closure))))
-    return 0;
+  if(closure) {
+    JS_FreeValueRT(rt, closure->fn_obj);
+    JS_FreeValueRT(rt, closure->user);
 
-  struct lws_context_protocols_closure* closure =
-      (struct lws_context_protocols_closure*)&pro[1];
+    js_free_rt(rt, closure);
+  }
 
-  uint32_t u;
+  pro->user = 0;
+  pro->callback = 0;
+
+  js_free_rt(rt, (char*)pro->name);
+}
+
+static void
+lws_context_protocols_free(JSRuntime* rt, struct lws_protocols* pro) {
+  size_t i;
+
+  for(i = 0; pro[i].name; ++i)
+    lws_context_protocol_free(rt, &pro[i]);
+
+  js_free_rt(rt, pro);
+}
+
+static struct lws_protocols
+lws_context_protocol(JSContext* ctx, JSValueConst obj) {
+  struct lws_protocols pro;
+  struct lws_context_protocols_closure* closure = 0;
+
   JSValue value = JS_GetPropertyStr(ctx, obj, "name");
-  pro->name = value_to_string(ctx, value);
+  pro.name = value_to_string(ctx, value);
   JS_FreeValue(ctx, value);
 
   value = JS_GetPropertyStr(ctx, obj, "callback");
   if(JS_IsFunction(ctx, value)) {
-    pro->callback = &protocol_callback;
-    closure->ctx = ctx;
-    closure->fn_obj = JS_DupValue(ctx, value);
+    pro.callback = &protocol_callback;
+
+    if((closure = js_mallocz(ctx, sizeof(struct lws_context_protocols_closure)))) {
+      closure->ctx = ctx;
+      closure->fn_obj = JS_DupValue(ctx, value);
+
+      closure->user = JS_GetPropertyStr(ctx, obj, "user");
+    }
+
+    pro.user = closure;
   }
   JS_FreeValue(ctx, value);
 
   value = JS_GetPropertyStr(ctx, obj, "per_session_data_size");
-  JS_ToUint32(ctx, &u, value);
-  pro->per_session_data_size = u;
+  pro.per_session_data_size = value_to_integer(ctx, value);
   JS_FreeValue(ctx, value);
 
   value = JS_GetPropertyStr(ctx, obj, "rx_buffer_size");
-  JS_ToUint32(ctx, &u, value);
-  pro->rx_buffer_size = u;
+  pro.rx_buffer_size = value_to_integer(ctx, value);
   JS_FreeValue(ctx, value);
 
   value = JS_GetPropertyStr(ctx, obj, "id");
-  JS_ToUint32(ctx, &u, value);
-  pro->id = u;
+  pro.id = value_to_integer(ctx, value);
   JS_FreeValue(ctx, value);
 
   value = JS_GetPropertyStr(ctx, obj, "tx_packet_size");
-  JS_ToUint32(ctx, &u, value);
-  pro->tx_packet_size = u;
+  pro.tx_packet_size = value_to_integer(ctx, value);
   JS_FreeValue(ctx, value);
 
-  pro->user = closure;
+  return pro;
+}
+
+static const struct lws_protocols*
+lws_context_protocols(JSContext* ctx, JSValueConst value) {
+  struct lws_protocols* pro = 0;
+
+  if(JS_IsArray(ctx, value)) {
+    int32_t len = -1;
+    JS_GetPropertyStr(ctx, value, "length");
+    JS_ToInt32(ctx, &len, value);
+    JS_FreeValue(ctx, value);
+
+    if(len > 0) {
+      pro = js_mallocz(ctx, (len + 1) * sizeof(struct lws_protocols));
+
+      for(int32_t i = 0; i < len; len++) {
+        JSValue protocol = JS_GetPropertyUint32(ctx, value, i);
+
+        pro[i] = lws_context_protocol(ctx, protocol);
+
+        JS_FreeValue(ctx, protocol);
+      }
+    }
+  }
+
+  JS_FreeValue(ctx, value);
 
   return pro;
 }
@@ -176,6 +240,7 @@ lws_context_http_mounts(JSContext* ctx, JSValueConst value) {
     int32_t len = -1;
     JS_GetPropertyStr(ctx, value, "length");
     JS_ToInt32(ctx, &len, value);
+    JS_FreeValue(ctx, value);
 
     if(len > 0) {
       mnt = js_malloc(ctx, sizeof(struct lws_http_mount));
@@ -202,22 +267,24 @@ lws_context_http_mounts(JSContext* ctx, JSValueConst value) {
 static void
 lws_context_http_mounts_free(JSRuntime* rt, struct lws_http_mount* mnt) {
 
-  js_free_rt(rt, (char*)mnt->mountpoint);
-  mnt->mountpoint = 0;
-  js_free_rt(rt, (char*)mnt->origin);
-  mnt->origin = 0;
-  js_free_rt(rt, (char*)mnt->def);
-  mnt->def = 0;
-  js_free_rt(rt, (char*)mnt->protocol);
-  mnt->protocol = 0;
-  lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->cgienv);
-  mnt->cgienv = 0;
-  lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->extra_mimetypes);
-  mnt->extra_mimetypes = 0;
-  lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->interpret);
-  mnt->interpret = 0;
-  js_free_rt(rt, (char*)mnt->basic_auth_login_file);
-  mnt->basic_auth_login_file = 0;
+  for(; mnt; mnt = (struct lws_http_mount*)mnt->mount_next) {
+    js_free_rt(rt, (char*)mnt->mountpoint);
+    mnt->mountpoint = 0;
+    js_free_rt(rt, (char*)mnt->origin);
+    mnt->origin = 0;
+    js_free_rt(rt, (char*)mnt->def);
+    mnt->def = 0;
+    js_free_rt(rt, (char*)mnt->protocol);
+    mnt->protocol = 0;
+    lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->cgienv);
+    mnt->cgienv = 0;
+    lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->extra_mimetypes);
+    mnt->extra_mimetypes = 0;
+    lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->interpret);
+    mnt->interpret = 0;
+    js_free_rt(rt, (char*)mnt->basic_auth_login_file);
+    mnt->basic_auth_login_file = 0;
+  }
 }
 
 static struct lws_protocol_vhost_options* lws_context_vh_options(JSContext*, JSValueConst);
@@ -257,6 +324,7 @@ lws_context_vh_options(JSContext* ctx, JSValueConst value) {
     int32_t len = -1;
     JS_GetPropertyStr(ctx, value, "length");
     JS_ToInt32(ctx, &len, value);
+    JS_FreeValue(ctx, value);
 
     if(len > 0) {
 
@@ -295,15 +363,10 @@ lws_context_vh_options_free(JSRuntime* rt, struct lws_protocol_vhost_options* vh
 }
 
 JSValue
-lws_context_constructor(JSContext* ctx,
-                        JSValueConst new_target,
-                        int argc,
-                        JSValueConst argv[]) {
+lws_context_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSValueConst argv[]) {
   JSValue proto, obj;
-  struct lws_context_creation_info ci = {}, *pci = &ci, **lci = &pci;
+  struct lws_context_creation_info ci = {0};
   struct lws_context **lc, *other;
-  BOOL got_url = FALSE;
-  int32_t i;
 
   if(!(lc = js_malloc(ctx, sizeof(struct lws_context*))))
     return JS_EXCEPTION;
@@ -324,39 +387,61 @@ lws_context_constructor(JSContext* ctx,
     JSValue value;
 
     value = JS_GetPropertyStr(ctx, argv[0], "iface");
-    (*lci)->iface = value_to_string(ctx, value);
+    ci.iface = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "protocols");
-    (*lci)->protocols = lws_context_getarray(ctx, value, lws_context_protocols);
+    ci.protocols = lws_context_protocols(ctx, value);
     JS_FreeValue(ctx, value);
 
 #if defined(LWS_ROLE_WS)
 
 #endif
+#if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
     value = JS_GetPropertyStr(ctx, argv[0], "http_proxy_address");
-    (*lci)->http_proxy_address = value_to_string(ctx, value);
+    ci.http_proxy_address = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "headers");
-    (*lci)->headers = lws_context_vh_options(ctx, value);
+    ci.headers = lws_context_vh_options(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "reject_service_keywords");
-    (*lci)->reject_service_keywords = lws_context_vh_options(ctx, value);
+    ci.reject_service_keywords = lws_context_vh_options(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "pvo");
-    (*lci)->pvo = lws_context_vh_options(ctx, value);
+    ci.pvo = lws_context_vh_options(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "log_filepath");
-    (*lci)->log_filepath = value_to_string(ctx, value);
+    ci.log_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "mounts");
-    (*lci)->mounts = lws_context_http_mounts(ctx, value);
+    ci.mounts = lws_context_http_mounts(ctx, value);
     JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, argv[0], "server_string");
+    ci.server_string = value_to_string(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, argv[0], "error_document_404");
+    ci.error_document_404 = value_to_string(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, argv[0], "port");
+    ci.port = value_to_integer(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, argv[0], "http_proxy_port");
+    ci.http_proxy_port = value_to_integer(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, argv[0], "keepalive_timeout");
+    ci.keepalive_timeout = value_to_integer(ctx, value);
+    JS_FreeValue(ctx, value);
+#endif
 
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
     value = JS_GetPropertyStr(ctx, argv[0], "async_dns_servers");
@@ -364,83 +449,83 @@ lws_context_constructor(JSContext* ctx,
     if(JS_IsObject(value)) {
       JS_GetPropertyStr(ctx, value, "length");
       JS_ToInt32(ctx, &i, value);
+      JS_FreeValue(ctx, value);
 
       if(i > 0) {
-        (*lci)->async_dns_servers = js_malloc(ctx, (i + 1) * sizeof(const char*));
+        ci.async_dns_servers = js_mallocz(ctx, (i + 1) * sizeof(const char*));
 
         for(int32_t j = 0; j < i; i++) {
           JSValue server = JS_GetPropertyUint32(ctx, value, j);
 
-          (*lci)->async_dns_servers[j] = value_to_string(ctx, server);
+          ci.async_dns_servers[j] = value_to_string(ctx, server);
           JS_FreeValue(ctx, server);
         }
 
-        (*lci)->async_dns_servers[i] = 0;
+        ci.async_dns_servers[i] = 0;
       }
     }
 
     JS_FreeValue(ctx, value);
 #endif
 
-    JSValue protocols = JS_GetPropertyStr(ctx, argv[0], "protocols");
-
-#if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
-    JSValue vport = JS_GetPropertyStr(ctx, argv[0], "port");
-    int32_t port;
-    JS_ToInt32(ctx, &port, vport);
-    JS_FreeValue(ctx, vport);
-
-    (*lci)->port = port;
-#endif
-
 #if defined(LWS_WITH_TLS)
     value = JS_GetPropertyStr(ctx, argv[0], "ssl_private_key_password");
-    (*lci)->ssl_private_key_password = value_to_string(ctx, value);
+    ci.ssl_private_key_password = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "ssl_cert_filepath");
-    (*lci)->ssl_cert_filepath = value_to_string(ctx, value);
+    ci.ssl_cert_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "ssl_private_key_filepath");
-    (*lci)->ssl_private_key_filepath = value_to_string(ctx, value);
+    ci.ssl_private_key_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "ssl_ca_filepath");
-    (*lci)->ssl_ca_filepath = value_to_string(ctx, value);
+    ci.ssl_ca_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "ssl_cipher_list");
-    (*lci)->ssl_cipher_list = value_to_string(ctx, value);
+    ci.ssl_cipher_list = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "tls1_3_plus_cipher_list");
-    (*lci)->tls1_3_plus_cipher_list = value_to_string(ctx, value);
+    ci.tls1_3_plus_cipher_list = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "client_ssl_private_key_password");
-    (*lci)->client_ssl_private_key_password = value_to_string(ctx, value);
+    ci.client_ssl_private_key_password = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "client_ssl_cert_filepath");
-    (*lci)->client_ssl_cert_filepath = value_to_string(ctx, value);
+    ci.client_ssl_cert_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "client_ssl_private_key_filepath");
-    (*lci)->client_ssl_private_key_filepath = value_to_string(ctx, value);
+    ci.client_ssl_private_key_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "client_ssl_ca_filepath");
-    (*lci)->client_ssl_ca_filepath = value_to_string(ctx, value);
+    ci.client_ssl_ca_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "client_ssl_cipher_list");
-    (*lci)->client_ssl_cipher_list = value_to_string(ctx, value);
+    ci.client_ssl_cipher_list = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
+
     value = JS_GetPropertyStr(ctx, argv[0], "client_tls_1_3_plus_cipher_list");
-    (*lci)->client_tls_1_3_plus_cipher_list = value_to_string(ctx, value);
+    ci.client_tls_1_3_plus_cipher_list = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
 #endif
 
 #if defined(LWS_WITH_SOCKS5)
     value = JS_GetPropertyStr(ctx, argv[0], "socks_proxy_address");
-    (*lci)->socks_proxy_address = value_to_string(ctx, value);
+    ci.socks_proxy_address = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "socks_proxy_port");
-    JS_ToInt32(ctx, &i, value);
-    (*lci)->socks_proxy_port = i;
+    ci.socks_proxy_port = value_to_integer(ctx, value);
     JS_FreeValue(ctx, value);
 
 #endif
@@ -451,18 +536,19 @@ lws_context_constructor(JSContext* ctx,
     if(JS_IsObject(value)) {
       JS_GetPropertyStr(ctx, value, "length");
       JS_ToInt32(ctx, &i, value);
+      JS_FreeValue(ctx, value);
 
       if(i > 0) {
-        (*lci)->async_dns_servers = js_malloc(ctx, (i + 1) * sizeof(const char*));
+        ci.async_dns_servers = js_malloc(ctx, (i + 1) * sizeof(const char*));
 
         for(int32_t j = 0; j < i; i++) {
           JSValue server = JS_GetPropertyUint32(ctx, value, j);
 
-          (*lci)->async_dns_servers[j] = value_to_string(ctx, server);
+          ci.async_dns_servers[j] = value_to_string(ctx, server);
           JS_FreeValue(ctx, server);
         }
 
-        (*lci)->async_dns_servers[i] = 0;
+        ci.async_dns_servers[i] = 0;
       }
     }
 
@@ -470,19 +556,77 @@ lws_context_constructor(JSContext* ctx,
 #endif
 
     value = JS_GetPropertyStr(ctx, argv[0], "default_loglevel");
-    JS_ToInt32(ctx, &i, value);
-    (*lci)->default_loglevel = i;
+    ci.default_loglevel = value_to_integer(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "vh_listen_sockfd");
-    JS_ToInt32(ctx, &i, value);
-    (*lci)->vh_listen_sockfd = i;
+    ci.vh_listen_sockfd = value_to_integer(ctx, value);
     JS_FreeValue(ctx, value);
   }
 
-  (*lci)->user = JS_VALUE_GET_OBJ(obj);
+  ci.user = JS_VALUE_GET_OBJ(obj);
+
+  *lc = lws_create_context(&ci);
 
   JS_SetOpaque(obj, lc);
+
+  if(ci.iface)
+    js_free(ctx, (char*)ci.iface);
+  if(ci.protocols)
+    lws_context_protocols_free(JS_GetRuntime(ctx), (struct lws_protocols*)ci.protocols);
+  if(ci.http_proxy_address)
+    js_free(ctx, (char*)ci.http_proxy_address);
+  if(ci.headers)
+    lws_context_vh_options_free(JS_GetRuntime(ctx), (struct lws_protocol_vhost_options*)ci.headers);
+  if(ci.reject_service_keywords)
+    lws_context_vh_options_free(JS_GetRuntime(ctx), (struct lws_protocol_vhost_options*)ci.reject_service_keywords);
+  if(ci.pvo)
+    lws_context_vh_options_free(JS_GetRuntime(ctx), (struct lws_protocol_vhost_options*)ci.pvo);
+  if(ci.log_filepath)
+    js_free(ctx, (char*)ci.log_filepath);
+  if(ci.mounts)
+    lws_context_http_mounts_free(JS_GetRuntime(ctx), (struct lws_http_mount*)ci.mounts);
+  if(ci.server_string)
+    js_free(ctx, (char*)ci.server_string);
+  if(ci.error_document_404)
+    js_free(ctx, (char*)ci.error_document_404);
+#if defined(LWS_WITH_SYS_ASYNC_DNS)
+  if(ci.async_dns_servers) {
+    for(size_t i = 0; ci.async_dns_servers[i]; ++i)
+      js_free(ctx, (char*)ci.async_dns_servers[i]);
+    js_free(ctx, ci.async_dns_servers);
+  }
+#endif
+#if defined(LWS_WITH_TLS)
+  if(ci.ssl_private_key_password)
+    js_free(ctx, (char*)ci.ssl_private_key_password);
+  if(ci.ssl_cert_filepath)
+    js_free(ctx, (char*)ci.ssl_cert_filepath);
+  if(ci.ssl_private_key_filepath)
+    js_free(ctx, (char*)ci.ssl_private_key_filepath);
+  if(ci.ssl_ca_filepath)
+    js_free(ctx, (char*)ci.ssl_ca_filepath);
+  if(ci.ssl_cipher_list)
+    js_free(ctx, (char*)ci.ssl_cipher_list);
+  if(ci.tls1_3_plus_cipher_list)
+    js_free(ctx, (char*)ci.tls1_3_plus_cipher_list);
+  if(ci.client_ssl_private_key_password)
+    js_free(ctx, (char*)ci.client_ssl_private_key_password);
+  if(ci.client_ssl_cert_filepath)
+    js_free(ctx, (char*)ci.client_ssl_cert_filepath);
+  if(ci.client_ssl_private_key_filepath)
+    js_free(ctx, (char*)ci.client_ssl_private_key_filepath);
+  if(ci.client_ssl_ca_filepath)
+    js_free(ctx, (char*)ci.client_ssl_ca_filepath);
+  if(ci.client_ssl_cipher_list)
+    js_free(ctx, (char*)ci.client_ssl_cipher_list);
+  if(ci.client_tls_1_3_plus_cipher_list)
+    js_free(ctx, (char*)ci.client_tls_1_3_plus_cipher_list);
+#endif
+#if defined(LWS_WITH_SOCKS5)
+  if(ci.socks_proxy_address)
+    js_free(ctx, (char*)ci.socks_proxy_address);
+#endif
 
   return obj;
 
@@ -497,6 +641,8 @@ lws_context_finalizer(JSRuntime* rt, JSValue val) {
   struct lws_context** lc;
 
   if((lc = JS_GetOpaque(val, lws_context_class_id))) {
+    lws_context_destroy(*lc);
+    *lc = 0;
     js_free_rt(rt, lc);
   }
 }
@@ -510,13 +656,9 @@ lws_context_init(JSContext* ctx, JSModuleDef* m) {
   JS_NewClassID(&lws_context_class_id);
   JS_NewClass(JS_GetRuntime(ctx), lws_context_class_id, &lws_context_class);
   lws_context_proto = JS_NewObject(ctx);
-  JS_SetPropertyFunctionList(ctx,
-                             lws_context_proto,
-                             lws_context_proto_funcs,
-                             countof(lws_context_proto_funcs));
+  JS_SetPropertyFunctionList(ctx, lws_context_proto, lws_context_proto_funcs, countof(lws_context_proto_funcs));
 
-  lws_context_ctor = JS_NewCFunction2(
-      ctx, lws_context_constructor, "MinnetRequest", 1, JS_CFUNC_constructor, 0);
+  lws_context_ctor = JS_NewCFunction2(ctx, lws_context_constructor, "MinnetRequest", 1, JS_CFUNC_constructor, 0);
   JS_SetConstructor(ctx, lws_context_ctor, lws_context_proto);
 
   if(m)
