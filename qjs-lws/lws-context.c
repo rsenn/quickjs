@@ -10,9 +10,17 @@ static const JSCFunctionListEntry lws_context_proto_funcs[] = {
 
 static void lws_context_vh_options_free(JSRuntime* rt, struct lws_protocol_vhost_options* vho);
 
-static const void*
+static const char*
 value_to_string(JSContext* ctx, JSValueConst value) {
   const char* s = JS_ToCString(ctx, value);
+  char* x = js_strdup(ctx, s);
+  JS_FreeCString(ctx, s);
+  return x;
+}
+
+static const char*
+atom_to_string(JSContext* ctx, JSAtom a) {
+  const char* s = JS_AtomToCString(ctx, a);
   char* x = js_strdup(ctx, s);
   JS_FreeCString(ctx, s);
   return x;
@@ -63,7 +71,6 @@ static int
 protocol_callback(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
   struct lws_protocols const* pro = lws_get_protocol(wsi);
   struct protocols_closure* closure = pro->user;
-
   JSValue argv[] = {
       JS_NewInt32(closure->ctx, reason),
       pro->per_session_data_size ? JS_NewArrayBufferCopy(closure->ctx, user, pro->per_session_data_size) : JS_NULL,
@@ -121,13 +128,12 @@ lws_context_protocol(JSContext* ctx, JSValueConst obj) {
 
   value = JS_GetPropertyStr(ctx, obj, "callback");
   if(JS_IsFunction(ctx, value)) {
-    pro.callback = &protocol_callback;
-
     if((closure = js_mallocz(ctx, sizeof(struct protocols_closure)))) {
       closure->ctx = ctx;
       closure->callback = JS_DupValue(ctx, value);
-
       closure->user = JS_GetPropertyStr(ctx, obj, "user");
+
+      pro.callback = protocol_callback;
     }
 
     pro.user = closure;
@@ -182,35 +188,44 @@ lws_context_protocols(JSContext* ctx, JSValueConst value) {
 }
 
 static struct lws_http_mount*
-lws_context_http_mount(JSContext* ctx, JSValueConst obj) {
+lws_context_http_mount(JSContext* ctx, JSValueConst obj, const char* name) {
   struct lws_http_mount* mnt;
   JSValue value;
 
   if(!(mnt = js_mallocz(ctx, sizeof(struct lws_http_mount))))
     return 0;
 
-  if(JS_IsArray(ctx, obj)) {
-    value = JS_GetPropertyUint32(ctx, obj, 0);
-    mnt->mountpoint = value_to_string(ctx, value);
-    JS_FreeValue(ctx, value);
+  if(name) {
+    mnt->mountpoint = js_strdup(ctx, name);
+  }
 
-    value = JS_GetPropertyUint32(ctx, obj, 1);
+  if(JS_IsArray(ctx, obj)) {
+    int i = 0;
+
+    if(!name) {
+      value = JS_GetPropertyUint32(ctx, obj, i++);
+      mnt->mountpoint = value_to_string(ctx, value);
+      JS_FreeValue(ctx, value);
+    }
+
+    value = JS_GetPropertyUint32(ctx, obj, i++);
     mnt->origin = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
-    value = JS_GetPropertyUint32(ctx, obj, 2);
+    value = JS_GetPropertyUint32(ctx, obj, i++);
     mnt->def = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
-    value = JS_GetPropertyUint32(ctx, obj, 3);
+    value = JS_GetPropertyUint32(ctx, obj, i++);
     mnt->protocol = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
-    value = JS_GetPropertyUint32(ctx, obj, 4);
+    value = JS_GetPropertyUint32(ctx, obj, i++);
     mnt->basic_auth_login_file = value_to_string(ctx, value);
   } else if(JS_IsObject(obj)) {
     value = JS_GetPropertyStr(ctx, obj, "mountpoint");
-    mnt->mountpoint = value_to_string(ctx, value);
+    if(JS_IsString(value))
+      mnt->mountpoint = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, obj, "origin");
@@ -249,9 +264,29 @@ lws_context_http_mounts(JSContext* ctx, JSValueConst value) {
       for(int32_t i = 0; i < len; i++) {
         JSValue mount = JS_GetPropertyUint32(ctx, value, i);
 
-        if((*ptr = tmp = lws_context_http_mount(ctx, mount)))
+        if((*ptr = tmp = lws_context_http_mount(ctx, mount, 0)))
           ptr = (const struct lws_http_mount**)&(*ptr)->mount_next;
 
+        JS_FreeValue(ctx, mount);
+
+        if(!tmp)
+          break;
+      }
+    }
+  } else if(JS_IsObject(value)) {
+    JSPropertyEnum* tmp_tab = 0;
+    uint32_t len;
+
+    if(!JS_GetOwnPropertyNames(ctx, &tmp_tab, &len, value, JS_GPN_STRING_MASK | JS_GPN_SET_ENUM)) {
+
+      for(uint32_t i = 0; i < len; i++) {
+        const char* name = JS_AtomToCString(ctx, tmp_tab[i].atom);
+        JSValue mount = JS_GetProperty(ctx, value, tmp_tab[i].atom);
+
+        if((*ptr = tmp = lws_context_http_mount(ctx, mount, name)))
+          ptr = (const struct lws_http_mount**)&(*ptr)->mount_next;
+
+        JS_FreeCString(ctx, name);
         JS_FreeValue(ctx, mount);
 
         if(!tmp)
@@ -269,22 +304,38 @@ static void
 lws_context_http_mounts_free(JSRuntime* rt, struct lws_http_mount* mnt) {
 
   for(; mnt; mnt = (struct lws_http_mount*)mnt->mount_next) {
-    js_free_rt(rt, (char*)mnt->mountpoint);
-    mnt->mountpoint = 0;
-    js_free_rt(rt, (char*)mnt->origin);
-    mnt->origin = 0;
-    js_free_rt(rt, (char*)mnt->def);
-    mnt->def = 0;
-    js_free_rt(rt, (char*)mnt->protocol);
-    mnt->protocol = 0;
-    lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->cgienv);
-    mnt->cgienv = 0;
-    lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->extra_mimetypes);
-    mnt->extra_mimetypes = 0;
-    lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->interpret);
-    mnt->interpret = 0;
-    js_free_rt(rt, (char*)mnt->basic_auth_login_file);
-    mnt->basic_auth_login_file = 0;
+    if(mnt->mountpoint) {
+      js_free_rt(rt, (char*)mnt->mountpoint);
+      mnt->mountpoint = 0;
+    }
+    if(mnt->origin) {
+      js_free_rt(rt, (char*)mnt->origin);
+      mnt->origin = 0;
+    }
+    if(mnt->def) {
+      js_free_rt(rt, (char*)mnt->def);
+      mnt->def = 0;
+    }
+    if(mnt->protocol) {
+      js_free_rt(rt, (char*)mnt->protocol);
+      mnt->protocol = 0;
+    }
+    if(mnt->cgienv) {
+      lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->cgienv);
+      mnt->cgienv = 0;
+    }
+    if(mnt->extra_mimetypes) {
+      lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->extra_mimetypes);
+      mnt->extra_mimetypes = 0;
+    }
+    if(mnt->interpret) {
+      lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)mnt->interpret);
+      mnt->interpret = 0;
+    }
+    if(mnt->basic_auth_login_file) {
+      js_free_rt(rt, (char*)mnt->basic_auth_login_file);
+      mnt->basic_auth_login_file = 0;
+    }
   }
 }
 
@@ -363,16 +414,21 @@ lws_context_vh_options_free(JSRuntime* rt, struct lws_protocol_vhost_options* vh
   vho->options = 0;
 }
 
+struct context_closure {
+  struct lws_context* ctx;
+  struct lws_context_creation_info info;
+};
+
 JSValue
 lws_context_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSValueConst argv[]) {
   JSValue proto, obj;
-  struct lws_context_creation_info ci = {0};
-  struct lws_context **lc, *other;
+  struct lws_context_creation_info* ci;
+  struct context_closure* lc;
 
-  if(!(lc = js_malloc(ctx, sizeof(struct lws_context*))))
+  if(!(lc = js_malloc(ctx, sizeof(struct context_closure))))
     return JS_EXCEPTION;
 
-  *lc = 0;
+  ci = &lc->info;
 
   /* using new_target to get the prototype is necessary when the class is extended. */
   proto = JS_GetPropertyStr(ctx, new_target, "prototype");
@@ -388,11 +444,11 @@ lws_context_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVal
     JSValue value;
 
     value = JS_GetPropertyStr(ctx, argv[0], "iface");
-    ci.iface = value_to_string(ctx, value);
+    ci->iface = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "protocols");
-    ci.protocols = lws_context_protocols(ctx, value);
+    ci->protocols = lws_context_protocols(ctx, value);
     JS_FreeValue(ctx, value);
 
 #if defined(LWS_ROLE_WS)
@@ -400,47 +456,47 @@ lws_context_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVal
 #endif
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
     value = JS_GetPropertyStr(ctx, argv[0], "http_proxy_address");
-    ci.http_proxy_address = value_to_string(ctx, value);
+    ci->http_proxy_address = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "headers");
-    ci.headers = lws_context_vh_options(ctx, value);
+    ci->headers = lws_context_vh_options(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "reject_service_keywords");
-    ci.reject_service_keywords = lws_context_vh_options(ctx, value);
+    ci->reject_service_keywords = lws_context_vh_options(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "pvo");
-    ci.pvo = lws_context_vh_options(ctx, value);
+    ci->pvo = lws_context_vh_options(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "log_filepath");
-    ci.log_filepath = value_to_string(ctx, value);
+    ci->log_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "mounts");
-    ci.mounts = lws_context_http_mounts(ctx, value);
+    ci->mounts = lws_context_http_mounts(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "server_string");
-    ci.server_string = value_to_string(ctx, value);
+    ci->server_string = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "error_document_404");
-    ci.error_document_404 = value_to_string(ctx, value);
+    ci->error_document_404 = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "port");
-    ci.port = value_to_integer(ctx, value);
+    ci->port = value_to_integer(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "http_proxy_port");
-    ci.http_proxy_port = value_to_integer(ctx, value);
+    ci->http_proxy_port = value_to_integer(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "keepalive_timeout");
-    ci.keepalive_timeout = value_to_integer(ctx, value);
+    ci->keepalive_timeout = value_to_integer(ctx, value);
     JS_FreeValue(ctx, value);
 #endif
 
@@ -453,16 +509,16 @@ lws_context_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVal
       JS_FreeValue(ctx, value);
 
       if(i > 0) {
-        ci.async_dns_servers = js_mallocz(ctx, (i + 1) * sizeof(const char*));
+        ci->async_dns_servers = js_mallocz(ctx, (i + 1) * sizeof(const char*));
 
         for(int32_t j = 0; j < i; i++) {
           JSValue server = JS_GetPropertyUint32(ctx, value, j);
 
-          ci.async_dns_servers[j] = value_to_string(ctx, server);
+          ci->async_dns_servers[j] = value_to_string(ctx, server);
           JS_FreeValue(ctx, server);
         }
 
-        ci.async_dns_servers[i] = 0;
+        ci->async_dns_servers[i] = 0;
       }
     }
 
@@ -471,62 +527,62 @@ lws_context_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVal
 
 #if defined(LWS_WITH_TLS)
     value = JS_GetPropertyStr(ctx, argv[0], "ssl_private_key_password");
-    ci.ssl_private_key_password = value_to_string(ctx, value);
+    ci->ssl_private_key_password = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "ssl_cert_filepath");
-    ci.ssl_cert_filepath = value_to_string(ctx, value);
+    ci->ssl_cert_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "ssl_private_key_filepath");
-    ci.ssl_private_key_filepath = value_to_string(ctx, value);
+    ci->ssl_private_key_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "ssl_ca_filepath");
-    ci.ssl_ca_filepath = value_to_string(ctx, value);
+    ci->ssl_ca_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "ssl_cipher_list");
-    ci.ssl_cipher_list = value_to_string(ctx, value);
+    ci->ssl_cipher_list = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "tls1_3_plus_cipher_list");
-    ci.tls1_3_plus_cipher_list = value_to_string(ctx, value);
+    ci->tls1_3_plus_cipher_list = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "client_ssl_private_key_password");
-    ci.client_ssl_private_key_password = value_to_string(ctx, value);
+    ci->client_ssl_private_key_password = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "client_ssl_cert_filepath");
-    ci.client_ssl_cert_filepath = value_to_string(ctx, value);
+    ci->client_ssl_cert_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "client_ssl_private_key_filepath");
-    ci.client_ssl_private_key_filepath = value_to_string(ctx, value);
+    ci->client_ssl_private_key_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "client_ssl_ca_filepath");
-    ci.client_ssl_ca_filepath = value_to_string(ctx, value);
+    ci->client_ssl_ca_filepath = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "client_ssl_cipher_list");
-    ci.client_ssl_cipher_list = value_to_string(ctx, value);
+    ci->client_ssl_cipher_list = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "client_tls_1_3_plus_cipher_list");
-    ci.client_tls_1_3_plus_cipher_list = value_to_string(ctx, value);
+    ci->client_tls_1_3_plus_cipher_list = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
 #endif
 
 #if defined(LWS_WITH_SOCKS5)
     value = JS_GetPropertyStr(ctx, argv[0], "socks_proxy_address");
-    ci.socks_proxy_address = value_to_string(ctx, value);
+    ci->socks_proxy_address = value_to_string(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "socks_proxy_port");
-    ci.socks_proxy_port = value_to_integer(ctx, value);
+    ci->socks_proxy_port = value_to_integer(ctx, value);
     JS_FreeValue(ctx, value);
 
 #endif
@@ -540,16 +596,16 @@ lws_context_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVal
       JS_FreeValue(ctx, value);
 
       if(i > 0) {
-        ci.async_dns_servers = js_malloc(ctx, (i + 1) * sizeof(const char*));
+        ci->async_dns_servers = js_malloc(ctx, (i + 1) * sizeof(const char*));
 
         for(int32_t j = 0; j < i; i++) {
           JSValue server = JS_GetPropertyUint32(ctx, value, j);
 
-          ci.async_dns_servers[j] = value_to_string(ctx, server);
+          ci->async_dns_servers[j] = value_to_string(ctx, server);
           JS_FreeValue(ctx, server);
         }
 
-        ci.async_dns_servers[i] = 0;
+        ci->async_dns_servers[i] = 0;
       }
     }
 
@@ -557,77 +613,19 @@ lws_context_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVal
 #endif
 
     value = JS_GetPropertyStr(ctx, argv[0], "default_loglevel");
-    ci.default_loglevel = value_to_integer(ctx, value);
+    ci->default_loglevel = value_to_integer(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, argv[0], "vh_listen_sockfd");
-    ci.vh_listen_sockfd = value_to_integer(ctx, value);
+    ci->vh_listen_sockfd = value_to_integer(ctx, value);
     JS_FreeValue(ctx, value);
   }
 
-  ci.user = JS_VALUE_GET_OBJ(obj);
+  ci->user = JS_VALUE_GET_OBJ(obj);
 
-  *lc = lws_create_context(&ci);
+  lc->ctx = lws_create_context(ci);
 
   JS_SetOpaque(obj, lc);
-
-  if(ci.iface)
-    js_free(ctx, (char*)ci.iface);
-  if(ci.protocols)
-    lws_context_protocols_free(JS_GetRuntime(ctx), (struct lws_protocols*)ci.protocols);
-  if(ci.http_proxy_address)
-    js_free(ctx, (char*)ci.http_proxy_address);
-  if(ci.headers)
-    lws_context_vh_options_free(JS_GetRuntime(ctx), (struct lws_protocol_vhost_options*)ci.headers);
-  if(ci.reject_service_keywords)
-    lws_context_vh_options_free(JS_GetRuntime(ctx), (struct lws_protocol_vhost_options*)ci.reject_service_keywords);
-  if(ci.pvo)
-    lws_context_vh_options_free(JS_GetRuntime(ctx), (struct lws_protocol_vhost_options*)ci.pvo);
-  if(ci.log_filepath)
-    js_free(ctx, (char*)ci.log_filepath);
-  if(ci.mounts)
-    lws_context_http_mounts_free(JS_GetRuntime(ctx), (struct lws_http_mount*)ci.mounts);
-  if(ci.server_string)
-    js_free(ctx, (char*)ci.server_string);
-  if(ci.error_document_404)
-    js_free(ctx, (char*)ci.error_document_404);
-#if defined(LWS_WITH_SYS_ASYNC_DNS)
-  if(ci.async_dns_servers) {
-    for(size_t i = 0; ci.async_dns_servers[i]; ++i)
-      js_free(ctx, (char*)ci.async_dns_servers[i]);
-    js_free(ctx, ci.async_dns_servers);
-  }
-#endif
-#if defined(LWS_WITH_TLS)
-  if(ci.ssl_private_key_password)
-    js_free(ctx, (char*)ci.ssl_private_key_password);
-  if(ci.ssl_cert_filepath)
-    js_free(ctx, (char*)ci.ssl_cert_filepath);
-  if(ci.ssl_private_key_filepath)
-    js_free(ctx, (char*)ci.ssl_private_key_filepath);
-  if(ci.ssl_ca_filepath)
-    js_free(ctx, (char*)ci.ssl_ca_filepath);
-  if(ci.ssl_cipher_list)
-    js_free(ctx, (char*)ci.ssl_cipher_list);
-  if(ci.tls1_3_plus_cipher_list)
-    js_free(ctx, (char*)ci.tls1_3_plus_cipher_list);
-  if(ci.client_ssl_private_key_password)
-    js_free(ctx, (char*)ci.client_ssl_private_key_password);
-  if(ci.client_ssl_cert_filepath)
-    js_free(ctx, (char*)ci.client_ssl_cert_filepath);
-  if(ci.client_ssl_private_key_filepath)
-    js_free(ctx, (char*)ci.client_ssl_private_key_filepath);
-  if(ci.client_ssl_ca_filepath)
-    js_free(ctx, (char*)ci.client_ssl_ca_filepath);
-  if(ci.client_ssl_cipher_list)
-    js_free(ctx, (char*)ci.client_ssl_cipher_list);
-  if(ci.client_tls_1_3_plus_cipher_list)
-    js_free(ctx, (char*)ci.client_tls_1_3_plus_cipher_list);
-#endif
-#if defined(LWS_WITH_SOCKS5)
-  if(ci.socks_proxy_address)
-    js_free(ctx, (char*)ci.socks_proxy_address);
-#endif
 
   return obj;
 
@@ -638,12 +636,76 @@ fail:
 }
 
 static void
+lws_context_creation_info_free(JSRuntime* rt, struct lws_context_creation_info* ci) {
+  if(ci->iface)
+    js_free_rt(rt, (char*)ci->iface);
+  if(ci->protocols)
+    lws_context_protocols_free(rt, (struct lws_protocols*)ci->protocols);
+  if(ci->http_proxy_address)
+    js_free_rt(rt, (char*)ci->http_proxy_address);
+  if(ci->headers)
+    lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)ci->headers);
+  if(ci->reject_service_keywords)
+    lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)ci->reject_service_keywords);
+  if(ci->pvo)
+    lws_context_vh_options_free(rt, (struct lws_protocol_vhost_options*)ci->pvo);
+  if(ci->log_filepath)
+    js_free_rt(rt, (char*)ci->log_filepath);
+  if(ci->mounts)
+    lws_context_http_mounts_free(rt, (struct lws_http_mount*)ci->mounts);
+  if(ci->server_string)
+    js_free_rt(rt, (char*)ci->server_string);
+  if(ci->error_document_404)
+    js_free_rt(rt, (char*)ci->error_document_404);
+#if defined(LWS_WITH_SYS_ASYNC_DNS)
+  if(ci->async_dns_servers) {
+    for(size_t i = 0; ci->async_dns_servers[i]; ++i)
+      js_free_rt(rt, (char*)ci->async_dns_servers[i]);
+    js_free_rt(rt, ci->async_dns_servers);
+  }
+#endif
+#if defined(LWS_WITH_TLS)
+  if(ci->ssl_private_key_password)
+    js_free_rt(rt, (char*)ci->ssl_private_key_password);
+  if(ci->ssl_cert_filepath)
+    js_free_rt(rt, (char*)ci->ssl_cert_filepath);
+  if(ci->ssl_private_key_filepath)
+    js_free_rt(rt, (char*)ci->ssl_private_key_filepath);
+  if(ci->ssl_ca_filepath)
+    js_free_rt(rt, (char*)ci->ssl_ca_filepath);
+  if(ci->ssl_cipher_list)
+    js_free_rt(rt, (char*)ci->ssl_cipher_list);
+  if(ci->tls1_3_plus_cipher_list)
+    js_free_rt(rt, (char*)ci->tls1_3_plus_cipher_list);
+  if(ci->client_ssl_private_key_password)
+    js_free_rt(rt, (char*)ci->client_ssl_private_key_password);
+  if(ci->client_ssl_cert_filepath)
+    js_free_rt(rt, (char*)ci->client_ssl_cert_filepath);
+  if(ci->client_ssl_private_key_filepath)
+    js_free_rt(rt, (char*)ci->client_ssl_private_key_filepath);
+  if(ci->client_ssl_ca_filepath)
+    js_free_rt(rt, (char*)ci->client_ssl_ca_filepath);
+  if(ci->client_ssl_cipher_list)
+    js_free_rt(rt, (char*)ci->client_ssl_cipher_list);
+  if(ci->client_tls_1_3_plus_cipher_list)
+    js_free_rt(rt, (char*)ci->client_tls_1_3_plus_cipher_list);
+#endif
+#if defined(LWS_WITH_SOCKS5)
+  if(ci->socks_proxy_address)
+    js_free_rt(rt, (char*)ci->socks_proxy_address);
+#endif
+}
+
+static void
 lws_context_finalizer(JSRuntime* rt, JSValue val) {
-  struct lws_context** lc;
+  struct context_closure* lc;
 
   if((lc = JS_GetOpaque(val, lws_context_class_id))) {
-    lws_context_destroy(*lc);
-    *lc = 0;
+    lws_context_destroy(lc->ctx);
+    lc->ctx = 0;
+
+    lws_context_creation_info_free(rt, &lc->info);
+
     js_free_rt(rt, lc);
   }
 }
