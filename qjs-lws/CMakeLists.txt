@@ -430,7 +430,7 @@ macro(TARGET_LINK TARGET)
     ${SOCKET_LIBRARIES} ${BROTLI_LIBRARIES} ${ZLIB_LIBRARY})
 endmacro(TARGET_LINK TARGET)
 
-target_link(qjs-lws net)
+target_link(qjs-lws lws)
 
 include(CheckLibraryExists)
 

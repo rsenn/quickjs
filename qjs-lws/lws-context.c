@@ -31,14 +31,14 @@ lws_context_getarray(JSContext* ctx, JSValueConst value, void* fn(JSContext*, JS
 
   if(JS_IsArray(ctx, value)) {
     int32_t len = -1;
-    JS_GetPropertyStr(ctx, value, "length");
-    JS_ToInt32(ctx, &len, value);
-    JS_FreeValue(ctx, value);
+    JSValue vlen = JS_GetPropertyStr(ctx, value, "length");
+    JS_ToInt32(ctx, &len, vlen);
+    JS_FreeValue(ctx, vlen);
 
     if(len > 0) {
       arr = js_mallocz(ctx, (len + 1) * sizeof(void*));
 
-      for(int32_t i = 0; i < len; len++) {
+      for(int32_t i = 0; i < len; i++) {
         JSValue item = JS_GetPropertyUint32(ctx, value, i);
 
         if(!(arr[i] = fn(ctx, item)))
@@ -54,22 +54,23 @@ lws_context_getarray(JSContext* ctx, JSValueConst value, void* fn(JSContext*, JS
   return arr;
 }
 
-struct lws_context_protocols_closure {
+struct protocols_closure {
   JSContext* ctx;
-  JSValue fn_obj;
-  JSValue user;
+  JSValue callback, user;
 };
 
 static int
 protocol_callback(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
-  struct lws_context_protocols_closure* closure = user;
+  struct lws_protocols const* pro = lws_get_protocol(wsi);
+  struct protocols_closure* closure = pro->user;
+
   JSValue argv[] = {
       JS_NewInt32(closure->ctx, reason),
-      JS_DupValue(closure->ctx, closure->user),
+      pro->per_session_data_size ? JS_NewArrayBufferCopy(closure->ctx, user, pro->per_session_data_size) : JS_NULL,
       in ? JS_NewArrayBufferCopy(closure->ctx, in, len) : JS_NULL,
       JS_NewInt64(closure->ctx, len),
   };
-  JSValue ret = JS_Call(closure->ctx, closure->fn_obj, JS_NULL, countof(argv), argv);
+  JSValue ret = JS_Call(closure->ctx, closure->callback, JS_NULL, countof(argv), argv);
   JS_FreeValue(closure->ctx, argv[0]);
   JS_FreeValue(closure->ctx, argv[1]);
   JS_FreeValue(closure->ctx, argv[2]);
@@ -84,10 +85,10 @@ protocol_callback(struct lws* wsi, enum lws_callback_reasons reason, void* user,
 
 static void
 lws_context_protocol_free(JSRuntime* rt, struct lws_protocols* pro) {
-  struct lws_context_protocols_closure* closure = pro->user;
+  struct protocols_closure* closure = pro->user;
 
   if(closure) {
-    JS_FreeValueRT(rt, closure->fn_obj);
+    JS_FreeValueRT(rt, closure->callback);
     JS_FreeValueRT(rt, closure->user);
 
     js_free_rt(rt, closure);
@@ -112,7 +113,7 @@ lws_context_protocols_free(JSRuntime* rt, struct lws_protocols* pro) {
 static struct lws_protocols
 lws_context_protocol(JSContext* ctx, JSValueConst obj) {
   struct lws_protocols pro;
-  struct lws_context_protocols_closure* closure = 0;
+  struct protocols_closure* closure = 0;
 
   JSValue value = JS_GetPropertyStr(ctx, obj, "name");
   pro.name = value_to_string(ctx, value);
@@ -122,9 +123,9 @@ lws_context_protocol(JSContext* ctx, JSValueConst obj) {
   if(JS_IsFunction(ctx, value)) {
     pro.callback = &protocol_callback;
 
-    if((closure = js_mallocz(ctx, sizeof(struct lws_context_protocols_closure)))) {
+    if((closure = js_mallocz(ctx, sizeof(struct protocols_closure)))) {
       closure->ctx = ctx;
-      closure->fn_obj = JS_DupValue(ctx, value);
+      closure->callback = JS_DupValue(ctx, value);
 
       closure->user = JS_GetPropertyStr(ctx, obj, "user");
     }
@@ -158,14 +159,14 @@ lws_context_protocols(JSContext* ctx, JSValueConst value) {
 
   if(JS_IsArray(ctx, value)) {
     int32_t len = -1;
-    JS_GetPropertyStr(ctx, value, "length");
-    JS_ToInt32(ctx, &len, value);
-    JS_FreeValue(ctx, value);
+    JSValue vlen = JS_GetPropertyStr(ctx, value, "length");
+    JS_ToInt32(ctx, &len, vlen);
+    JS_FreeValue(ctx, vlen);
 
     if(len > 0) {
       pro = js_mallocz(ctx, (len + 1) * sizeof(struct lws_protocols));
 
-      for(int32_t i = 0; i < len; len++) {
+      for(int32_t i = 0; i < len; i++) {
         JSValue protocol = JS_GetPropertyUint32(ctx, value, i);
 
         pro[i] = lws_context_protocol(ctx, protocol);
@@ -238,14 +239,14 @@ lws_context_http_mounts(JSContext* ctx, JSValueConst value) {
 
   if(JS_IsArray(ctx, value)) {
     int32_t len = -1;
-    JS_GetPropertyStr(ctx, value, "length");
-    JS_ToInt32(ctx, &len, value);
-    JS_FreeValue(ctx, value);
+    JSValue vlen = JS_GetPropertyStr(ctx, value, "length");
+    JS_ToInt32(ctx, &len, vlen);
+    JS_FreeValue(ctx, vlen);
 
     if(len > 0) {
       mnt = js_malloc(ctx, sizeof(struct lws_http_mount));
 
-      for(int32_t i = 0; i < len; len++) {
+      for(int32_t i = 0; i < len; i++) {
         JSValue mount = JS_GetPropertyUint32(ctx, value, i);
 
         if((*ptr = tmp = lws_context_http_mount(ctx, mount)))
@@ -322,13 +323,13 @@ lws_context_vh_options(JSContext* ctx, JSValueConst value) {
 
   if(JS_IsArray(ctx, value)) {
     int32_t len = -1;
-    JS_GetPropertyStr(ctx, value, "length");
-    JS_ToInt32(ctx, &len, value);
-    JS_FreeValue(ctx, value);
+    JSValue vlen = JS_GetPropertyStr(ctx, value, "length");
+    JS_ToInt32(ctx, &len, vlen);
+    JS_FreeValue(ctx, vlen);
 
     if(len > 0) {
 
-      for(int32_t i = 0; i < len; len++) {
+      for(int32_t i = 0; i < len; i++) {
         JSValue option = JS_GetPropertyUint32(ctx, value, i);
 
         if((*ptr = tmp = lws_context_vh_option(ctx, option)))
@@ -646,6 +647,7 @@ lws_context_finalizer(JSRuntime* rt, JSValue val) {
     js_free_rt(rt, lc);
   }
 }
+
 static const JSClassDef lws_context_class = {
     "MinnetWebsocket",
     .finalizer = lws_context_finalizer,
@@ -665,4 +667,14 @@ lws_context_init(JSContext* ctx, JSModuleDef* m) {
     JS_SetModuleExport(ctx, m, "LwsContext", lws_context_ctor);
 
   return 0;
+}
+
+__attribute__((visibility("default"))) JSModuleDef*
+js_init_module(JSContext* ctx, const char* module_name) {
+  JSModuleDef* m;
+
+  if((m = JS_NewCModule(ctx, module_name, lws_context_init)))
+    JS_AddModuleExport(ctx, m, "LwsContext");
+
+  return m;
 }
