@@ -50,7 +50,7 @@ lws_context_getarray(JSContext* ctx,
 
 struct lws_context_protocols_closure {
   JSContext* ctx;
-  JSValue fn_obj, this_obj;
+  JSValue fn_obj;
 };
 
 static int
@@ -65,6 +65,7 @@ protocol_callback(
 
   return i;
 }
+
 static void*
 lws_context_protocols(JSContext* ctx, JSValueConst obj) {
   struct lws_protocols* pro;
@@ -85,9 +86,8 @@ lws_context_protocols(JSContext* ctx, JSValueConst obj) {
   value = JS_GetPropertyStr(ctx, obj, "callback");
   if(JS_IsFunction(ctx, value)) {
     pro->callback = &protocol_callback;
-    closure->fn_obj = JS_DupValue(ctx, value);
-    closure->this_obj = JS_NULL;
     closure->ctx = ctx;
+    closure->fn_obj = JS_DupValue(ctx, value);
   }
   JS_FreeValue(ctx, value);
 
