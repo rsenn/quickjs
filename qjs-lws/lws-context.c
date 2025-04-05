@@ -83,6 +83,32 @@ get_cb(JSContext* ctx, int write) {
   return fn;
 }
 
+static void
+set_handler(JSContext* ctx, int fd, JSValueConst handler, int write) {
+  JSValue fn = get_cb(ctx, write);
+  JSValue args[2] = {
+      JS_NewInt32(ctx, fd),
+      handler,
+  };
+  JSValue ret = JS_Call(ctx, fn, JS_NULL, 2, args);
+  JS_FreeValue(ctx, ret);
+  JS_FreeValue(ctx, fn);
+}
+
+static JSValue
+protocol_handler(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic, JSValue* func_data) {
+  BOOL write = JS_ToBool(ctx, func_data[2]);
+  int64_t i64;
+  int32_t fd, events;
+  JS_ToInt64(ctx, &i64, func_data[3]);
+  JS_ToInt32(ctx, &fd, func_data[0]);
+  JS_ToInt32(ctx, &events, func_data[1]);
+
+  struct lws_pollfd x = {.fd = fd, .events = events, .revents = write ? POLLOUT : POLLIN};
+
+  lws_service_fd((struct lws_context*)i64, &x);
+}
+
 static int
 protocol_callback(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
   struct lws_protocols const* pro = lws_get_protocol(wsi);
@@ -92,20 +118,31 @@ protocol_callback(struct lws* wsi, enum lws_callback_reasons reason, void* user,
     case LWS_CALLBACK_LOCK_POLL:
     case LWS_CALLBACK_UNLOCK_POLL: break;
 
-    case LWS_CALLBACK_DEL_POLL_FD:
+    case LWS_CALLBACK_DEL_POLL_FD: {
+      struct lws_pollargs* x = in;
+      set_handler(closure->ctx, x->fd, JS_NULL, 0);
+      set_handler(closure->ctx, x->fd, JS_NULL, 1);
+      break;
+    }
+
     case LWS_CALLBACK_ADD_POLL_FD:
     case LWS_CALLBACK_CHANGE_MODE_POLL_FD: {
       struct lws_pollargs* x = in;
-      JSValue handler = JS_NULL;
-      JSValue fn = get_cb(closure->ctx, !!(x->events & POLLOUT));
-      JSValue args[2] = {
+      BOOL write = !!(x->events & POLLOUT);
+      JSValueConst data[] = {
           JS_NewInt32(closure->ctx, x->fd),
-          reason == LWS_CALLBACK_DEL_POLL_FD ? JS_NULL : handler,
+          JS_NewInt32(closure->ctx, x->events),
+          JS_NewBool(closure->ctx, write),
+          JS_NewInt64(closure->ctx, (intptr_t)lws_get_context(wsi)),
       };
-      JSValue ret = JS_Call(closure->ctx, fn, JS_NULL, 2, args);
+      JSValue fn = JS_NewCFunctionData(closure->ctx, protocol_handler, 0, 0, countof(data), data);
+
+      if(reason == LWS_CALLBACK_CHANGE_MODE_POLL_FD)
+        set_handler(closure->ctx, x->fd, JS_NULL, !write);
+
+      set_handler(closure->ctx, x->fd, fn, write);
+
       JS_FreeValue(closure->ctx, fn);
-      JS_FreeValue(closure->ctx, ret);
-      JS_FreeValue(closure->ctx, handler);
       break;
     }
 
