@@ -4,14 +4,15 @@
 
 static JSValue lws_context_proto, lws_context_ctor;
 static JSClassID lws_context_class_id;
-static const JSCFunctionListEntry lws_context_proto_funcs[] = {
-    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "LwsContext", JS_PROP_CONFIGURABLE),
-};
 
+static struct lws_protocol_vhost_options* lws_context_vh_options(JSContext* ctx, JSValueConst value);
 static void lws_context_vh_options_free(JSRuntime* rt, struct lws_protocol_vhost_options* vho);
 
 static const char*
 value_to_string(JSContext* ctx, JSValueConst value) {
+  if(JS_IsUndefined(value) || JS_IsNull(value))
+    return 0;
+
   const char* s = JS_ToCString(ctx, value);
   char* x = js_strdup(ctx, s);
   JS_FreeCString(ctx, s);
@@ -20,9 +21,16 @@ value_to_string(JSContext* ctx, JSValueConst value) {
 
 static const char*
 atom_to_string(JSContext* ctx, JSAtom a) {
-  const char* s = JS_AtomToCString(ctx, a);
-  char* x = js_strdup(ctx, s);
-  JS_FreeCString(ctx, s);
+  char* x = 0;
+  JSValue v = JS_AtomToValue(ctx, a);
+
+  if(!(JS_IsUndefined(v) || JS_IsNull(v))) {
+    const char* s = JS_ToCString(ctx, v);
+    x = js_strdup(ctx, s);
+    JS_FreeCString(ctx, s);
+  }
+  JS_FreeValue(ctx, v);
+
   return x;
 }
 
@@ -57,8 +65,6 @@ lws_context_getarray(JSContext* ctx, JSValueConst value, void* fn(JSContext*, JS
     }
   }
 
-  JS_FreeValue(ctx, value);
-
   return arr;
 }
 
@@ -67,27 +73,64 @@ struct protocols_closure {
   JSValue callback, user;
 };
 
+static JSValue
+get_cb(JSContext* ctx, int write) {
+  JSValue glob = JS_GetGlobalObject(ctx);
+  JSValue os = JS_GetPropertyStr(ctx, glob, "os");
+  JS_FreeValue(ctx, glob);
+  JSValue fn = JS_GetPropertyStr(ctx, os, write ? "setWriteHandler" : "setReadHandler");
+  JS_FreeValue(ctx, os);
+  return fn;
+}
+
 static int
 protocol_callback(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
   struct lws_protocols const* pro = lws_get_protocol(wsi);
   struct protocols_closure* closure = pro->user;
-  JSValue argv[] = {
-      JS_NewInt32(closure->ctx, reason),
-      pro->per_session_data_size ? JS_NewArrayBufferCopy(closure->ctx, user, pro->per_session_data_size) : JS_NULL,
-      in ? JS_NewArrayBufferCopy(closure->ctx, in, len) : JS_NULL,
-      JS_NewInt64(closure->ctx, len),
-  };
-  JSValue ret = JS_Call(closure->ctx, closure->callback, JS_NULL, countof(argv), argv);
-  JS_FreeValue(closure->ctx, argv[0]);
-  JS_FreeValue(closure->ctx, argv[1]);
-  JS_FreeValue(closure->ctx, argv[2]);
-  JS_FreeValue(closure->ctx, argv[3]);
 
-  int32_t i = -1;
-  JS_ToInt32(closure->ctx, &i, ret);
-  JS_FreeValue(closure->ctx, ret);
+  switch(reason) {
+    case LWS_CALLBACK_LOCK_POLL:
+    case LWS_CALLBACK_UNLOCK_POLL: break;
 
-  return i;
+    case LWS_CALLBACK_DEL_POLL_FD:
+    case LWS_CALLBACK_ADD_POLL_FD:
+    case LWS_CALLBACK_CHANGE_MODE_POLL_FD: {
+      struct lws_pollargs* x = in;
+      JSValue handler = JS_NULL;
+      JSValue fn = get_cb(closure->ctx, !!(x->events & POLLOUT));
+      JSValue args[2] = {
+          JS_NewInt32(closure->ctx, x->fd),
+          reason == LWS_CALLBACK_DEL_POLL_FD ? JS_NULL : handler,
+      };
+      JSValue ret = JS_Call(closure->ctx, fn, JS_NULL, 2, args);
+      JS_FreeValue(closure->ctx, fn);
+      JS_FreeValue(closure->ctx, ret);
+      JS_FreeValue(closure->ctx, handler);
+      break;
+    }
+
+    default: {
+      JSValue argv[] = {
+          JS_NewInt32(closure->ctx, reason),
+          pro->per_session_data_size ? JS_NewArrayBufferCopy(closure->ctx, user, pro->per_session_data_size) : JS_NULL,
+          in ? JS_NewArrayBufferCopy(closure->ctx, in, len) : JS_NULL,
+          JS_NewInt64(closure->ctx, len),
+      };
+      JSValue ret = JS_Call(closure->ctx, closure->callback, JS_NULL, countof(argv), argv);
+      JS_FreeValue(closure->ctx, argv[0]);
+      JS_FreeValue(closure->ctx, argv[1]);
+      JS_FreeValue(closure->ctx, argv[2]);
+      JS_FreeValue(closure->ctx, argv[3]);
+
+      int32_t i = -1;
+      JS_ToInt32(closure->ctx, &i, ret);
+      JS_FreeValue(closure->ctx, ret);
+
+      return i;
+    }
+  }
+
+  return 0;
 }
 
 static void
@@ -182,8 +225,6 @@ lws_context_protocols(JSContext* ctx, JSValueConst value) {
     }
   }
 
-  JS_FreeValue(ctx, value);
-
   return pro;
 }
 
@@ -197,6 +238,7 @@ lws_context_http_mount(JSContext* ctx, JSValueConst obj, const char* name) {
 
   if(name) {
     mnt->mountpoint = js_strdup(ctx, name);
+    mnt->mountpoint_len = strlen(name);
   }
 
   if(JS_IsArray(ctx, obj)) {
@@ -205,6 +247,7 @@ lws_context_http_mount(JSContext* ctx, JSValueConst obj, const char* name) {
     if(!name) {
       value = JS_GetPropertyUint32(ctx, obj, i++);
       mnt->mountpoint = value_to_string(ctx, value);
+      mnt->mountpoint_len = strlen(mnt->mountpoint);
       JS_FreeValue(ctx, value);
     }
 
@@ -224,8 +267,10 @@ lws_context_http_mount(JSContext* ctx, JSValueConst obj, const char* name) {
     mnt->basic_auth_login_file = value_to_string(ctx, value);
   } else if(JS_IsObject(obj)) {
     value = JS_GetPropertyStr(ctx, obj, "mountpoint");
-    if(JS_IsString(value))
+    if(JS_IsString(value)) {
       mnt->mountpoint = value_to_string(ctx, value);
+      mnt->mountpoint_len = strlen(mnt->mountpoint);
+    }
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, obj, "origin");
@@ -238,6 +283,50 @@ lws_context_http_mount(JSContext* ctx, JSValueConst obj, const char* name) {
 
     value = JS_GetPropertyStr(ctx, obj, "protocol");
     mnt->protocol = value_to_string(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "cgienv");
+    mnt->cgienv = lws_context_vh_options(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "extra_mimetypes");
+    mnt->extra_mimetypes = lws_context_vh_options(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "interpret");
+    mnt->interpret = lws_context_vh_options(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "cgi_timeout");
+    mnt->cgi_timeout = value_to_integer(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "cache_max_age");
+    mnt->cache_max_age = value_to_integer(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "auth_mask");
+    mnt->auth_mask = value_to_integer(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "cache_reusable");
+    mnt->cache_reusable = JS_ToBool(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "cache_revalidate");
+    mnt->cache_revalidate = JS_ToBool(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "cache_intermediaries");
+    mnt->cache_intermediaries = JS_ToBool(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "cache_no");
+    mnt->cache_no = JS_ToBool(ctx, value);
+    JS_FreeValue(ctx, value);
+
+    value = JS_GetPropertyStr(ctx, obj, "origin_protocol");
+    mnt->origin_protocol = value_to_integer(ctx, value);
     JS_FreeValue(ctx, value);
 
     value = JS_GetPropertyStr(ctx, obj, "basic_auth_login_file");
@@ -295,8 +384,6 @@ lws_context_http_mounts(JSContext* ctx, JSValueConst value) {
     }
   }
 
-  JS_FreeValue(ctx, value);
-
   return mnt;
 }
 
@@ -338,8 +425,6 @@ lws_context_http_mounts_free(JSRuntime* rt, struct lws_http_mount* mnt) {
     }
   }
 }
-
-static struct lws_protocol_vhost_options* lws_context_vh_options(JSContext*, JSValueConst);
 
 static struct lws_protocol_vhost_options*
 lws_context_vh_option(JSContext* ctx, JSValueConst obj) {
@@ -394,8 +479,6 @@ lws_context_vh_options(JSContext* ctx, JSValueConst value) {
     }
   }
 
-  JS_FreeValue(ctx, value);
-
   return vho;
 }
 
@@ -425,7 +508,7 @@ lws_context_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVal
   struct lws_context_creation_info* ci;
   struct context_closure* lc;
 
-  if(!(lc = js_malloc(ctx, sizeof(struct context_closure))))
+  if(!(lc = js_mallocz(ctx, sizeof(struct context_closure))))
     return JS_EXCEPTION;
 
   ci = &lc->info;
@@ -714,6 +797,15 @@ static const JSClassDef lws_context_class = {
     "MinnetWebsocket",
     .finalizer = lws_context_finalizer,
 };
+static const JSCFunctionListEntry lws_context_proto_funcs[] = {
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "LwsContext", JS_PROP_CONFIGURABLE),
+};
+
+static const JSCFunctionListEntry lws_funcs[] = {
+    JS_PROP_INT32_DEF("LWSMPRO_HTTP", LWSMPRO_HTTP, 0),
+    JS_PROP_INT32_DEF("LWSMPRO_HTTPS", LWSMPRO_HTTPS, 0),
+    JS_PROP_INT32_DEF("LWSMPRO_FILE", LWSMPRO_FILE, 0),
+};
 
 int
 lws_context_init(JSContext* ctx, JSModuleDef* m) {
@@ -725,8 +817,10 @@ lws_context_init(JSContext* ctx, JSModuleDef* m) {
   lws_context_ctor = JS_NewCFunction2(ctx, lws_context_constructor, "MinnetRequest", 1, JS_CFUNC_constructor, 0);
   JS_SetConstructor(ctx, lws_context_ctor, lws_context_proto);
 
-  if(m)
+  if(m) {
     JS_SetModuleExport(ctx, m, "LwsContext", lws_context_ctor);
+    JS_SetModuleExportList(ctx, m, lws_funcs, countof(lws_funcs));
+  }
 
   return 0;
 }
@@ -735,8 +829,10 @@ __attribute__((visibility("default"))) JSModuleDef*
 js_init_module(JSContext* ctx, const char* module_name) {
   JSModuleDef* m;
 
-  if((m = JS_NewCModule(ctx, module_name, lws_context_init)))
+  if((m = JS_NewCModule(ctx, module_name, lws_context_init))) {
     JS_AddModuleExport(ctx, m, "LwsContext");
+    JS_AddModuleExportList(ctx, m, lws_funcs, countof(lws_funcs));
+  }
 
   return m;
 }
