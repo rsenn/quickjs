@@ -35,3 +35,7 @@
 [submodule "qjs-sound/LabSound"]
 	path = qjs-sound/LabSound
 	url = git@github.com:rsenn/LabSound
+[submodule "qjs-lws"]
+	path = qjs-lws
+	url = git@github.com:rsenn/qjs-lws.git
+	branch = main
