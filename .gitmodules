@@ -35,6 +35,3 @@
 [submodule "qjs-sound/LabSound"]
 	path = qjs-sound/LabSound
 	url = git@github.com:rsenn/LabSound
-[submodule "qjs-lws/libwebsockets"]
-	path = qjs-lws/libwebsockets
-	url = https://github.com/warmcat/libwebsockets.git
