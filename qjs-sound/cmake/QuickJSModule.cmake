@@ -13,28 +13,36 @@ endfunction(config_module TARGET_NAME)
 
 function(compile_module SOURCE)
   basename(BASE "${SOURCE}" .js)
-  message(STATUS "Compile QuickJS module '${BASE}.c' from '${SOURCE}'")
+  #message(STATUS "Compile QuickJS module '${BASE}.c' from '${SOURCE}'")
+
+  set(ARGLIST "${ARGN}")
+  list(POP_FRONT ARGLIST OUT)
 
   set(MODULES_DIR "${CMAKE_BINARY_DIR}/modules")
   set(MODULES_DIR "${MODULES_DIR}" PARENT_SCOPE)
   file(MAKE_DIRECTORY "${MODULES_DIR}")
 
-  if(ARGN)
-    set(OUTPUT_FILE ${ARGN})
-  else(ARGN)
+  if(OUT AND NOT "${OUT}" STREQUAL "")
+    set(OUTPUT_FILE ${OUT})
+  else(OUT)
     set(OUTPUT_FILE "${MODULES_DIR}/${BASE}.c")
-  endif(ARGN)
+  endif(OUT)
 
   list(APPEND COMPILED_MODULES "${OUTPUT_FILE}")
   list(APPEND COMPILED_TARGETS "${BASE}.c")
   set(COMPILED_MODULES "${COMPILED_MODULES}" PARENT_SCOPE)
   set(COMPILED_TARGETS "${COMPILED_TARGETS}" PARENT_SCOPE)
 
-  #add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc -v -c -o "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
+  unset(ADD_MODULES)
+  foreach(MOD IN ITEMS ${ARGLIST})
+    list(APPEND ADD_MODULES -M "${MOD}")
+  endforeach(MOD IN ITEMS ${ARGLIST})
+
+  #add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc ${ADD_MODULES} -v -c -o "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
   add_custom_target(
     "${BASE}.c" ALL
     BYPRODUCTS "${OUTPUT_FILE}"
-    COMMAND "${QJSC}" -v -c -o "${OUTPUT_FILE}" -m
+    COMMAND "${QJSC}" ${ADD_MODULES} -v -c -o "${OUTPUT_FILE}" -m
             "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}"
     DEPENDS ${QJSC_DEPS}
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
@@ -185,6 +193,12 @@ function(make_script OUTPUT_FILE TEXT INCLUDES)
 endfunction(make_script OUTPUT_FILE TEXT INCLUDES)
 
 function(make_module FNAME)
+  set(EXT "${ARGN}")
+
+  if("${EXT}" STREQUAL "")
+    set(EXT "c")
+  endif()
+
   string(REGEX REPLACE "_" "-" NAME "${FNAME}")
   string(REGEX REPLACE "-" "_" VNAME "${FNAME}")
   string(TOUPPER "${FNAME}" UUNAME)
@@ -194,21 +208,25 @@ function(make_module FNAME)
   set(DEPS ${${VNAME}_DEPS})
   set(LIBS ${${VNAME}_LIBRARIES})
 
-  if(ARGN)
-    set(SOURCES ${ARGN} #${${VNAME}_SOURCES}
-                ${COMMON_SOURCES})
-    add_unique(DEPS ${${VNAME}_DEPS})
-  else(ARGN)
-    set(SOURCES quickjs-${NAME}.c #${${VNAME}_SOURCES}
-                ${COMMON_SOURCES})
-    add_unique(LIBS ${${VNAME}_LIBRARIES})
-  endif(ARGN)
+  set(SOURCES quickjs-${NAME}.${EXT} ${COMMON_SOURCES})
+  add_unique(LIBS ${${VNAME}_LIBRARIES})
+
   add_unique(LIBS ${COMMON_LIBRARIES})
 
-  message(
-    STATUS
-      "Building QuickJS module: ${FNAME} (deps: ${DEPS}, libs: ${LIBS}) JS_${UNAME}_MODULE=1"
-  )
+  set(MSG "Building QuickJS module: ${FNAME}")
+
+  if(DEPS)
+    set(MSG "${MSG} (deps: ${DEPS})")
+  endif()
+  set(OUT "${LIBS}")
+  list(REMOVE_ITEM OUT compiled)
+  list(REMOVE_ITEM OUT modules)
+  if(OUT)
+    string(REPLACE ";" " " OUT "${OUT}")
+    set(MSG "${MSG} (libs: ${OUT})")
+  endif()
+
+  #message(STATUS "${MSG}")
 
   if(WASI OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
     set(BUILD_SHARED_MODULES OFF)
@@ -219,8 +237,6 @@ function(make_module FNAME)
   else(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
     set(PREFIX "")
   endif(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
-
-  #dump(VNAME ${VNAME}_SOURCES SOURCES)
 
   if(BUILD_SHARED_MODULES)
     #add_library(${TARGET_NAME} MODULE ${SOURCES})
@@ -235,16 +251,18 @@ function(make_module FNAME)
     target_compile_definitions(
       ${TARGET_NAME}
       PRIVATE _GNU_SOURCE=1 JS_SHARED_LIBRARY=1 JS_${UNAME}_MODULE=1
-              QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}")
+              QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}"
+              LIBMAGIC_DB="${LIBMAGIC_DB}")
 
-    target_link_directories(${TARGET_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+    #dump(${VNAME}_LINK_DIRECTORIES)
+
+    target_link_directories(${TARGET_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}"
+                            ${${VNAME}_LINK_DIRECTORIES})
     target_link_libraries(${TARGET_NAME} PUBLIC ${LIBS} ${QUICKJS_LIBRARY})
 
-    install(
-      TARGETS ${TARGET_NAME}
-      RUNTIME DESTINATION "${QUICKJS_C_MODULE_DIR}"
-              PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-                          GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+    install(TARGETS ${TARGET_NAME} DESTINATION "${QUICKJS_C_MODULE_DIR}"
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
+                        GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
     config_module(${TARGET_NAME})
 
@@ -258,23 +276,17 @@ function(make_module FNAME)
 
   endif(BUILD_SHARED_MODULES)
 
-  add_library(${TARGET_NAME}-static STATIC ${SOURCES})
+  list(APPEND MODULES_SOURCES quickjs-${NAME}.${EXT})
+  set(MODULES_SOURCES "${MODULES_SOURCES}" PARENT_SCOPE)
 
+  #[[add_library(${TARGET_NAME}-static STATIC ${SOURCES})
   set(MODULES_STATIC "${QJS_MODULES_STATIC}")
   list(APPEND MODULES_STATIC "${TARGET_NAME}-static")
   set(QJS_MODULES_STATIC "${MODULES_STATIC}" PARENT_SCOPE)
-
-  set_target_properties(
-    ${TARGET_NAME}-static
-    PROPERTIES OUTPUT_NAME "${VNAME}" PREFIX "quickjs-" SUFFIX
-                                                        "${LIBRARY_SUFFIX}"
-               COMPILE_FLAGS "")
-  target_compile_definitions(
-    ${TARGET_NAME}-static PRIVATE _GNU_SOURCE=1 JS_${UNAME}_MODULE=1
-                                  QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}")
-  target_link_directories(${TARGET_NAME}-static PUBLIC
-                          "${CMAKE_CURRENT_BINARY_DIR}")
-  target_link_libraries(${TARGET_NAME}-static INTERFACE ${QUICKJS_LIBRARY})
+  set_target_properties(${TARGET_NAME}-static PROPERTIES OUTPUT_NAME "${VNAME}" PREFIX "quickjs-" SUFFIX "${LIBRARY_SUFFIX}" COMPILE_FLAGS "")
+  target_compile_definitions(${TARGET_NAME}-static PRIVATE _GNU_SOURCE=1 JS_${UNAME}_MODULE=1 QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" LIBMAGIC_DB="${LIBMAGIC_DB}")
+  target_link_directories(${TARGET_NAME}-static PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+  target_link_libraries(${TARGET_NAME}-static INTERFACE ${QUICKJS_LIBRARY})]]
 
 endfunction()
 

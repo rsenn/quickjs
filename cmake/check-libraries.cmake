@@ -1,6 +1,7 @@
 include(CheckLibraryExists)
 
-check_library_exists(pthread pthread_create ${CMAKE_INSTALL_PREFIX}/lib HAVE_LIBPTHREAD)
+check_library_exists(pthread pthread_create ${CMAKE_INSTALL_PREFIX}/lib
+                     HAVE_LIBPTHREAD)
 if(HAVE_LIBPTHREAD)
   set(LIBPTHREAD pthread)
 endif(HAVE_LIBPTHREAD)
