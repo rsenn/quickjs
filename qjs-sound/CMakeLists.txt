@@ -2,7 +2,6 @@ project(qjs-sound C CXX)
 
 cmake_minimum_required(VERSION 3.19)
 
-
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/LabSound/include")
 #add_subdirectory(stk)
 #add_subdirectory(sndobj)
@@ -21,7 +20,7 @@ check_flag("-fvisibility=hidden" VISIBILITY_HIDDEN MODULE_COMPILE_FLAGS)
 
 #string(REGEX REPLACE "[\n\r;]+" " " MODULE_COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
 message("MODULE_COMPILE_FLAGS: ${MODULE_COMPILE_FLAGS}")
- 
+
 include(ExternalProject)
 
 ExternalProject_Add(
@@ -40,10 +39,9 @@ ExternalProject_Add(
     "-DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS} ${MODULE_COMPILE_FLAGS}"
     "-DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS} ${MODULE_COMPILE_FLAGS}"
     "-DNYQUIST_COMPILE_FLAGS:STRING=-fPIC"
-    INSTALL_COMMAND "" )
+  INSTALL_COMMAND "")
 
-
-ExternalProject_Get_property(LabSound BINARY_DIR)
+ExternalProject_Get_Property(LabSound BINARY_DIR)
 set(LABSOUND_BINARY_DIR "${BINARY_DIR}")
 message("Binary dir of LabSound = ${LABSOUND_BINARY_DIR}")
 
@@ -53,20 +51,23 @@ include(CheckCCompilerFlag)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindQuickJS.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake)
 
-set(labsound_LINK_DIRECTORIES
-    ${LABSOUND_BINARY_DIR}/bin
-    ${LABSOUND_BINARY_DIR}/third_party/libnyquist/lib)
+set(labsound_LINK_DIRECTORIES ${LABSOUND_BINARY_DIR}/bin
+                              ${LABSOUND_BINARY_DIR}/third_party/libnyquist/lib)
 
+if(CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
+  set(DEBUG_SUFFIX _d)
+else(CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
+  set(DEBUG_SUFFIX "")
+endif(CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
+
+link_directories(${LABSOUND_BINARY_DIR}/bin
+                 ${LABSOUND_BINARY_DIR}/third_party/libnyquist/lib)
 set(labsound_LIBRARIES
-    ${LABSOUND_BINARY_DIR}/bin/libLabSound_d.a
-    ${LABSOUND_BINARY_DIR}/bin/libLabSoundRtAudio_d.a
-    ${LABSOUND_BINARY_DIR}/third_party/libnyquist/lib/liblibnyquist.a
-    #LabSound_d libnyquist_d
-    pulse-simple
-    samplerate)
+    LabSound${DEBUG_SUFFIX} LabSoundRtAudio${DEBUG_SUFFIX} libnyquist
+    #LabSound${DEBUG_SUFFIX} libnyquist${DEBUG_SUFFIX}
+    pulse-simple samplerate)
 
 link_directories(${labsound_LINK_DIRECTORIES})
-
 
 find_quickjs()
 configure_quickjs()
