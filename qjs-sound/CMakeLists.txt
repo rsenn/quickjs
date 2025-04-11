@@ -91,5 +91,5 @@ link_directories(${labsound_LINK_DIRECTORIES})
 
 find_quickjs()
 configure_quickjs()
-
+add_definitions(-fvisibility=hidden)
 make_module(labsound cpp)
