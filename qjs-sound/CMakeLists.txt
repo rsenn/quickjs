@@ -31,7 +31,8 @@ ExternalProject_Add(
   CMAKE_ARGS
     "-DLABSOUND_NO_BUILD_EXAMPLES:BOOL=ON"
     "-DBUILD_SHARED_LIBS:BOOL=OFF"
-    "-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}"
+    #"-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}"
+    "-DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo"
     "-DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF"
     "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON"
     "-DCMAKE_C_COMPILER:STRING=${CMAKE_C_COMPILER}"
@@ -45,7 +46,7 @@ ExternalProject_Get_Property(LabSound BINARY_DIR)
 set(LABSOUND_BINARY_DIR "${BINARY_DIR}")
 message("Binary dir of LabSound = ${LABSOUND_BINARY_DIR}")
 
-#add_subdirectory(LabSound)
+#add_subdirectory(libLabSound)
 
 include(CheckCCompilerFlag)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindQuickJS.cmake)
@@ -54,18 +55,37 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake)
 set(labsound_LINK_DIRECTORIES ${LABSOUND_BINARY_DIR}/bin
                               ${LABSOUND_BINARY_DIR}/third_party/libnyquist/lib)
 
-if(CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
-  set(DEBUG_SUFFIX _d)
-else(CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
+if(CMAKE_BUILD_TYPE MATCHES "Rel")
+  #set(DEBUG_SUFFIX _d)
+else(CMAKE_BUILD_TYPE MATCHES "Rel")
   set(DEBUG_SUFFIX "")
-endif(CMAKE_BUILD_TYPE MATCHES ".*Deb.*")
+endif(CMAKE_BUILD_TYPE MATCHES "Rel")
+
+
+add_library(libLabSound STATIC IMPORTED GLOBAL)
+set_target_properties(libLabSound PROPERTIES
+  IMPORTED_LOCATION "${LABSOUND_BINARY_DIR}/bin/libLabSound${DEBUG_SUFFIX}.a"
+  IMPORTED_LOCATION_DEBUG "${LABSOUND_BINARY_DIR}/bin/libLabSound${DEBUG_SUFFIX}.a"
+  IMPORTED_CONFIGURATIONS "RELEASE;DEBUG"
+)
+add_library(libLabSoundRtAudio STATIC IMPORTED GLOBAL)
+set_target_properties(libLabSoundRtAudio PROPERTIES
+  IMPORTED_LOCATION "${LABSOUND_BINARY_DIR}/bin/libLabSoundRtAudio${DEBUG_SUFFIX}.a"
+  IMPORTED_LOCATION_DEBUG "${LABSOUND_BINARY_DIR}/bin/libLabSoundRtAudio${DEBUG_SUFFIX}.a"
+  IMPORTED_CONFIGURATIONS "RELEASE;DEBUG"
+)
 
 link_directories(${LABSOUND_BINARY_DIR}/bin
                  ${LABSOUND_BINARY_DIR}/third_party/libnyquist/lib)
 set(labsound_LIBRARIES
-    LabSound${DEBUG_SUFFIX} LabSoundRtAudio${DEBUG_SUFFIX} libnyquist
-    #LabSound${DEBUG_SUFFIX} libnyquist${DEBUG_SUFFIX}
-    pulse-simple samplerate)
+   #  ${LABSOUND_BINARY_DIR}/bin/libLabSound${DEBUG_SUFFIX}.a
+   #A ${LABSOUND_BINARY_DIR}/bin/libLabSoundRtAudio${DEBUG_SUFFIX}.a
+   libLabSound
+   libLabSoundRtAudio
+    ${LABSOUND_BINARY_DIR}/third_party/libnyquist/lib/liblibnyquist.a
+    #LabSound_d libnyquist_d
+    pulse-simple
+    samplerate)
 
 link_directories(${labsound_LINK_DIRECTORIES})
 
