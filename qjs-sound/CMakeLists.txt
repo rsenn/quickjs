@@ -2,6 +2,8 @@ project(qjs-sound C CXX)
 
 cmake_minimum_required(VERSION 3.19)
 
+
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/LabSound/include")
 #add_subdirectory(stk)
 #add_subdirectory(sndobj)
 
