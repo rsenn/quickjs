@@ -527,17 +527,17 @@ js_stkgenerator_constructor(JSContext* ctx, JSValueConst new_target, int argc, J
   js_set_tostringtag(ctx,
                      obj,
                      ((const char*[]){
-                         "ADSR",
-                         "Asymp",
-                         "Blit",
-                         "BlitSaw",
-                         "BlitSquare",
-                         "Envelope",
-                         "Granulate",
-                         "Modulate",
-                         "Noise",
-                         "SineWave",
-                         "SingWave",
+                         "StkADSR",
+                         "StkAsymp",
+                         "StkBlit",
+                         "StkBlitSaw",
+                         "StkBlitSquare",
+                         "StkEnvelope",
+                         "StkGranulate",
+                         "StkModulate",
+                         "StkNoise",
+                         "StkSineWave",
+                         "StkSingWave",
                      })[magic]);
 
   return obj;
@@ -750,6 +750,12 @@ js_stkfilter_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVa
     goto fail;
 
   JS_SetOpaque(obj, f);
+
+  js_set_tostringtag(
+      ctx,
+      obj,
+      ((const char*[]){"BiQuad", "Delay", "DelayA", "DelayL", "Fir", "FormSwep", "Iir", "OnePole", "OneZero", "PoleZero", "TapDelay", "TwoPole", "TwoZero"})[magic]);
+
   return obj;
 
 fail:
@@ -848,6 +854,20 @@ js_stkeffect_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVa
     goto fail;
 
   JS_SetOpaque(obj, e);
+
+  js_set_tostringtag(ctx,
+                     obj,
+                     ((const char*[]){
+                         "StkChorus",
+                         "StkEcho",
+                         "StkFreeVerb",
+                         "StkJCRev",
+                         "StkLentPitShift",
+                         "StkNRev",
+                         "StkPRCRev",
+                         "StkPitShift",
+                     })[magic]);
+
   return obj;
 
 fail:
