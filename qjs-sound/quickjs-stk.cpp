@@ -129,8 +129,10 @@ static int64_t
 array_length(JSContext* ctx, JSValueConst arr) {
   int64_t len = -1;
   JSValue lprop = JS_GetPropertyStr(ctx, arr, "length");
+
   if(!JS_IsException(lprop))
     JS_ToInt64(ctx, &len, lprop);
+
   JS_FreeValue(ctx, lprop);
   return len;
 }
@@ -246,16 +248,17 @@ js_stkframes_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVa
   JSValue proto, obj = JS_UNDEFINED;
   double value;
   uint32_t nframes = 0, nchannels = 0;
-  int argi = 0;
+  int i = 0;
 
   if(argc > 2)
-    JS_ToFloat64(ctx, &value, argv[argi++]);
+    JS_ToFloat64(ctx, &value, argv[i++]);
 
-  if(argc > argi)
-    JS_ToUint32(ctx, &nframes, argv[argi]);
-  ++argi;
-  if(argc > argi)
-    JS_ToUint32(ctx, &nchannels, argv[argi]);
+  if(argc > i)
+    JS_ToUint32(ctx, &nframes, argv[i]);
+
+  ++i;
+  if(argc > i)
+    JS_ToUint32(ctx, &nchannels, argv[i]);
 
   StkFramesPtr* f = static_cast<StkFramesPtr*>(js_mallocz(ctx, sizeof(StkFramesPtr)));
 
@@ -1147,33 +1150,36 @@ js_stk_init(JSContext* ctx, JSModuleDef* m) {
 
   JS_SetClassProto(ctx, js_stkfilter_class_id, stkfilter_proto);
 
-  JSValue ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "BiQuad", 0, JS_CFUNC_constructor_magic, INSTANCE_BI_QUAD);
-  JS_SetModuleExport(ctx, m, "StkBiQuad", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "DelayA", 0, JS_CFUNC_constructor_magic, INSTANCE_DELAY_A);
-  JS_SetModuleExport(ctx, m, "StkDelayA", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "DelayL", 0, JS_CFUNC_constructor_magic, INSTANCE_DELAY_L);
-  JS_SetModuleExport(ctx, m, "StkDelayL", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "Delay", 0, JS_CFUNC_constructor_magic, INSTANCE_DELAY);
-  JS_SetModuleExport(ctx, m, "StkDelay", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "Fir", 1, JS_CFUNC_constructor_magic, INSTANCE_FIR);
-  JS_SetModuleExport(ctx, m, "StkFir", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "FormSwep", 0, JS_CFUNC_constructor_magic, INSTANCE_FORM_SWEP);
-  JS_SetModuleExport(ctx, m, "StkFormSwep", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "Iir", 0, JS_CFUNC_constructor_magic, INSTANCE_IIR);
-  JS_SetModuleExport(ctx, m, "StkIir", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "OnePole", 0, JS_CFUNC_constructor_magic, INSTANCE_ONE_POLE);
-  JS_SetModuleExport(ctx, m, "StkOnePole", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "OneZero", 0, JS_CFUNC_constructor_magic, INSTANCE_ONE_ZERO);
-  JS_SetModuleExport(ctx, m, "StkOneZero", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "PoleZero", 0, JS_CFUNC_constructor_magic, INSTANCE_POLE_ZERO);
-  JS_SetModuleExport(ctx, m, "StkPoleZero", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "TapDelay", 0, JS_CFUNC_constructor_magic, INSTANCE_TAP_DELAY);
-  JS_SetModuleExport(ctx, m, "StkTapDelay", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "TwoPole", 0, JS_CFUNC_constructor_magic, INSTANCE_TWO_POLE);
-  JS_SetModuleExport(ctx, m, "StkTwoPole", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "TwoZero", 0, JS_CFUNC_constructor_magic, INSTANCE_TWO_ZERO);
-  JS_SetModuleExport(ctx, m, "StkTwoZero", ctor);
+  JSValue ctor;
 
+  if(m) {
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "BiQuad", 0, JS_CFUNC_constructor_magic, INSTANCE_BI_QUAD);
+    JS_SetModuleExport(ctx, m, "StkBiQuad", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "DelayA", 0, JS_CFUNC_constructor_magic, INSTANCE_DELAY_A);
+    JS_SetModuleExport(ctx, m, "StkDelayA", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "DelayL", 0, JS_CFUNC_constructor_magic, INSTANCE_DELAY_L);
+    JS_SetModuleExport(ctx, m, "StkDelayL", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "Delay", 0, JS_CFUNC_constructor_magic, INSTANCE_DELAY);
+    JS_SetModuleExport(ctx, m, "StkDelay", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "Fir", 1, JS_CFUNC_constructor_magic, INSTANCE_FIR);
+    JS_SetModuleExport(ctx, m, "StkFir", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "FormSwep", 0, JS_CFUNC_constructor_magic, INSTANCE_FORM_SWEP);
+    JS_SetModuleExport(ctx, m, "StkFormSwep", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "Iir", 0, JS_CFUNC_constructor_magic, INSTANCE_IIR);
+    JS_SetModuleExport(ctx, m, "StkIir", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "OnePole", 0, JS_CFUNC_constructor_magic, INSTANCE_ONE_POLE);
+    JS_SetModuleExport(ctx, m, "StkOnePole", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "OneZero", 0, JS_CFUNC_constructor_magic, INSTANCE_ONE_ZERO);
+    JS_SetModuleExport(ctx, m, "StkOneZero", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "PoleZero", 0, JS_CFUNC_constructor_magic, INSTANCE_POLE_ZERO);
+    JS_SetModuleExport(ctx, m, "StkPoleZero", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "TapDelay", 0, JS_CFUNC_constructor_magic, INSTANCE_TAP_DELAY);
+    JS_SetModuleExport(ctx, m, "StkTapDelay", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "TwoPole", 0, JS_CFUNC_constructor_magic, INSTANCE_TWO_POLE);
+    JS_SetModuleExport(ctx, m, "StkTwoPole", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "TwoZero", 0, JS_CFUNC_constructor_magic, INSTANCE_TWO_ZERO);
+    JS_SetModuleExport(ctx, m, "StkTwoZero", ctor);
+  }
   JS_NewClassID(&js_stkgenerator_class_id);
   JS_NewClass(JS_GetRuntime(ctx), js_stkgenerator_class_id, &js_stkgenerator_class);
 
@@ -1184,28 +1190,31 @@ js_stk_init(JSContext* ctx, JSModuleDef* m) {
 
   JS_SetClassProto(ctx, js_stkgenerator_class_id, stkgenerator_proto);
 
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "ADSR", 0, JS_CFUNC_constructor_magic, INSTANCE_ADSR);
-  JS_SetModuleExport(ctx, m, "StkADSR", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Asymp", 0, JS_CFUNC_constructor_magic, INSTANCE_ASYMP);
-  JS_SetModuleExport(ctx, m, "StkAsymp", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "BlitSaw", 0, JS_CFUNC_constructor_magic, INSTANCE_BLIT_SAW);
-  JS_SetModuleExport(ctx, m, "StkBlitSaw", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "BlitSquare", 0, JS_CFUNC_constructor_magic, INSTANCE_BLIT_SQUARE);
-  JS_SetModuleExport(ctx, m, "StkBlitSquare", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Blit", 0, JS_CFUNC_constructor_magic, INSTANCE_BLIT);
-  JS_SetModuleExport(ctx, m, "StkBlit", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Envelope", 0, JS_CFUNC_constructor_magic, INSTANCE_ENVELOPE);
-  JS_SetModuleExport(ctx, m, "StkEnvelope", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Granulate", 0, JS_CFUNC_constructor_magic, INSTANCE_GRANULATE);
-  JS_SetModuleExport(ctx, m, "StkGranulate", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Modulate", 0, JS_CFUNC_constructor_magic, INSTANCE_MODULATE);
-  JS_SetModuleExport(ctx, m, "StkModulate", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Noise", 0, JS_CFUNC_constructor_magic, INSTANCE_NOISE);
-  JS_SetModuleExport(ctx, m, "StkNoise", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "SineWave", 0, JS_CFUNC_constructor_magic, INSTANCE_SINE_WAVE);
-  JS_SetModuleExport(ctx, m, "StkSineWave", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "SingWave", 0, JS_CFUNC_constructor_magic, INSTANCE_SING_WAVE);
-  JS_SetModuleExport(ctx, m, "StkStkSingWave", ctor);
+  if(m) {
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "ADSR", 0, JS_CFUNC_constructor_magic, INSTANCE_ADSR);
+    JS_SetModuleExport(ctx, m, "StkADSR", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Asymp", 0, JS_CFUNC_constructor_magic, INSTANCE_ASYMP);
+    JS_SetModuleExport(ctx, m, "StkAsymp", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "BlitSaw", 0, JS_CFUNC_constructor_magic, INSTANCE_BLIT_SAW);
+    JS_SetModuleExport(ctx, m, "StkBlitSaw", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "BlitSquare", 0, JS_CFUNC_constructor_magic, INSTANCE_BLIT_SQUARE);
+    JS_SetModuleExport(ctx, m, "StkBlitSquare", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Blit", 0, JS_CFUNC_constructor_magic, INSTANCE_BLIT);
+    JS_SetModuleExport(ctx, m, "StkBlit", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Envelope", 0, JS_CFUNC_constructor_magic, INSTANCE_ENVELOPE);
+    JS_SetModuleExport(ctx, m, "StkEnvelope", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Granulate", 0, JS_CFUNC_constructor_magic, INSTANCE_GRANULATE);
+    JS_SetModuleExport(ctx, m, "StkGranulate", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Modulate", 0, JS_CFUNC_constructor_magic, INSTANCE_MODULATE);
+    JS_SetModuleExport(ctx, m, "StkModulate", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "Noise", 0, JS_CFUNC_constructor_magic, INSTANCE_NOISE);
+    JS_SetModuleExport(ctx, m, "StkNoise", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "SineWave", 0, JS_CFUNC_constructor_magic, INSTANCE_SINE_WAVE);
+    JS_SetModuleExport(ctx, m, "StkSineWave", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkgenerator_constructor, "SingWave", 0, JS_CFUNC_constructor_magic, INSTANCE_SING_WAVE);
+    JS_SetModuleExport(ctx, m, "StkStkSingWave", ctor);
+  }
+
   JS_NewClassID(&js_stkeffect_class_id);
   JS_NewClass(JS_GetRuntime(ctx), js_stkeffect_class_id, &js_stkeffect_class);
 
@@ -1223,48 +1232,48 @@ js_stk_init(JSContext* ctx, JSModuleDef* m) {
 
   JS_SetClassProto(ctx, js_stkinstrmnt_class_id, stkinstrmnt_proto);
 
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "BandedWG", 0, JS_CFUNC_constructor_magic, INSTANCE_BANDEDWG);
-  JS_SetModuleExport(ctx, m, "StkBandedWG", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "BlowBotl", 0, JS_CFUNC_constructor_magic, INSTANCE_BLOWBOTL);
-  JS_SetModuleExport(ctx, m, "StkBlowBotl", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "BlowHole", 0, JS_CFUNC_constructor_magic, INSTANCE_BLOWHOLE);
-  JS_SetModuleExport(ctx, m, "StkBlowHole", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Bowed", 0, JS_CFUNC_constructor_magic, INSTANCE_BOWED);
-  JS_SetModuleExport(ctx, m, "StkBowed", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Brass", 0, JS_CFUNC_constructor_magic, INSTANCE_BRASS);
-  JS_SetModuleExport(ctx, m, "StkBrass", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Clarinet", 0, JS_CFUNC_constructor_magic, INSTANCE_CLARINET);
-  JS_SetModuleExport(ctx, m, "StkClarinet", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Drummer", 0, JS_CFUNC_constructor_magic, INSTANCE_DRUMMER);
-  JS_SetModuleExport(ctx, m, "StkDrummer", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Flute", 0, JS_CFUNC_constructor_magic, INSTANCE_FLUTE);
-  JS_SetModuleExport(ctx, m, "StkFlute", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Mandolin", 0, JS_CFUNC_constructor_magic, INSTANCE_MANDOLIN);
-  JS_SetModuleExport(ctx, m, "StkMandolin", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Mesh2D", 0, JS_CFUNC_constructor_magic, INSTANCE_MESH2D);
-  JS_SetModuleExport(ctx, m, "StkMesh2D", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Plucked", 0, JS_CFUNC_constructor_magic, INSTANCE_PLUCKED);
-  JS_SetModuleExport(ctx, m, "StkPlucked", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Recorder", 0, JS_CFUNC_constructor_magic, INSTANCE_RECORDER);
-  JS_SetModuleExport(ctx, m, "StkRecorder", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Resonate", 0, JS_CFUNC_constructor_magic, INSTANCE_RESONATE);
-  JS_SetModuleExport(ctx, m, "StkResonate", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Saxofony", 0, JS_CFUNC_constructor_magic, INSTANCE_SAXOFONY);
-  JS_SetModuleExport(ctx, m, "StkSaxofony", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Shakers", 0, JS_CFUNC_constructor_magic, INSTANCE_SHAKERS);
-  JS_SetModuleExport(ctx, m, "StkShakers", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Simple", 0, JS_CFUNC_constructor_magic, INSTANCE_SIMPLE);
-  JS_SetModuleExport(ctx, m, "StkSimple", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Sitar", 0, JS_CFUNC_constructor_magic, INSTANCE_SITAR);
-  JS_SetModuleExport(ctx, m, "StkSitar", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "StifKarp", 0, JS_CFUNC_constructor_magic, INSTANCE_STIFKARP);
-  JS_SetModuleExport(ctx, m, "StkStifKarp", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "VoicForm", 0, JS_CFUNC_constructor_magic, INSTANCE_VOICFORM);
-  JS_SetModuleExport(ctx, m, "StkVoicForm", ctor);
-  ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Whistle", 0, JS_CFUNC_constructor_magic, INSTANCE_WHISTLE);
-  JS_SetModuleExport(ctx, m, "StkWhistle", ctor);
-
   if(m) {
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "BandedWG", 0, JS_CFUNC_constructor_magic, INSTANCE_BANDEDWG);
+    JS_SetModuleExport(ctx, m, "StkBandedWG", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "BlowBotl", 0, JS_CFUNC_constructor_magic, INSTANCE_BLOWBOTL);
+    JS_SetModuleExport(ctx, m, "StkBlowBotl", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "BlowHole", 0, JS_CFUNC_constructor_magic, INSTANCE_BLOWHOLE);
+    JS_SetModuleExport(ctx, m, "StkBlowHole", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Bowed", 0, JS_CFUNC_constructor_magic, INSTANCE_BOWED);
+    JS_SetModuleExport(ctx, m, "StkBowed", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Brass", 0, JS_CFUNC_constructor_magic, INSTANCE_BRASS);
+    JS_SetModuleExport(ctx, m, "StkBrass", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Clarinet", 0, JS_CFUNC_constructor_magic, INSTANCE_CLARINET);
+    JS_SetModuleExport(ctx, m, "StkClarinet", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Drummer", 0, JS_CFUNC_constructor_magic, INSTANCE_DRUMMER);
+    JS_SetModuleExport(ctx, m, "StkDrummer", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Flute", 0, JS_CFUNC_constructor_magic, INSTANCE_FLUTE);
+    JS_SetModuleExport(ctx, m, "StkFlute", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Mandolin", 0, JS_CFUNC_constructor_magic, INSTANCE_MANDOLIN);
+    JS_SetModuleExport(ctx, m, "StkMandolin", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Mesh2D", 0, JS_CFUNC_constructor_magic, INSTANCE_MESH2D);
+    JS_SetModuleExport(ctx, m, "StkMesh2D", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Plucked", 0, JS_CFUNC_constructor_magic, INSTANCE_PLUCKED);
+    JS_SetModuleExport(ctx, m, "StkPlucked", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Recorder", 0, JS_CFUNC_constructor_magic, INSTANCE_RECORDER);
+    JS_SetModuleExport(ctx, m, "StkRecorder", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Resonate", 0, JS_CFUNC_constructor_magic, INSTANCE_RESONATE);
+    JS_SetModuleExport(ctx, m, "StkResonate", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Saxofony", 0, JS_CFUNC_constructor_magic, INSTANCE_SAXOFONY);
+    JS_SetModuleExport(ctx, m, "StkSaxofony", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Shakers", 0, JS_CFUNC_constructor_magic, INSTANCE_SHAKERS);
+    JS_SetModuleExport(ctx, m, "StkShakers", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Simple", 0, JS_CFUNC_constructor_magic, INSTANCE_SIMPLE);
+    JS_SetModuleExport(ctx, m, "StkSimple", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Sitar", 0, JS_CFUNC_constructor_magic, INSTANCE_SITAR);
+    JS_SetModuleExport(ctx, m, "StkSitar", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "StifKarp", 0, JS_CFUNC_constructor_magic, INSTANCE_STIFKARP);
+    JS_SetModuleExport(ctx, m, "StkStifKarp", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "VoicForm", 0, JS_CFUNC_constructor_magic, INSTANCE_VOICFORM);
+    JS_SetModuleExport(ctx, m, "StkVoicForm", ctor);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkinstrmnt_constructor, "Whistle", 0, JS_CFUNC_constructor_magic, INSTANCE_WHISTLE);
+    JS_SetModuleExport(ctx, m, "StkWhistle", ctor);
+
     JS_SetModuleExport(ctx, m, "Stk", stk_ctor);
     JS_SetModuleExport(ctx, m, "StkFrames", stkframes_ctor);
     JS_SetModuleExport(ctx, m, "StkGenerator", stkfilter_ctor);
