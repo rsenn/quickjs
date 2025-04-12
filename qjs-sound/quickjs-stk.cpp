@@ -342,7 +342,15 @@ enum {
   PROP_CHANNELS,
   PROP_FRAMES,
   PROP_DATA_RATE,
+  PROP_BUFFER,
 };
+
+static void
+js_stkframes_free_buf(JSRuntime* rt, void* opaque, void* ptr) {
+  StkFramesPtr* f = opaque;
+  f->~StkFramesPtr();
+  js_free_rt(rt, f);
+}
 
 static JSValue
 js_stkframes_get(JSContext* ctx, JSValueConst this_val, int magic) {
@@ -371,6 +379,17 @@ js_stkframes_get(JSContext* ctx, JSValueConst this_val, int magic) {
     }
     case PROP_DATA_RATE: {
       ret = JS_NewFloat64(ctx, (*f)->dataRate());
+      break;
+    }
+    case PROP_BUFFER: {
+      StkFloat* ptr = &((*(*f))[0]);
+      size_t len = (*f)->size();
+
+      StkFramesPtr* opaque = static_cast<StkFramesPtr*>(js_mallocz(ctx, sizeof(StkFramesPtr)));
+
+      new(opaque) StkFramesPtr(*f);
+
+      ret = JS_NewArrayBuffer(ctx, ptr, sizeof(StkFloat) * len, js_stkframes_free_buf, opaque, FALSE);
       break;
     }
   }
