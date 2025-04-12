@@ -5,6 +5,9 @@
 #include "LabSound/backends/AudioDevice_RtAudio.h"
 
 extern int js_stk_init(JSContext* ctx, JSModuleDef* m);
+
+extern "C" JSModuleDef* js_init_module_stk(JSContext* ctx, const char* module_name);
+
 /*VISIBLE*/ JSClassID js_audiocontext_class_id = 0, js_audiodestinationnode_class_id = 0, js_audiolistener_class_id = 0, js_audiodevice_class_id = 0;
 /*VISIBLE*/ JSValue audiocontext_proto = {{0}, JS_TAG_UNDEFINED}, audiocontext_ctor = {{0}, JS_TAG_UNDEFINED}, audiodestinationnode_proto = {{0}, JS_TAG_UNDEFINED},
                     audiodestinationnode_ctor = {{0}, JS_TAG_UNDEFINED}, audiolistener_proto = {{0}, JS_TAG_UNDEFINED}, audiolistener_ctor = {{0}, JS_TAG_UNDEFINED},
@@ -556,10 +559,7 @@ js_init_module(JSContext* ctx, const char* module_name) {
     JS_AddModuleExport(ctx, m, "AudioDestinationNode");
     JS_AddModuleExport(ctx, m, "AudioListener");
     JS_AddModuleExport(ctx, m, "AudioDevice");
-    JS_AddModuleExport(ctx, m, "Stk");
-    JS_AddModuleExport(ctx, m, "StkFrames");
-    JS_AddModuleExport(ctx, m, "StkGenerator");
-    JS_AddModuleExport(ctx, m, "StkFilter");
+    js_init_module_stk(ctx, module_name);
   }
 
   return m;
