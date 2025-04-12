@@ -32,3 +32,6 @@
 [submodule "qjs-sound/LabSound"]
 	path = qjs-sound/LabSound
 	url = git@github.com:rsenn/LabSound
+[submodule "qjs-sound/libsndfile"]
+	path = qjs-sound/libsndfile
+	url = git@github.com:libsndfile/libsndfile.git
