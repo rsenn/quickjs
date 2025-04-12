@@ -86,7 +86,7 @@ find_quickjs()
 configure_quickjs()
 add_definitions(-fvisibility=hidden)
 
-if(LINUX)
+if(LINUX OR ANDROID)
   add_definitions(-D__LINUX_PULSE__)
 endif()
 file(GLOB COMMON_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/stk/src/*.cpp)
