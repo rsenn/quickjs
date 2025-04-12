@@ -293,6 +293,8 @@ fail:
 enum {
   METHOD_RESIZE = 0,
   METHOD_INTERPOLATE,
+  METHOD_GETCHANNEL,
+  METHOD_SETCHANNEL,
 };
 
 static JSValue
@@ -329,6 +331,35 @@ js_stkframes_method(JSContext* ctx, JSValueConst this_val, int argc, JSValueCons
         JS_ToUint32(ctx, &channel, argv[1]);
 
       ret = JS_NewFloat64(ctx, (*f)->interpolate(frame, channel));
+      break;
+    }
+    case METHOD_GETCHANNEL: {
+      uint32_t channel, dstChannel;
+      StkFramesPtr* a;
+
+      JS_ToUint32(ctx, &channel, argv[0]);
+
+      if(!(a = static_cast<StkFramesPtr*>(JS_GetOpaque(argv[1], js_stkframes_class_id))))
+        return JS_ThrowTypeError(ctx, "argument 2 must be StkFrames");
+
+      JS_ToUint32(ctx, &dstChannel, argv[2]);
+
+      (*f)->getChannel(channel, *a->get(), dstChannel);
+      ret = JS_DupValue(ctx, argv[1]);
+      break;
+    }
+    case METHOD_SETCHANNEL: {
+      uint32_t channel, srcChannel;
+      StkFramesPtr* a;
+
+      JS_ToUint32(ctx, &channel, argv[0]);
+
+      if(!(a = static_cast<StkFramesPtr*>(JS_GetOpaque(argv[1], js_stkframes_class_id))))
+        return JS_ThrowTypeError(ctx, "argument 2 must be StkFrames");
+
+      JS_ToUint32(ctx, &srcChannel, argv[2]);
+
+      (*f)->setChannel(channel, *a->get(), srcChannel);
       break;
     }
   }
@@ -435,6 +466,8 @@ static JSClassDef js_stkframes_class = {
 static const JSCFunctionListEntry js_stkframes_funcs[] = {
     JS_CFUNC_MAGIC_DEF("resize", 1, js_stkframes_method, METHOD_RESIZE),
     JS_CFUNC_MAGIC_DEF("interpolate", 1, js_stkframes_method, METHOD_INTERPOLATE),
+    JS_CFUNC_MAGIC_DEF("getChannel", 3, js_stkframes_method, METHOD_GETCHANNEL),
+    JS_CFUNC_MAGIC_DEF("setChannel", 3, js_stkframes_method, METHOD_SETCHANNEL),
     JS_CGETSET_MAGIC_DEF("size", js_stkframes_get, 0, PROP_SIZE),
     JS_CGETSET_MAGIC_DEF("empty", js_stkframes_get, 0, PROP_EMPTY),
     JS_CGETSET_MAGIC_DEF("channels", js_stkframes_get, 0, PROP_CHANNELS),
