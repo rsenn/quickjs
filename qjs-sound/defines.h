@@ -6,4 +6,3 @@
 #define VISIBLE __attribute__((visibility("default")))
 #define HIDDEN __attribute__((visibility("hidden")))
 #endif
-

@@ -4,6 +4,7 @@
 #include "LabSound/LabSound.h"
 #include "LabSound/backends/AudioDevice_RtAudio.h"
 
+extern int js_stk_init(JSContext* ctx, JSModuleDef* m);
 /*VISIBLE*/ JSClassID js_audiocontext_class_id = 0, js_audiodestinationnode_class_id = 0, js_audiolistener_class_id = 0, js_audiodevice_class_id = 0;
 /*VISIBLE*/ JSValue audiocontext_proto = {{0}, JS_TAG_UNDEFINED}, audiocontext_ctor = {{0}, JS_TAG_UNDEFINED}, audiodestinationnode_proto = {{0}, JS_TAG_UNDEFINED},
                     audiodestinationnode_ctor = {{0}, JS_TAG_UNDEFINED}, audiolistener_proto = {{0}, JS_TAG_UNDEFINED}, audiolistener_ctor = {{0}, JS_TAG_UNDEFINED},
@@ -540,6 +541,8 @@ js_labsound_init(JSContext* ctx, JSModuleDef* m) {
     JS_SetModuleExport(ctx, m, "AudioListener", audiolistener_ctor);
     JS_SetModuleExport(ctx, m, "AudioDevice", audiodevice_ctor);
   }
+
+  js_stk_init(ctx, m);
 
   return 0;
 }
