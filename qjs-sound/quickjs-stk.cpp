@@ -382,14 +382,14 @@ js_stkframes_get(JSContext* ctx, JSValueConst this_val, int magic) {
       break;
     }
     case PROP_BUFFER: {
-      StkFloat* ptr = &((*(*f))[0]);
+      stk::StkFloat* ptr = &((*(*f))[0]);
       size_t len = (*f)->size();
 
       StkFramesPtr* opaque = static_cast<StkFramesPtr*>(js_mallocz(ctx, sizeof(StkFramesPtr)));
 
       new(opaque) StkFramesPtr(*f);
 
-      ret = JS_NewArrayBuffer(ctx, ptr, sizeof(StkFloat) * len, js_stkframes_free_buf, opaque, FALSE);
+      ret = JS_NewArrayBuffer(ctx, ptr, sizeof(stk::StkFloat) * len, js_stkframes_free_buf, opaque, FALSE);
       break;
     }
   }
