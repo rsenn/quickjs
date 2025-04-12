@@ -556,6 +556,10 @@ js_init_module(JSContext* ctx, const char* module_name) {
     JS_AddModuleExport(ctx, m, "AudioDestinationNode");
     JS_AddModuleExport(ctx, m, "AudioListener");
     JS_AddModuleExport(ctx, m, "AudioDevice");
+    JS_AddModuleExport(ctx, m, "Stk");
+    JS_AddModuleExport(ctx, m, "StkFrames");
+    JS_AddModuleExport(ctx, m, "StkGenerator");
+    JS_AddModuleExport(ctx, m, "StkFilter");
   }
 
   return m;
