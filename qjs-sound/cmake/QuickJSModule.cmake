@@ -208,7 +208,7 @@ function(make_module FNAME)
   set(DEPS ${${VNAME}_DEPS})
   set(LIBS ${${VNAME}_LIBRARIES})
 
-  set(SOURCES quickjs-${NAME}.${EXT} ${COMMON_SOURCES})
+  set(SOURCES quickjs-${NAME}.${EXT} ${COMMON_SOURCES} ${${VNAME}_SOURCES})
   add_unique(LIBS ${${VNAME}_LIBRARIES})
 
   add_unique(LIBS ${COMMON_LIBRARIES})

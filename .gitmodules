@@ -35,3 +35,6 @@
 [submodule "qjs-sound/libsndfile"]
 	path = qjs-sound/libsndfile
 	url = git@github.com:libsndfile/libsndfile.git
+[submodule "qjs-sound/stk"]
+	path = qjs-sound/stk
+	url = git@github.com:thestk/stk.git
