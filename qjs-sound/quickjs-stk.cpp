@@ -104,10 +104,29 @@ typedef std::shared_ptr<stk::Effect> StkEffectPtr;
 typedef std::shared_ptr<stk::FM> StkFMPtr;
 typedef std::shared_ptr<stk::Instrmnt> StkInstrmntPtr;
 
+static JSAtom
+js_symbol_tostringtag(JSContext* ctx) {
+  JSValue g = JS_GetGlobalObject(ctx);
+  JSValue sym = JS_GetPropertyStr(ctx, g, "Symbol");
+  JSValue tst = JS_GetPropertyStr(ctx, sym, "toStringTag");
+  JS_FreeValue(ctx, sym);
+  JS_FreeValue(ctx, g);
+  JSAtom ret = JS_ValueToAtom(ctx, tst);
+  JS_FreeValue(ctx, tst);
+  return ret;
+}
+
+static void
+js_set_tostringtag(JSContext* ctx, JSValueConst obj, const char* name) {
+  JSAtom tst = js_symbol_tostringtag(ctx);
+  JSValue str = JS_NewString(ctx, name);
+  JS_DeleteProperty(ctx, obj, tst, 0);
+  JS_DefinePropertyValue(ctx, obj, tst, str, JS_PROP_CONFIGURABLE | JS_PROP_WRITABLE);
+  JS_FreeAtom(ctx, tst);
+}
+
 static int64_t
 array_length(JSContext* ctx, JSValueConst arr) {
-  /*if(!JS_IsArray(ctx, arr))
-    return -1;*/
   int64_t len = -1;
   JSValue lprop = JS_GetPropertyStr(ctx, arr, "length");
   if(!JS_IsException(lprop))
@@ -161,7 +180,7 @@ fail:
 }
 
 enum {
-  PROP_SAMPLERATE,
+  PROP_SAMPLERATE = 0,
 };
 
 static JSValue
@@ -269,7 +288,7 @@ fail:
 }
 
 enum {
-  METHOD_RESIZE,
+  METHOD_RESIZE = 0,
   METHOD_INTERPOLATE,
 };
 
@@ -315,7 +334,7 @@ js_stkframes_method(JSContext* ctx, JSValueConst this_val, int argc, JSValueCons
 }
 
 enum {
-  PROP_SIZE,
+  PROP_SIZE = 0,
   PROP_EMPTY,
   PROP_CHANNELS,
   PROP_FRAMES,
@@ -403,7 +422,7 @@ static const JSCFunctionListEntry js_stkframes_funcs[] = {
 };
 
 enum {
-  INSTANCE_ADSR,
+  INSTANCE_ADSR = 0,
   INSTANCE_ASYMP,
   INSTANCE_BLIT_SAW,
   INSTANCE_BLIT_SQUARE,
@@ -420,16 +439,35 @@ static JSValue
 js_stkgenerator_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSValueConst argv[], int magic) {
   StkGeneratorPtr* g = static_cast<StkGeneratorPtr*>(js_mallocz(ctx, sizeof(StkGeneratorPtr)));
   double arg = 0;
+
   if(argc > 0)
     JS_ToFloat64(ctx, &arg, argv[0]);
 
   switch(magic) {
-    case INSTANCE_ASYMP: *g = std::make_shared<stk::Asymp>(); break;
-    case INSTANCE_ADSR: *g = std::make_shared<stk::ADSR>(); break;
-    case INSTANCE_BLIT: *g = std::make_shared<stk::Blit>(argc > 0 ? arg : 220.0); break;
-    case INSTANCE_BLIT_SAW: *g = std::make_shared<stk::BlitSaw>(argc > 0 ? arg : 220.0); break;
-    case INSTANCE_BLIT_SQUARE: *g = std::make_shared<stk::BlitSquare>(argc > 0 ? arg : 220.0); break;
-    case INSTANCE_ENVELOPE: *g = std::make_shared<stk::Envelope>(); break;
+    case INSTANCE_ADSR: {
+      *g = std::make_shared<stk::ADSR>();
+      break;
+    }
+    case INSTANCE_ASYMP: {
+      *g = std::make_shared<stk::Asymp>();
+      break;
+    }
+    case INSTANCE_BLIT: {
+      *g = std::make_shared<stk::Blit>(argc > 0 ? arg : 220.0);
+      break;
+    }
+    case INSTANCE_BLIT_SAW: {
+      *g = std::make_shared<stk::BlitSaw>(argc > 0 ? arg : 220.0);
+      break;
+    }
+    case INSTANCE_BLIT_SQUARE: {
+      *g = std::make_shared<stk::BlitSquare>(argc > 0 ? arg : 220.0);
+      break;
+    }
+    case INSTANCE_ENVELOPE: {
+      *g = std::make_shared<stk::Envelope>();
+      break;
+    }
     case INSTANCE_GRANULATE: {
       if(argc > 1) {
         uint32_t nvoices;
@@ -445,9 +483,18 @@ js_stkgenerator_constructor(JSContext* ctx, JSValueConst new_target, int argc, J
       }
       break;
     }
-    case INSTANCE_MODULATE: *g = std::make_shared<stk::Modulate>(); break;
-    case INSTANCE_NOISE: *g = std::make_shared<stk::Noise>(argc > 0 ? arg : 0); break;
-    case INSTANCE_SINE_WAVE: *g = std::make_shared<stk::SineWave>(); break;
+    case INSTANCE_MODULATE: {
+      *g = std::make_shared<stk::Modulate>();
+      break;
+    }
+    case INSTANCE_NOISE: {
+      *g = std::make_shared<stk::Noise>(argc > 0 ? arg : 0);
+      break;
+    }
+    case INSTANCE_SINE_WAVE: {
+      *g = std::make_shared<stk::SineWave>();
+      break;
+    }
     case INSTANCE_SING_WAVE: {
       const char* filename = JS_ToCString(ctx, argv[0]);
       BOOL raw = FALSE;
@@ -476,6 +523,23 @@ js_stkgenerator_constructor(JSContext* ctx, JSValueConst new_target, int argc, J
     goto fail;
 
   JS_SetOpaque(obj, g);
+
+  js_set_tostringtag(ctx,
+                     obj,
+                     ((const char*[]){
+                         "ADSR",
+                         "Asymp",
+                         "Blit",
+                         "BlitSaw",
+                         "BlitSquare",
+                         "Envelope",
+                         "Granulate",
+                         "Modulate",
+                         "Noise",
+                         "SineWave",
+                         "SingWave",
+                     })[magic]);
+
   return obj;
 
 fail:
@@ -484,7 +548,7 @@ fail:
 }
 
 enum {
-  PROP_CHANNELS_OUT,
+  PROP_CHANNELS_OUT = 0,
 };
 
 static JSValue
@@ -539,7 +603,7 @@ static const JSCFunctionListEntry js_stkgenerator_funcs[] = {
 };
 
 enum {
-  INSTANCE_BI_QUAD,
+  INSTANCE_BI_QUAD = 0,
   INSTANCE_DELAY,
   INSTANCE_DELAY_A,
   INSTANCE_DELAY_L,
@@ -569,9 +633,18 @@ js_stkfilter_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVa
         JS_ToFloat64(ctx, &maxDelay, argv[1]);
 
       switch(magic) {
-        case INSTANCE_DELAY: *f = std::make_shared<stk::Delay>(); break;
-        case INSTANCE_DELAY_A: *f = std::make_shared<stk::DelayA>(delay, maxDelay); break;
-        case INSTANCE_DELAY_L: *f = std::make_shared<stk::DelayL>(delay, maxDelay); break;
+        case INSTANCE_DELAY: {
+          *f = std::make_shared<stk::Delay>();
+          break;
+        }
+        case INSTANCE_DELAY_A: {
+          *f = std::make_shared<stk::DelayA>(delay, maxDelay);
+          break;
+        }
+        case INSTANCE_DELAY_L: {
+          *f = std::make_shared<stk::DelayL>(delay, maxDelay);
+          break;
+        }
       }
 
       break;
@@ -627,13 +700,34 @@ js_stkfilter_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVa
         JS_ToFloat64(ctx, &arg, argv[0]);
 
       switch(magic) {
-        case INSTANCE_BI_QUAD: *f = std::make_shared<stk::BiQuad>(); break;
-        case INSTANCE_FORM_SWEP: *f = std::make_shared<stk::FormSwep>(); break;
-        case INSTANCE_ONE_POLE: *f = std::make_shared<stk::OnePole>(arg); break;
-        case INSTANCE_ONE_ZERO: *f = std::make_shared<stk::OneZero>(arg); break;
-        case INSTANCE_POLE_ZERO: *f = std::make_shared<stk::PoleZero>(); break;
-        case INSTANCE_TWO_POLE: *f = std::make_shared<stk::TwoPole>(); break;
-        case INSTANCE_TWO_ZERO: *f = std::make_shared<stk::TwoZero>(); break;
+        case INSTANCE_BI_QUAD: {
+          *f = std::make_shared<stk::BiQuad>();
+          break;
+        }
+        case INSTANCE_FORM_SWEP: {
+          *f = std::make_shared<stk::FormSwep>();
+          break;
+        }
+        case INSTANCE_ONE_POLE: {
+          *f = std::make_shared<stk::OnePole>(arg);
+          break;
+        }
+        case INSTANCE_ONE_ZERO: {
+          *f = std::make_shared<stk::OneZero>(arg);
+          break;
+        }
+        case INSTANCE_POLE_ZERO: {
+          *f = std::make_shared<stk::PoleZero>();
+          break;
+        }
+        case INSTANCE_TWO_POLE: {
+          *f = std::make_shared<stk::TwoPole>();
+          break;
+        }
+        case INSTANCE_TWO_ZERO: {
+          *f = std::make_shared<stk::TwoZero>();
+          break;
+        }
       }
 
       break;
@@ -683,7 +777,7 @@ static const JSCFunctionListEntry js_stkfilter_funcs[] = {
 };
 
 enum {
-  INSTANCE_CHORUS,
+  INSTANCE_CHORUS = 0,
   INSTANCE_ECHO,
   INSTANCE_FREEVERB,
   INSTANCE_JCREV,
@@ -701,10 +795,22 @@ js_stkeffect_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVa
     JS_ToFloat64(ctx, &arg, argv[0]);
 
   switch(magic) {
-    case INSTANCE_CHORUS: *e = std::make_shared<stk::Chorus>(argc > 0 ? arg : 6000); break;
-    case INSTANCE_ECHO: *e = std::make_shared<stk::Echo>(argc > 0 ? arg : stk::Stk::sampleRate()); break;
-    case INSTANCE_FREEVERB: *e = std::make_shared<stk::FreeVerb>(); break;
-    case INSTANCE_JCREV: *e = std::make_shared<stk::JCRev>(argc > 0 ? arg : 1.0); break;
+    case INSTANCE_CHORUS: {
+      *e = std::make_shared<stk::Chorus>(argc > 0 ? arg : 6000);
+      break;
+    }
+    case INSTANCE_ECHO: {
+      *e = std::make_shared<stk::Echo>(argc > 0 ? arg : stk::Stk::sampleRate());
+      break;
+    }
+    case INSTANCE_FREEVERB: {
+      *e = std::make_shared<stk::FreeVerb>();
+      break;
+    }
+    case INSTANCE_JCREV: {
+      *e = std::make_shared<stk::JCRev>(argc > 0 ? arg : 1.0);
+      break;
+    }
     case INSTANCE_LENTPITSHIFT: {
       int32_t tmax = stk::RT_BUFFER_SIZE;
       if(argc > 1)
@@ -712,9 +818,18 @@ js_stkeffect_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVa
       *e = std::make_shared<stk::LentPitShift>(argc > 0 ? arg : 1.0, tmax);
       break;
     }
-    case INSTANCE_NREV: *e = std::make_shared<stk::NRev>(argc > 0 ? arg : 1.0); break;
-    case INSTANCE_PITSHIFT: *e = std::make_shared<stk::PitShift>(); break;
-    case INSTANCE_PRCREV: *e = std::make_shared<stk::PRCRev>(argc > 0 ? arg : 1.0); break;
+    case INSTANCE_NREV: {
+      *e = std::make_shared<stk::NRev>(argc > 0 ? arg : 1.0);
+      break;
+    }
+    case INSTANCE_PITSHIFT: {
+      *e = std::make_shared<stk::PitShift>();
+      break;
+    }
+    case INSTANCE_PRCREV: {
+      *e = std::make_shared<stk::PRCRev>(argc > 0 ? arg : 1.0);
+      break;
+    }
   }
 
   /* using new_target to get the prototype is necessary when the class is extended. */
@@ -760,7 +875,7 @@ static const JSCFunctionListEntry js_stkeffect_funcs[] = {
 };
 
 enum {
-  INSTANCE_BEETHREE,
+  INSTANCE_BEETHREE = 0,
   INSTANCE_FMVOICES,
   INSTANCE_HEVYMETL,
   INSTANCE_PERCFLUT,
@@ -821,7 +936,7 @@ static const JSCFunctionListEntry js_stkfm_funcs[] = {
 };
 
 enum {
-  INSTANCE_BANDEDWG,
+  INSTANCE_BANDEDWG = 0,
   INSTANCE_BLOWBOTL,
   INSTANCE_BLOWHOLE,
   INSTANCE_BOWED,
@@ -831,10 +946,10 @@ enum {
   INSTANCE_FLUTE,
   INSTANCE_MANDOLIN,
   INSTANCE_MESH2D,
-   INSTANCE_PLUCKED,
+  INSTANCE_PLUCKED,
   INSTANCE_RECORDER,
   INSTANCE_RESONATE,
-   INSTANCE_SAXOFONY,
+  INSTANCE_SAXOFONY,
   INSTANCE_SHAKERS,
   INSTANCE_SIMPLE,
   INSTANCE_SITAR,
@@ -851,15 +966,42 @@ js_stkinstrmnt_constructor(JSContext* ctx, JSValueConst new_target, int argc, JS
     JS_ToFloat64(ctx, &arg, argv[0]);
 
   switch(magic) {
-    case INSTANCE_BANDEDWG: *i = std::make_shared<stk::BandedWG>(); break;
-    case INSTANCE_BLOWBOTL: *i = std::make_shared<stk::BlowBotl>(); break;
-    case INSTANCE_BLOWHOLE: *i = std::make_shared<stk::BlowHole>(arg); break;
-    case INSTANCE_BOWED: *i = std::make_shared<stk::Bowed>(argc > 0 ? arg : 8.0); break;
-    case INSTANCE_BRASS: *i = std::make_shared<stk::Brass>(argc > 0 ? arg : 8.0); break;
-    case INSTANCE_CLARINET: *i = std::make_shared<stk::Clarinet>(argc > 0 ? arg : 8.0); break;
-    case INSTANCE_DRUMMER: *i = std::make_shared<stk::Drummer>(); break;
-    case INSTANCE_FLUTE: *i = std::make_shared<stk::Flute>(arg); break;
-    case INSTANCE_MANDOLIN: *i = std::make_shared<stk::Mandolin>(arg); break;
+    case INSTANCE_BANDEDWG: {
+      *i = std::make_shared<stk::BandedWG>();
+      break;
+    }
+    case INSTANCE_BLOWBOTL: {
+      *i = std::make_shared<stk::BlowBotl>();
+      break;
+    }
+    case INSTANCE_BLOWHOLE: {
+      *i = std::make_shared<stk::BlowHole>(arg);
+      break;
+    }
+    case INSTANCE_BOWED: {
+      *i = std::make_shared<stk::Bowed>(argc > 0 ? arg : 8.0);
+      break;
+    }
+    case INSTANCE_BRASS: {
+      *i = std::make_shared<stk::Brass>(argc > 0 ? arg : 8.0);
+      break;
+    }
+    case INSTANCE_CLARINET: {
+      *i = std::make_shared<stk::Clarinet>(argc > 0 ? arg : 8.0);
+      break;
+    }
+    case INSTANCE_DRUMMER: {
+      *i = std::make_shared<stk::Drummer>();
+      break;
+    }
+    case INSTANCE_FLUTE: {
+      *i = std::make_shared<stk::Flute>(arg);
+      break;
+    }
+    case INSTANCE_MANDOLIN: {
+      *i = std::make_shared<stk::Mandolin>(arg);
+      break;
+    }
     case INSTANCE_MESH2D: {
       uint32_t nx, ny;
       JS_ToUint32(ctx, &nx, argv[0]);
@@ -867,18 +1009,48 @@ js_stkinstrmnt_constructor(JSContext* ctx, JSValueConst new_target, int argc, JS
       *i = std::make_shared<stk::Mesh2D>(nx, ny);
       break;
     }
-    // case INSTANCE_MODAL: *i = std::make_shared<stk::Modal>(argc > 0 ? arg : 4); break;
-    case INSTANCE_PLUCKED: *i = std::make_shared<stk::Plucked>(argc > 0 ? arg : 10.0); break;
-    case INSTANCE_RECORDER: *i = std::make_shared<stk::Recorder>(); break;
-    case INSTANCE_RESONATE: *i = std::make_shared<stk::Resonate>(); break;
-    // case INSTANCE_SAMPLER: *i = std::make_shared<stk::Sampler>(); break;
-    case INSTANCE_SAXOFONY: *i = std::make_shared<stk::Saxofony>(arg); break;
-    case INSTANCE_SHAKERS: *i = std::make_shared<stk::Shakers>(argc > 0 ? arg : 0); break;
-    case INSTANCE_SIMPLE: *i = std::make_shared<stk::Simple>(); break;
-    case INSTANCE_SITAR: *i = std::make_shared<stk::Sitar>(argc > 0 ? arg : 8.0); break;
-    case INSTANCE_STIFKARP: *i = std::make_shared<stk::StifKarp>(argc > 0 ? arg : 10.0); break;
-    case INSTANCE_VOICFORM: *i = std::make_shared<stk::VoicForm>(); break;
-    case INSTANCE_WHISTLE: *i = std::make_shared<stk::Whistle>(); break;
+    // case INSTANCE_MODAL: { *i = std::make_shared<stk::Modal>(argc > 0 ? arg : 4); break; }
+    case INSTANCE_PLUCKED: {
+      *i = std::make_shared<stk::Plucked>(argc > 0 ? arg : 10.0);
+      break;
+    }
+    case INSTANCE_RECORDER: {
+      *i = std::make_shared<stk::Recorder>();
+      break;
+    }
+    case INSTANCE_RESONATE: {
+      *i = std::make_shared<stk::Resonate>();
+      break;
+    }
+    // case INSTANCE_SAMPLER: { *i = std::make_shared<stk::Sampler>(); break; }
+    case INSTANCE_SAXOFONY: {
+      *i = std::make_shared<stk::Saxofony>(arg);
+      break;
+    }
+    case INSTANCE_SHAKERS: {
+      *i = std::make_shared<stk::Shakers>(argc > 0 ? arg : 0);
+      break;
+    }
+    case INSTANCE_SIMPLE: {
+      *i = std::make_shared<stk::Simple>();
+      break;
+    }
+    case INSTANCE_SITAR: {
+      *i = std::make_shared<stk::Sitar>(argc > 0 ? arg : 8.0);
+      break;
+    }
+    case INSTANCE_STIFKARP: {
+      *i = std::make_shared<stk::StifKarp>(argc > 0 ? arg : 10.0);
+      break;
+    }
+    case INSTANCE_VOICFORM: {
+      *i = std::make_shared<stk::VoicForm>();
+      break;
+    }
+    case INSTANCE_WHISTLE: {
+      *i = std::make_shared<stk::Whistle>();
+      break;
+    }
   }
 
   /* using new_target to get the prototype is necessary when the class is extended. */
