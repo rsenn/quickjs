@@ -6,7 +6,7 @@
 
 extern int js_stk_init(JSContext* ctx, JSModuleDef* m);
 
-extern "C" JSModuleDef* js_init_module_stk(JSContext* ctx, const char* module_name);
+extern "C" void js_init_module_stk(JSContext* ctx, JSModuleDef*);
 
 /*VISIBLE*/ JSClassID js_audiocontext_class_id = 0, js_audiodestinationnode_class_id = 0, js_audiolistener_class_id = 0, js_audiodevice_class_id = 0;
 /*VISIBLE*/ JSValue audiocontext_proto = {{0}, JS_TAG_UNDEFINED}, audiocontext_ctor = {{0}, JS_TAG_UNDEFINED}, audiodestinationnode_proto = {{0}, JS_TAG_UNDEFINED},
@@ -559,7 +559,7 @@ js_init_module(JSContext* ctx, const char* module_name) {
     JS_AddModuleExport(ctx, m, "AudioDestinationNode");
     JS_AddModuleExport(ctx, m, "AudioListener");
     JS_AddModuleExport(ctx, m, "AudioDevice");
-    js_init_module_stk(ctx, module_name);
+    js_init_module_stk(ctx, m);
   }
 
   return m;

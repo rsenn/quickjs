@@ -720,40 +720,34 @@ js_stk_init(JSContext* ctx, JSModuleDef* m) {
   return 0;
 }
 
-extern "C" VISIBLE JSModuleDef*
-js_init_module_stk(JSContext* ctx, const char* module_name) {
-  JSModuleDef* m;
-
-  if((m = JS_NewCModule(ctx, module_name, js_stk_init))) {
-    JS_AddModuleExport(ctx, m, "StkBiQuad");
-    JS_AddModuleExport(ctx, m, "StkDelayA");
-    JS_AddModuleExport(ctx, m, "StkDelayL");
-    JS_AddModuleExport(ctx, m, "StkDelay");
-    JS_AddModuleExport(ctx, m, "StkFir");
-    JS_AddModuleExport(ctx, m, "StkFormSwep");
-    JS_AddModuleExport(ctx, m, "StkIir");
-    JS_AddModuleExport(ctx, m, "StkOnePole");
-    JS_AddModuleExport(ctx, m, "StkOneZero");
-    JS_AddModuleExport(ctx, m, "StkPoleZero");
-    JS_AddModuleExport(ctx, m, "StkTapDelay");
-    JS_AddModuleExport(ctx, m, "StkTwoPole");
-    JS_AddModuleExport(ctx, m, "StkTwoZero");
-    JS_AddModuleExport(ctx, m, "StkADSR");
-    JS_AddModuleExport(ctx, m, "StkAsymp");
-    JS_AddModuleExport(ctx, m, "StkBlitSaw");
-    JS_AddModuleExport(ctx, m, "StkBlitSquare");
-    JS_AddModuleExport(ctx, m, "StkBlit");
-    JS_AddModuleExport(ctx, m, "StkEnvelope");
-    JS_AddModuleExport(ctx, m, "StkGranulate");
-    JS_AddModuleExport(ctx, m, "StkModulate");
-    JS_AddModuleExport(ctx, m, "StkNoise");
-    JS_AddModuleExport(ctx, m, "StkSineWave");
-    JS_AddModuleExport(ctx, m, "StkStkSingWave");
-    JS_AddModuleExport(ctx, m, "Stk");
-    JS_AddModuleExport(ctx, m, "StkFrames");
-    JS_AddModuleExport(ctx, m, "StkGenerator");
-    JS_AddModuleExport(ctx, m, "StkFilter");
-  }
-
-  return m;
+extern "C" VISIBLE void
+js_init_module_stk(JSContext* ctx, JSModuleDef* m) {
+  JS_AddModuleExport(ctx, m, "StkBiQuad");
+  JS_AddModuleExport(ctx, m, "StkDelayA");
+  JS_AddModuleExport(ctx, m, "StkDelayL");
+  JS_AddModuleExport(ctx, m, "StkDelay");
+  JS_AddModuleExport(ctx, m, "StkFir");
+  JS_AddModuleExport(ctx, m, "StkFormSwep");
+  JS_AddModuleExport(ctx, m, "StkIir");
+  JS_AddModuleExport(ctx, m, "StkOnePole");
+  JS_AddModuleExport(ctx, m, "StkOneZero");
+  JS_AddModuleExport(ctx, m, "StkPoleZero");
+  JS_AddModuleExport(ctx, m, "StkTapDelay");
+  JS_AddModuleExport(ctx, m, "StkTwoPole");
+  JS_AddModuleExport(ctx, m, "StkTwoZero");
+  JS_AddModuleExport(ctx, m, "StkADSR");
+  JS_AddModuleExport(ctx, m, "StkAsymp");
+  JS_AddModuleExport(ctx, m, "StkBlitSaw");
+  JS_AddModuleExport(ctx, m, "StkBlitSquare");
+  JS_AddModuleExport(ctx, m, "StkBlit");
+  JS_AddModuleExport(ctx, m, "StkEnvelope");
+  JS_AddModuleExport(ctx, m, "StkGranulate");
+  JS_AddModuleExport(ctx, m, "StkModulate");
+  JS_AddModuleExport(ctx, m, "StkNoise");
+  JS_AddModuleExport(ctx, m, "StkSineWave");
+  JS_AddModuleExport(ctx, m, "StkStkSingWave");
+  JS_AddModuleExport(ctx, m, "Stk");
+  JS_AddModuleExport(ctx, m, "StkFrames");
+  JS_AddModuleExport(ctx, m, "StkGenerator");
+  JS_AddModuleExport(ctx, m, "StkFilter");
 }
