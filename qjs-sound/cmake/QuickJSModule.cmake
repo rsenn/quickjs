@@ -238,6 +238,14 @@ function(make_module FNAME)
     set(PREFIX "")
   endif(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 
+
+  set(MODNAME "${VNAME}")
+  if(${VNAME}_NAME)
+    set(MODNAME ${${VNAME}_NAME})
+
+  endif(${VNAME}_NAME)
+
+
   if(BUILD_SHARED_MODULES)
     #add_library(${TARGET_NAME} MODULE ${SOURCES})
     add_library(${TARGET_NAME} SHARED ${SOURCES})
@@ -246,7 +254,7 @@ function(make_module FNAME)
       ${TARGET_NAME}
       PROPERTIES RPATH "${MBEDTLS_LIBRARY_DIR}:${QUICKJS_C_MODULE_DIR}"
                  INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}" PREFIX "${PREFIX}"
-                 OUTPUT_NAME "${VNAME}" COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
+                 OUTPUT_NAME "${MODNAME}" COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
 
     target_compile_definitions(
       ${TARGET_NAME}
