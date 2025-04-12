@@ -551,6 +551,39 @@ fail:
 }
 
 enum {
+  METHOD_TICK = 0,
+};
+
+static JSValue
+js_stkgenerator_method(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst argv[], int magic) {
+  StkGeneratorPtr* f;
+  JSValue ret = JS_UNDEFINED;
+
+  if(!(f = static_cast<StkGeneratorPtr*>(JS_GetOpaque2(ctx, this_val, js_stkgenerator_class_id))))
+    return JS_EXCEPTION;
+
+  switch(magic) {
+    case METHOD_TICK: {
+      StkFramesPtr* a;
+      uint32_t channel = 0;
+
+      if(!(a = static_cast<StkFramesPtr*>(JS_GetOpaque(argv[0], js_stkframes_class_id))))
+        return JS_ThrowTypeError(ctx, "argument 1 must be StkFrames");
+
+      if(argc > 1)
+        JS_ToUint32(ctx, &channel, argv[1]);
+
+      (*f)->tick(*a->get(), channel);
+
+      ret = JS_DupValue(ctx, argv[0]);
+      break;
+    }
+  }
+
+  return ret;
+}
+
+enum {
   PROP_CHANNELS_OUT = 0,
 };
 
@@ -601,12 +634,13 @@ static JSClassDef js_stkgenerator_class = {
 };
 
 static const JSCFunctionListEntry js_stkgenerator_funcs[] = {
+    JS_CFUNC_MAGIC_DEF("tick", 1, js_stkgenerator_method, METHOD_TICK),
     JS_CGETSET_MAGIC_DEF("channelsOut", js_stkgenerator_get, js_stkgenerator_set, PROP_SAMPLERATE),
     JS_PROP_STRING_DEF("[Symbol.toStringTag]", "StkGenerator", JS_PROP_CONFIGURABLE),
 };
 
 enum {
-  INSTANCE_BI_QUAD = 0,
+  INSTANCE_BIQUAD = 0,
   INSTANCE_DELAY,
   INSTANCE_DELAY_A,
   INSTANCE_DELAY_L,
@@ -703,7 +737,7 @@ js_stkfilter_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVa
         JS_ToFloat64(ctx, &arg, argv[0]);
 
       switch(magic) {
-        case INSTANCE_BI_QUAD: {
+        case INSTANCE_BIQUAD: {
           *f = std::make_shared<stk::BiQuad>();
           break;
         }
@@ -754,10 +788,23 @@ js_stkfilter_constructor(JSContext* ctx, JSValueConst new_target, int argc, JSVa
 
   JS_SetOpaque(obj, f);
 
-  js_set_tostringtag(
-      ctx,
-      obj,
-      ((const char*[]){"BiQuad", "Delay", "DelayA", "DelayL", "Fir", "FormSwep", "Iir", "OnePole", "OneZero", "PoleZero", "TapDelay", "TwoPole", "TwoZero"})[magic]);
+  js_set_tostringtag(ctx,
+                     obj,
+                     ((const char*[]){
+                         "StkBiQuad",
+                         "StkDelay",
+                         "StkDelayA",
+                         "StkDelayL",
+                         "StkFir",
+                         "StkFormSwep",
+                         "StkIir",
+                         "StkOnePole",
+                         "StkOneZero",
+                         "StkPoleZero",
+                         "StkTapDelay",
+                         "StkTwoPole",
+                         "StkTwoZero",
+                     })[magic]);
 
   return obj;
 
@@ -1153,7 +1200,7 @@ js_stk_init(JSContext* ctx, JSModuleDef* m) {
   JSValue ctor;
 
   if(m) {
-    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "BiQuad", 0, JS_CFUNC_constructor_magic, INSTANCE_BI_QUAD);
+    ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "BiQuad", 0, JS_CFUNC_constructor_magic, INSTANCE_BIQUAD);
     JS_SetModuleExport(ctx, m, "StkBiQuad", ctor);
     ctor = JS_NewCFunction2(ctx, (JSCFunction*)js_stkfilter_constructor, "DelayA", 0, JS_CFUNC_constructor_magic, INSTANCE_DELAY_A);
     JS_SetModuleExport(ctx, m, "StkDelayA", ctor);
