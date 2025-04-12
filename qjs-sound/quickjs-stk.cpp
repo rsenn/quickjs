@@ -347,7 +347,7 @@ enum {
 
 static void
 js_stkframes_free_buf(JSRuntime* rt, void* opaque, void* ptr) {
-  StkFramesPtr* f = opaque;
+  StkFramesPtr* f = static_cast<StkFramesPtr*>(opaque);
   f->~StkFramesPtr();
   js_free_rt(rt, f);
 }
@@ -389,7 +389,7 @@ js_stkframes_get(JSContext* ctx, JSValueConst this_val, int magic) {
 
       new(opaque) StkFramesPtr(*f);
 
-      ret = JS_NewArrayBuffer(ctx, ptr, sizeof(stk::StkFloat) * len, js_stkframes_free_buf, opaque, FALSE);
+      ret = JS_NewArrayBuffer(ctx, reinterpret_cast<uint8_t*>(ptr), sizeof(stk::StkFloat) * len, js_stkframes_free_buf, opaque, FALSE);
       break;
     }
   }
