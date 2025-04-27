@@ -48,15 +48,15 @@ if(NOT CMAKE_ARCH_LIBDIR)
     set(CMAKE_CROSS_ARCH "${CMAKE_CROSS_ARCH}" CACHE STRING
                                                      "Cross compiling target")
   endif()
+ set(THIS_SYSTEM "${SYSTEM_NAME}")
+  string(REGEX REPLACE unknown-android android THIS_SYSTEM "${THIS_SYSTEM}")
+  string(REGEX REPLACE android[0-9]* android THIS_SYSTEM "${THIS_SYSTEM}")
 
-  string(REGEX REPLACE unknown-android android SYSTEM_NAME "${SYSTEM_NAME}")
-  string(REGEX REPLACE android[0-9]* android SYSTEM_NAME "${SYSTEM_NAME}")
-
-  if(SYSTEM_NAME AND NOT "${SYSTEM_NAME}" STREQUAL "")
-    set(CMAKE_INSTALL_LIBDIR lib/${SYSTEM_NAME})
-    set(CMAKE_ARCH_LIBDIR lib/${SYSTEM_NAME}
+  if(THIS_SYSTEM AND NOT "${THIS_SYSTEM}" STREQUAL "")
+    set(CMAKE_INSTALL_LIBDIR lib/${THIS_SYSTEM})
+    set(CMAKE_ARCH_LIBDIR lib/${THIS_SYSTEM}
         CACHE STRING "Architecture specific libraries")
-  endif(SYSTEM_NAME AND NOT "${SYSTEM_NAME}" STREQUAL "")
+  endif(THIS_SYSTEM AND NOT "${THIS_SYSTEM}" STREQUAL "")
 endif(NOT CMAKE_ARCH_LIBDIR)
 
 #message("${CMAKE_C_COMPILER}: ${CMAKE_C_COMPILER}")
