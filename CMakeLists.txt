@@ -695,10 +695,10 @@ else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   message("Building shared library: NO")
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 
-dump(LIB_TARGETS)
-dump(SYSTEM_NAME)
-dump(HOST_SYSTEM_NAME)
-dump(DIET)
+#dump(LIB_TARGETS)
+#dump(SYSTEM_NAME)
+#dump(HOST_SYSTEM_NAME)
+#dump(DIET)
 
 if(NOT "${CONFIG_SHEXT}" STREQUAL ".dll")
   unset(DLL_TARGETS)
@@ -767,7 +767,7 @@ if(WASI)
   set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc")
 endif(WASI)
 
-dump(LIBPTHREAD)
+#dump(LIBPTHREAD)
 
 if(BUILD_QJSC)
   add_executable(qjsc qjsc.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
