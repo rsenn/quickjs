@@ -30,3 +30,7 @@
 	path = qjs-lws
 	url = git@github.com:rsenn/qjs-lws.git
 	branch = main
+[submodule "qjs-sound"]
+	path = qjs-sound
+	url = git@github.com:rsenn/qjs-sound.git
+	branch = main
