@@ -22,6 +22,7 @@
    with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #ifndef HAVE_POLL
+#ifdef _WIN32
 
 /* Tell gcc not to warn about the (nfd < 0) tests, below.  */
 #if(__GNUC__ == 4 && 3 <= __GNUC_MINOR__) || 4 < __GNUC__
@@ -557,4 +558,5 @@ restart:
 #endif
 }
 
+#endif 
 #endif /* !defined(HAVE_POLL) */
