@@ -57,6 +57,12 @@ typedef sig_t sighandler_t;
 
 #endif
 
+#ifdef HAVE_POLL
+#include <sys/poll.h>
+#elif defined(_WIN32)
+#include "win32-poll.h"
+#endif
+
 #if !defined(_WIN32)
 /* enable the os.Worker API. IT relies on POSIX threads */
 #define USE_WORKER
@@ -70,7 +76,6 @@ typedef sig_t sighandler_t;
 #include "cutils.h"
 #include "list.h"
 #include "quickjs-libc.h"
-#include "poll.h"
 
 /* TODO:
    - add socket calls
