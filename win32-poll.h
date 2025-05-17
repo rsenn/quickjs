@@ -64,7 +64,8 @@ typedef int sigset_t[32];
 
 #ifdef _GNU_SOURCE
 #include <signal.h>
-int ppoll(struct pollfd* fds, nfds_t nfds, const struct timespec* timeout, const sigset_t* sigmask);
+int
+ppoll(struct pollfd* fds, nfds_t nfds, const struct timespec* timeout, const sigset_t* sigmask);
 #endif
 
 #ifdef __cplusplus

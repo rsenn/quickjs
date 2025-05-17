@@ -62,12 +62,13 @@ void js_debugger_check(JSContext* ctx, const uint8_t* pc);
 void js_debugger_exception(JSContext* ctx);
 void js_debugger_free(JSRuntime* rt, JSDebuggerInfo* info);
 
-void js_debugger_attach(JSContext* ctx,
-                        size_t (*transport_read)(void* udata, char* buffer, size_t length),
-                        size_t (*transport_write)(void* udata, const char* buffer, size_t length),
-                        size_t (*transport_peek)(void* udata),
-                        void (*transport_close)(JSRuntime* rt, void* udata),
-                        void* udata);
+void
+js_debugger_attach(JSContext* ctx,
+                   size_t (*transport_read)(void* udata, char* buffer, size_t length),
+                   size_t (*transport_write)(void* udata, const char* buffer, size_t length),
+                   size_t (*transport_peek)(void* udata),
+                   void (*transport_close)(JSRuntime* rt, void* udata),
+                   void* udata);
 void js_debugger_connect(JSContext* ctx, const char* address);
 void js_debugger_wait_connection(JSContext* ctx, const char* address);
 int js_debugger_is_transport_connected(JSRuntime* rt);
