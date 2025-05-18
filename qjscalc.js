@@ -119,7 +119,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
   var small_primes = [
     2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197,
     199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433,
-    439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499
+    439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499,
   ];
 
   function miller_rabin_test(n, t) {
@@ -175,7 +175,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       } else {
         return Float(a) ** Float(b);
       }
-    }
+    },
   });
 
   add_props(Integer, {
@@ -304,7 +304,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
         }
       }
       return r;
-    }
+    },
   });
 
   add_props(Integer.prototype, {
@@ -333,7 +333,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     log() {
       if(this == 1) return 0;
       else return Float(this).log();
-    }
+    },
   });
 
   /* Fraction */
@@ -451,7 +451,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       },
       neg(a) {
         return Fraction(-a.num, a.den);
-      }
+      },
     },
     {
       left: [Number, BigInt],
@@ -463,7 +463,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '%': fraction_mod,
       '**': generic_pow,
       '==': fraction_eq,
-      '<': fraction_lt
+      '<': fraction_lt,
     },
     {
       left: Float,
@@ -475,8 +475,8 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '%': float_mod,
       '**': float_pow,
       '==': float_eq,
-      '<': float_lt
-    }
+      '<': float_lt,
+    },
   );
 
   add_props(Fraction, {
@@ -485,7 +485,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       var r = Fraction(a, b);
       if(algebraicMode && r.den == 1) return r.num;
       else return r;
-    }
+    },
   });
 
   add_props(Fraction.prototype, {
@@ -521,7 +521,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     },
     log() {
       return Float(this).log();
-    }
+    },
   });
 
   /* Number (Float64) */
@@ -552,7 +552,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       } else {
         return Float.log(this);
       }
-    }
+    },
   });
 
   /* Float */
@@ -629,7 +629,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     /* prettier-ignore */ get LOG10E() { return get_const(4); },
     //        get PI() { return get_const(5); },
     /* prettier-ignore */ get SQRT1_2() { return get_const(6); },
-    /* prettier-ignore */ get SQRT2() { return get_const(7); }
+    /* prettier-ignore */ get SQRT2() { return get_const(7); },
   });
 
   add_props(Float.prototype, {
@@ -658,7 +658,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       } else {
         return Float.log(this);
       }
-    }
+    },
   });
 
   /* Complex */
@@ -716,7 +716,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       },
       neg(a) {
         return Complex(-a.re, -a.im);
-      }
+      },
     },
     {
       left: [Number, BigInt, Float, Fraction],
@@ -726,8 +726,8 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '*': complex_mul,
       '/': complex_div,
       '**': generic_pow,
-      '==': complex_eq
-    }
+      '==': complex_eq,
+    },
   );
 
   add_props(Complex, {
@@ -735,7 +735,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     toComplex(re, im) {
       if(algebraicMode && im == 0) return re;
       else return Complex(re, im);
-    }
+    },
   });
 
   add_props(Complex.prototype, {
@@ -779,7 +779,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     },
     log() {
       return Complex(abs(this).log(), atan2(this.im, this.re));
-    }
+    },
   });
 
   /* Mod */
@@ -857,7 +857,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       },
       neg(a) {
         return Mod(-a.res, a.mod);
-      }
+      },
     },
     {
       left: [Number, BigInt, Float, Fraction],
@@ -866,8 +866,8 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '-': mod_sub,
       '*': mod_mul,
       '/': mod_div,
-      '**': generic_pow
-    }
+      '**': generic_pow,
+    },
   );
 
   add_props(Mod.prototype, {
@@ -882,7 +882,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     },
     toString() {
       return 'Mod(' + this.res + ',' + this.mod + ')';
-    }
+    },
   });
 
   /* Polynomial */
@@ -1108,7 +1108,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
         r += a[i].norm2();
       }
       return r;
-    }
+    },
   });
 
   function polynomial_add(a, b) {
@@ -1183,7 +1183,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
         r = [];
         for(i = 0; i < n; i++) r[i] = -a[i];
         return Polynomial(r);
-      }
+      },
     },
     {
       left: [Number, BigInt, Float, Fraction, Complex, Mod],
@@ -1191,7 +1191,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '-': polynomial_sub,
       '*': polynomial_mul,
       '/': polynomial_div,
-      '**': generic_pow /* XXX: only for integer */
+      '**': generic_pow /* XXX: only for integer */,
     },
     {
       right: [Number, BigInt, Float, Fraction, Complex, Mod],
@@ -1199,8 +1199,8 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '-': polynomial_sub,
       '*': polynomial_mul,
       '/': polynomial_div_scalar,
-      '**': generic_pow /* XXX: only for integer */
-    }
+      '**': generic_pow /* XXX: only for integer */,
+    },
   );
 
   add_props(Polynomial, {
@@ -1259,7 +1259,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     },
     roots(p) {
       return poly_roots(p);
-    }
+    },
   });
 
   /* Polynomial Modulo Q */
@@ -1330,7 +1330,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       },
       neg(a) {
         return PolyMod(-a.res, a.mod);
-      }
+      },
     },
     {
       left: [Number, BigInt, Float, Fraction, Complex, Mod, Polynomial],
@@ -1339,8 +1339,8 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '-': polymod_sub,
       '*': polymod_mul,
       '/': polymod_div,
-      '**': generic_pow /* XXX: only for integer */
-    }
+      '**': generic_pow /* XXX: only for integer */,
+    },
   );
 
   add_props(PolyMod.prototype, {
@@ -1355,7 +1355,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     },
     toString() {
       return 'PolyMod(' + this.res + ',' + this.mod + ')';
-    }
+    },
   });
 
   /* Rational function */
@@ -1399,7 +1399,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       var n = this.num,
         d = this.den;
       return RationalFunction(n.deriv() * d - n * d.deriv(), d * d);
-    }
+    },
   });
 
   function ratfunc_add(a, b) {
@@ -1443,7 +1443,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       },
       neg(a) {
         return RationalFunction(-this.num, this.den);
-      }
+      },
     },
     {
       left: [Number, BigInt, Float, Fraction, Complex, Mod, Polynomial],
@@ -1452,8 +1452,8 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '-': ratfunc_sub,
       '*': ratfunc_mul,
       '/': ratfunc_div,
-      '**': generic_pow /* should only be used with integers */
-    }
+      '**': generic_pow /* should only be used with integers */,
+    },
   );
 
   add_props(RationalFunction, {
@@ -1470,7 +1470,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
         obj.den = Polynomial(1);
         return obj;
       }
-    }
+    },
   });
 
   /* Power series */
@@ -1615,7 +1615,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
           obj[i] = -a[i];
         }
         return obj;
-      }
+      },
     },
     {
       left: [Number, BigInt, Float, Fraction, Complex, Mod, Polynomial],
@@ -1624,8 +1624,8 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '-': series_sub,
       '*': series_mul,
       '/': series_div,
-      '**': series_pow
-    }
+      '**': series_pow,
+    },
   );
 
   add_props(Series.prototype, {
@@ -1781,7 +1781,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       /* add the constant term */
       r += global.log(a[0]);
       return r;
-    }
+    },
   });
 
   add_props(Series, {
@@ -1813,7 +1813,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
         n = -n;
       } else throw ErrorO();
       return Series.zero(0, n);
-    }
+    },
   });
 
   /* Array (Matrix) */
@@ -2107,7 +2107,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       r[1] = v1[2] * v2[0] - v1[0] * v2[2];
       r[2] = v1[0] * v2[1] - v1[1] * v2[0];
       return r;
-    }
+    },
   });
 
   function array_add(a, b) {
@@ -2219,7 +2219,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
         r = [];
         for(i = 0; i < n; i++) r[i] = -a[i];
         return r;
-      }
+      },
     },
     {
       right: [Number, BigInt, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunction, Series],
@@ -2227,7 +2227,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       '/'(a, b) {
         return a * b.inverse();
       },
-      '**': generic_pow /* XXX: only for integer */
+      '**': generic_pow /* XXX: only for integer */,
     },
     {
       left: [Number, BigInt, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunction, Series],
@@ -2236,8 +2236,8 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
       },
       '/'(a, b) {
         return a * array_element_wise_inverse(b);
-      }
-    }
+      },
+    },
   );
 
   add_props(Array.prototype, {
@@ -2266,7 +2266,7 @@ var Integer, Float, Fraction, Complex, Mod, Polynomial, PolyMod, RationalFunctio
     inverse() {
       return Matrix.inverse(this);
     },
-    norm2: Polynomial.prototype.norm2
+    norm2: Polynomial.prototype.norm2,
   });
 })(this);
 
@@ -2278,7 +2278,7 @@ var O = Series.O;
 Object.defineProperty(this, 'PI', {
   get: function() {
     return Float.PI;
-  }
+  },
 });
 
 /* put frequently used functions in the global context */

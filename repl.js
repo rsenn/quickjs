@@ -62,7 +62,7 @@ import * as std from 'std';
     bright_blue: '\x1b[34;1m',
     bright_magenta: '\x1b[35;1m',
     bright_cyan: '\x1b[36;1m',
-    bright_white: '\x1b[37;1m'
+    bright_white: '\x1b[37;1m',
   };
 
   var styles;
@@ -79,7 +79,7 @@ import * as std from 'std';
       identifier: 'yellow',
       error: 'bright_red',
       result: 'black',
-      error_msg: 'bright_red'
+      error_msg: 'bright_red',
     };
   } else {
     styles = {
@@ -94,7 +94,7 @@ import * as std from 'std';
       identifier: 'bright_green',
       error: 'red',
       result: 'bright_white',
-      error_msg: 'bright_red'
+      error_msg: 'bright_red',
     };
   }
 
@@ -734,7 +734,7 @@ import * as std from 'std';
     '\x1bl': downcase_word /* M-l - downcase_word */,
     '\x1bt': transpose_words /* M-t - transpose_words */,
     '\x1bu': upcase_word /* M-u - upcase_word */,
-    '\x7f': backward_delete_char /* ^? - delete */
+    '\x7f': backward_delete_char /* ^? - delete */,
   };
 
   function dupstr(str, count) {
@@ -1144,7 +1144,7 @@ import * as std from 'std';
         '\\t         ' +
         sel(show_time) +
         'toggle timing display\n' +
-        '\\clear      clear the terminal\n'
+        '\\clear      clear the terminal\n',
     );
     if(has_jscalc) {
       std.puts('\\a         ' + sel(algebraicMode) + 'algebraic mode\n' + '\\n         ' + sel(!algebraicMode) + 'numeric mode\n');
