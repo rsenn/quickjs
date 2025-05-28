@@ -115,17 +115,15 @@ cfg-diet() {
 
     export CC
 
-    if type pkgcfg >/dev/null; then
-      export PKG_CONFIG=$(type pkgcfg 2>&1 | sed 's,.* is ,,')
-    elif type pkg-config >/dev/null; then
-      export PKG_CONFIG=$(type pkg-config 2>&1 | sed 's,.* is ,,')
-    fi
-
-    : ${builddir=build/$host}
+   : ${builddir=build/$host}
     prefix=/opt/diet
 
+    if type ${host}-pkg-config >/dev/null 2>/dev/null; then
+      set -- "$@" \
+        -DPKG_CONFIG_EXECUTABLE="$(which ${host}-pkg-config)"
+    fi
+
     export builddir prefix
-    PKG_CONFIG_PATH=/opt/diet/lib-x86_64/pkgconfig:/opt/diet/lib/pkgconfig:/usr/lib/diet/lib/pkgconfig \
       cfg \
       -DCMAKE_INSTALL_PREFIX="$prefix" \
       -DBUILD_SSL=OFF \
@@ -136,7 +134,6 @@ cfg-diet() {
       -DCMAKE_FIND_ROOT_PATH="$prefix" \
       -DCMAKE_SYSTEM_LIBRARY_PATH="$prefix/lib-${host%%-*}" \
       ${launcher:+-DCMAKE_C_COMPILER_LAUNCHER="$launcher"} \
-      -DPKG_CONFIG_EXECUTABLE="$PKG_CONFIG" \
       "$@"
   )
 }

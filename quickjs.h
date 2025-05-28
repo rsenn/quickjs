@@ -1021,7 +1021,7 @@ JS_NewCFunctionMagic(JSContext* ctx,
                      int length,
                      JSCFunctionEnum cproto,
                      int magic) {
-  return JS_NewCFunction2(ctx, (JSCFunction*)func, name, length, cproto, magic);
+  return JS_NewCFunction2(ctx, (JSCFunction*)(void*)func, name, length, cproto, magic);
 }
 void JS_SetConstructor(JSContext* ctx, JSValueConst func_obj, JSValueConst proto);
 
