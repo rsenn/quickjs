@@ -367,9 +367,6 @@ cfg-msys() {
     : ${host=${build%%-*}-pc-msys}
     : ${prefix=/usr/$host/sys-root/usr}
     echo "host: $host"
-    : ${PKG_CONFIG_PATH=/usr/${host}/sys-root/usr/lib/pkgconfig}
-
-    export PKG_CONFIG_PATH
 
     case "$host" in
     x86_64*) : ${TOOLCHAIN=/opt/cmake-toolchains/msys64.cmake} ;;
@@ -385,17 +382,20 @@ cfg-msys() {
       host=$host \
       build=$build \
       cfg \
+  ${PKG_CONFIG:+-DPKG_CONFIG_EXECUTABLE="$PKG_CONFIG"} \
       "$@"
   )
 }
 
 cfg-msys32() {
+  : ${PKG_CONFIG=$(which i686-pc-msys-pkg-config)}
   host=i686-pc-msys \
     TOOLCHAIN=/opt/cmake-toolchains/msys32.cmake \
     cfg-msys "$@"
 }
 
 cfg-msys64() {
+  : ${PKG_CONFIG=$(which x86_64-pc-msys-pkg-config)}
   host=x86_64-pc-msys \
     TOOLCHAIN=/opt/cmake-toolchains/msys64.cmake \
     cfg-msys "$@"
