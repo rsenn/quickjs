@@ -61,7 +61,7 @@ cfg() {
     */*) ;;
     *) PKG_CONFIG=$(which "$PKG_CONFIG") ;;
     esac
-    : ${generator:="CodeLite - Unix Makefiles"}
+    : ${generator:="Unix Makefiles"}
 
     mkdir -p $builddir
     : ${relsrcdir=$(realpath --relative-to "$builddir" .)}
