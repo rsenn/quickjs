@@ -2326,7 +2326,7 @@ js_os_poll(JSContext* ctx) {
   }
   
   ret = poll(fds, n, min_delay);
-  assert(ret >= 0);
+  assert(ret >= 0 || errno == EINTR);
   if(ret > 0) {
     i = 0;
 
