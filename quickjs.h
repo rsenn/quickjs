@@ -913,8 +913,8 @@ void JS_SetModuleLoaderFunc(JSRuntime* rt,
                             JSModuleLoaderFunc* module_loader,
                             void* opaque);
 
-JSModuleLoaderFunc *JS_GetModuleLoaderFunc(JSRuntime *rt);
-void *JS_GetModuleLoaderOpaque(JSRuntime *rt);
+JSModuleLoaderFunc* JS_GetModuleLoaderFunc(JSRuntime* rt);
+void* JS_GetModuleLoaderOpaque(JSRuntime* rt);
 
 /* return the import.meta object of a module */
 JSValue JS_GetImportMeta(JSContext* ctx, JSModuleDef* m);
