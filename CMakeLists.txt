@@ -1,5 +1,5 @@
 # Copyright (c) 2020 Kosaki Mezumona This cmake script is distributed under the MIT License. See LICENSE for more details.
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 project(quickjs C)
 
 message("Building project [1;31m${PROJECT_NAME}[0m")
