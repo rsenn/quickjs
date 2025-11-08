@@ -17,6 +17,8 @@
 #include "quickjs-config.h"
 #endif
 
+typedef struct JSObject JSObject;
+
 typedef struct DebuggerSuspendedState {
   uint32_t variable_reference_count;
   JSValue variable_references;
@@ -149,7 +151,7 @@ js_debugger_get_variable_type(JSContext* ctx, struct DebuggerSuspendedState* sta
     JS_SetPropertyStr(ctx, var, "type", JS_NewString(ctx, "string"));
   else if(JS_IsInteger(var_val))
     JS_SetPropertyStr(ctx, var, "type", JS_NewString(ctx, "integer"));
-  else if(JS_IsNumber(var_val) || JS_IsBigFloat(var_val))
+  else if(JS_IsNumber(var_val) || JS_IsBigInt(ctx, var_val))
     JS_SetPropertyStr(ctx, var, "type", JS_NewString(ctx, "float"));
   else if(JS_IsBool(var_val))
     JS_SetPropertyStr(ctx, var, "type", JS_NewString(ctx, "boolean"));
@@ -160,7 +162,7 @@ js_debugger_get_variable_type(JSContext* ctx, struct DebuggerSuspendedState* sta
   else if(JS_IsObject(var_val)) {
     JS_SetPropertyStr(ctx, var, "type", JS_NewString(ctx, "object"));
 
-    JSObject* p = JS_VALUE_GET_OBJ(var_val);
+    JSObject* p = JS_VALUE_GET_PTR(var_val);
     // todo: xor the the two dwords to get a better hash?
     uint32_t pl = (uint32_t)(size_t)p;
     JSValue found = JS_GetPropertyUint32(ctx, state->variable_pointers, pl);

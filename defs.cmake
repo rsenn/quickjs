@@ -19,7 +19,7 @@ endif(NOT QUICKJS_VERSION)
 if(NOT QUICKJS_PREFIX)
   set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}")
 endif(NOT QUICKJS_PREFIX)
-set(QUICKJS_SOVERSION 1.1)
+set(QUICKJS_SOVERSION 1.2)
 set(QUICKJS_URL https://bellard.org/quickjs/quickjs-${QUICKJS_VERSION}.tar.xz)
 set(QUICKJS_SHA1 371eae0896cc9e9f50864cb34f37d9481d843ce1)
 set(QUICKJS_EXTRAS_URL https://bellard.org/quickjs/quickjs-extras-${QUICKJS_VERSION}.tar.xz)
@@ -28,17 +28,18 @@ set(QUICKJS_EXTRACT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sources)
 if(NOT QUICKJS_SOURCES_ROOT)
   set(QUICKJS_SOURCES_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 endif(NOT QUICKJS_SOURCES_ROOT)
-set(QUICKJS_INCLUDES cutils.h libbf.h libregexp-opcode.h libregexp.h libunicode-table.h libunicode.h list.h quickjs-atom.h quickjs-libc.h quickjs-opcode.h quickjs-debugger.h
+set(QUICKJS_INCLUDES cutils.h dtoa.h libregexp-opcode.h libregexp.h libunicode-table.h libunicode.h list.h quickjs-atom.h quickjs-libc.h quickjs-opcode.h quickjs-debugger.h
                      quickjs.h unicode_gen_def.h)
 
 set(QUICKJS_SOURCES
-    ${QUICKJS_SOURCES_ROOT}/cutils.c ${QUICKJS_SOURCES_ROOT}/libbf.c ${QUICKJS_SOURCES_ROOT}/libregexp.c ${QUICKJS_SOURCES_ROOT}/libunicode.c ${QUICKJS_SOURCES_ROOT}/quickjs.c
-    ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
-    ${QUICKJS_SOURCES_ROOT}/win32-poll.c ${QUICKJS_INCLUDES})
+    ${QUICKJS_SOURCES_ROOT}/cutils.c ${QUICKJS_SOURCES_ROOT}/dtoa.c ${QUICKJS_SOURCES_ROOT}/libregexp.c ${QUICKJS_SOURCES_ROOT}/libunicode.c ${QUICKJS_SOURCES_ROOT}/quickjs.c
+    ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c ${QUICKJS_SOURCES_ROOT}/win32-poll.c ${QUICKJS_INCLUDES})
 
 #message("CONFIG_DEBUGGER = ${CONFIG_DEBUGGER}")
 if(CONFIG_DEBUGGER)
-  set(QUICKJS_SOURCES_DEBUGGER ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+  set(QUICKJS_SOURCES ${QUICKJS_SOURCES}
+    ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
+    ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
   #set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
   message(STATUS "Enabling quickjs-debugger")
 endif(CONFIG_DEBUGGER)
@@ -85,6 +86,8 @@ endif(CMAKE_ARCH_LIBDIR)
 #option(USE_WORKER "Enable worker support" ON)
 
 set(CONFIG_VERSION "${QUICKJS_VERSION}" CACHE STRING "QuickJS version")
+
+add_definitions(-DCONFIG_PREFIX=\"${CONFIG_PREFIX}\" -DCONFIG_VERSION=\"${CONFIG_VERSION}\" -Dasm=__asm__)
 
 set(CONFIG_SHEXT "${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "Shared module extension")
 

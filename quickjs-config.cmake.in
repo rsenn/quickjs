@@ -10,9 +10,6 @@
 /* CONFIG_ATOMICS - Define this if you want 'Atomics' object [https://tc39.es/ecma262/#sec-atomics-object] */
 #cmakedefine CONFIG_ATOMICS 1
 
-/* CONFIG_BIGNUM - Define this if you want BigNum support */
-#cmakedefine CONFIG_BIGNUM 1
-
 /* CONFIG_PRINTF_RNDN - define it if printf uses the RNDN rounding mode instead of RNDNA */
 #cmakedefine CONFIG_PRINTF_RNDN 1
 

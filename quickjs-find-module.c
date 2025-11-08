@@ -123,7 +123,7 @@ js_find_module_path(JSContext* ctx, const char* module_name, void* opaque) {
   filename =
       module_name[strchrs(module_name, "." PATHSEP_STR)] ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
   if(filename) {
-    ret = js_module_loader(ctx, filename, opaque);
+    ret = js_module_loader(ctx, filename, opaque, JS_UNDEFINED);
     js_free(ctx, filename);
   }
   return ret;
