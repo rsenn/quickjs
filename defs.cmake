@@ -32,18 +32,16 @@ set(QUICKJS_INCLUDES cutils.h libbf.h libregexp-opcode.h libregexp.h libunicode-
                      quickjs.h unicode_gen_def.h)
 
 set(QUICKJS_SOURCES
-    ${QUICKJS_SOURCES_ROOT}/cutils.c ${QUICKJS_SOURCES_ROOT}/libbf.c ${QUICKJS_SOURCES_ROOT}/libregexp.c 
-    ${QUICKJS_SOURCES_ROOT}/libunicode.c ${QUICKJS_SOURCES_ROOT}/quickjs.c
-    ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c 
-    #  ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
-    ${QUICKJS_SOURCES_ROOT}/win32-poll.c ${QUICKJS_INCLUDES})
+    ${QUICKJS_SOURCES_ROOT}/cutils.c ${QUICKJS_SOURCES_ROOT}/libbf.c ${QUICKJS_SOURCES_ROOT}/libregexp.c ${QUICKJS_SOURCES_ROOT}/libunicode.c ${QUICKJS_SOURCES_ROOT}/quickjs.c
+    ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c ${QUICKJS_SOURCES_ROOT}/win32-poll.c ${QUICKJS_INCLUDES})
 
 #message("CONFIG_DEBUGGER = ${CONFIG_DEBUGGER}")
 if(CONFIG_DEBUGGER)
-  set(QUICKJS_SOURCES_DEBUGGER ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
+  set(QUICKJS_SOURCES ${QUICKJS_SOURCES}
+    ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
+    ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
   #set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
   message(STATUS "Enabling quickjs-debugger")
-  set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
 endif(CONFIG_DEBUGGER)
 
 if(WIN32)
@@ -53,6 +51,7 @@ endif(WIN32)
 string(REPLACE ";" "\n" sources "${QUICKJS_SOURCES}")
 
 #message("QUICKJS_SOURCES = ${QUICKJS_SOURCES}")
+# dump(QUICKJS_SOURCES)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseMultiArch.cmake)
 
@@ -87,6 +86,8 @@ endif(CMAKE_ARCH_LIBDIR)
 #option(USE_WORKER "Enable worker support" ON)
 
 set(CONFIG_VERSION "${QUICKJS_VERSION}" CACHE STRING "QuickJS version")
+
+add_definitions(-DCONFIG_PREFIX=\"${CONFIG_PREFIX}\" -DCONFIG_VERSION=\"${CONFIG_VERSION}\" -Dasm=__asm__)
 
 set(CONFIG_SHEXT "${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "Shared module extension")
 

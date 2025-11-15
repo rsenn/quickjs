@@ -28,7 +28,8 @@ static int
 js_transport_read_fully(JSDebuggerInfo* info, char* buffer, size_t length) {
   int offset = 0;
   while(offset < length) {
-    int received = info->transport_read(info->transport_udata, buffer + offset, length - offset);
+    int received =
+        info->transport_read(info->transport_udata, buffer + offset, length - offset);
     if(received <= 0)
       return 0;
     offset += received;
@@ -99,7 +100,10 @@ static int
 js_transport_send_response(JSDebuggerInfo* info, JSValue request, JSValue body) {
   JSContext* ctx = info->ctx;
   JSValue envelope = js_transport_new_envelope(info, "response");
-  JS_SetPropertyStr(ctx, envelope, "request_seq", JS_GetPropertyStr(ctx, request, "request_seq"));
+  JS_SetPropertyStr(ctx,
+                    envelope,
+                    "request_seq",
+                    JS_GetPropertyStr(ctx, request, "request_seq"));
   JS_SetPropertyStr(ctx, envelope, "body", body);
   return js_transport_write_value(info, envelope);
 }
@@ -141,7 +145,10 @@ JS_IsInteger(JSValueConst v) {
 }
 
 static void
-js_debugger_get_variable_type(JSContext* ctx, struct DebuggerSuspendedState* state, JSValue var, JSValue var_val) {
+js_debugger_get_variable_type(JSContext* ctx,
+                              struct DebuggerSuspendedState* state,
+                              JSValue var,
+                              JSValue var_val) {
 
   // 0 means not expandible
   uint32_t reference = 0;
@@ -166,7 +173,10 @@ js_debugger_get_variable_type(JSContext* ctx, struct DebuggerSuspendedState* sta
     JSValue found = JS_GetPropertyUint32(ctx, state->variable_pointers, pl);
     if(JS_IsUndefined(found)) {
       reference = state->variable_reference_count++;
-      JS_SetPropertyUint32(ctx, state->variable_references, reference, JS_DupValue(ctx, var_val));
+      JS_SetPropertyUint32(ctx,
+                           state->variable_references,
+                           reference,
+                           JS_DupValue(ctx, var_val));
       JS_SetPropertyUint32(ctx, state->variable_pointers, pl, JS_NewInt32(ctx, reference));
     } else {
       JS_ToUint32(ctx, &reference, found);
@@ -177,7 +187,10 @@ js_debugger_get_variable_type(JSContext* ctx, struct DebuggerSuspendedState* sta
 }
 
 static void
-js_debugger_get_value(JSContext* ctx, JSValue var_val, JSValue var, const char* value_property) {
+js_debugger_get_value(JSContext* ctx,
+                      JSValue var_val,
+                      JSValue var,
+                      const char* value_property) {
   // do not toString on Arrays, since that makes a giant string of all the elements.
   // todo: typed arrays?
   if(JS_IsArray(ctx, var_val)) {
@@ -191,7 +204,7 @@ js_debugger_get_value(JSContext* ctx, JSValue var_val, JSValue var, const char* 
     JS_SetPropertyStr(ctx, var, "indexedVariables", JS_NewInt32(ctx, len));
   } else {
     JSValue v = JS_ToString(ctx, var_val);
-    if(JS_IsException(v)){
+    if(JS_IsException(v)) {
       JS_GetException(ctx);
       v = JS_UNDEFINED;
     }
@@ -200,7 +213,10 @@ js_debugger_get_value(JSContext* ctx, JSValue var_val, JSValue var, const char* 
 }
 
 static JSValue
-js_debugger_get_variable(JSContext* ctx, struct DebuggerSuspendedState* state, JSValue var_name, JSValue var_val) {
+js_debugger_get_variable(JSContext* ctx,
+                         struct DebuggerSuspendedState* state,
+                         JSValue var_name,
+                         JSValue var_val) {
   JSValue var = JS_NewObject(ctx);
   JS_SetPropertyStr(ctx, var, "name", var_name);
   js_debugger_get_value(ctx, var_val, var, "value");
@@ -235,7 +251,8 @@ static void
 js_free_prop_enum(JSContext* ctx, JSPropertyEnum* tab, uint32_t len) {
   uint32_t i;
   if(tab) {
-    for(i = 0; i < len; i++) JS_FreeAtom(ctx, tab[i].atom);
+    for(i = 0; i < len; i++)
+      JS_FreeAtom(ctx, tab[i].atom);
     js_free(ctx, tab);
   }
 }
@@ -250,7 +267,9 @@ js_get_property_as_uint32(JSContext* ctx, JSValue obj, const char* property) {
 }
 
 static void
-js_process_request(JSDebuggerInfo* info, struct DebuggerSuspendedState* state, JSValue request) {
+js_process_request(JSDebuggerInfo* info,
+                   struct DebuggerSuspendedState* state,
+                   JSValue request) {
   JSContext* ctx = info->ctx;
   JSValue command_property = JS_GetPropertyStr(ctx, request, "command");
   const char* command = JS_ToCString(ctx, command_property);
@@ -339,7 +358,10 @@ js_process_request(JSDebuggerInfo* info, struct DebuggerSuspendedState* state, J
         assert(0);
 
       // need to dupe the variable, as it's used below as well.
-      JS_SetPropertyUint32(ctx, state->variable_references, reference, JS_DupValue(ctx, variable));
+      JS_SetPropertyUint32(ctx,
+                           state->variable_references,
+                           reference,
+                           JS_DupValue(ctx, variable));
     }
 
     JSPropertyEnum* tab_atom;
@@ -363,7 +385,8 @@ js_process_request(JSDebuggerInfo* info, struct DebuggerSuspendedState* state, J
       for(uint32_t i = 0; i < count; i++) {
         JSValue value = JS_GetPropertyUint32(ctx, variable, start + i);
         sprintf(name_buf, "%d", i);
-        JSValue variable_json = js_debugger_get_variable(ctx, state, JS_NewString(ctx, name_buf), value);
+        JSValue variable_json =
+            js_debugger_get_variable(ctx, state, JS_NewString(ctx, name_buf), value);
         JS_FreeValue(ctx, value);
         JS_SetPropertyUint32(ctx, properties, i, variable_json);
       }
@@ -372,11 +395,16 @@ js_process_request(JSDebuggerInfo* info, struct DebuggerSuspendedState* state, J
 
   unfiltered:
 
-    if(!JS_GetOwnPropertyNames(ctx, &tab_atom, &tab_atom_count, variable, JS_GPN_STRING_MASK | JS_GPN_SYMBOL_MASK)) {
+    if(!JS_GetOwnPropertyNames(ctx,
+                               &tab_atom,
+                               &tab_atom_count,
+                               variable,
+                               JS_GPN_STRING_MASK | JS_GPN_SYMBOL_MASK)) {
 
       for(int i = 0; i < tab_atom_count; i++) {
         JSValue value = JS_GetProperty(ctx, variable, tab_atom[i].atom);
-        JSValue variable_json = js_debugger_get_variable(ctx, state, JS_AtomToString(ctx, tab_atom[i].atom), value);
+        JSValue variable_json =
+            js_debugger_get_variable(ctx, state, JS_AtomToString(ctx, tab_atom[i].atom), value);
         JS_FreeValue(ctx, value);
         JS_SetPropertyUint32(ctx, properties, i, variable_json);
       }
@@ -608,12 +636,13 @@ js_debugger_check(JSContext* ctx, const uint8_t* cur_pc) {
     // may be on a breakpoint.
     location = js_debugger_current_location(ctx, cur_pc);
     depth = js_debugger_stack_depth(ctx);
-    if(info->step_depth == depth && location.filename == info->step_over.filename && location.line == info->step_over.line &&
-       location.column == info->step_over.column)
+    if(info->step_depth == depth && location.filename == info->step_over.filename &&
+       location.line == info->step_over.line && location.column == info->step_over.column)
       goto done;
   }
 
-  int at_breakpoint = js_debugger_check_breakpoint(ctx, info->breakpoints_dirty_counter, cur_pc);
+  int at_breakpoint =
+      js_debugger_check_breakpoint(ctx, info->breakpoints_dirty_counter, cur_pc);
   if(at_breakpoint) {
     // reaching a breakpoint resets any existing stepping.
     info->stepping = 0;
@@ -635,8 +664,8 @@ js_debugger_check(JSContext* ctx, const uint8_t* cur_pc) {
       // break if the stack unwinds
       if(info->step_depth == depth) {
         struct JSDebuggerLocation location = js_debugger_current_location(ctx, cur_pc);
-        if(location.filename == info->step_over.filename && location.line == info->step_over.line &&
-           location.column == info->step_over.column)
+        if(location.filename == info->step_over.filename &&
+           location.line == info->step_over.line && location.column == info->step_over.column)
           goto done;
       }
       info->stepping = 0;
@@ -653,8 +682,8 @@ js_debugger_check(JSContext* ctx, const uint8_t* cur_pc) {
       struct JSDebuggerLocation location = js_debugger_current_location(ctx, cur_pc);
       // to step over, need to make sure the location changes,
       // and that the location change isn't into a function call (deeper stack).
-      if((location.filename == info->step_over.filename && location.line == info->step_over.line &&
-          location.column == info->step_over.column) ||
+      if((location.filename == info->step_over.filename &&
+          location.line == info->step_over.line && location.column == info->step_over.column) ||
          js_debugger_stack_depth(ctx) > info->step_depth)
         goto done;
       info->stepping = 0;

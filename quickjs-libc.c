@@ -165,7 +165,7 @@ js_printf_internal(JSContext* ctx, int argc, JSValueConst* argv, FILE* fp) {
   double double_arg;
   const char* string_arg;
   /* Use indirect call to dbuf_printf to prevent gcc warning */
-  int (*dbuf_printf_fun)(DynBuf * s, const char* fmt, ...) = (void*)dbuf_printf;
+  int (*dbuf_printf_fun)(DynBuf* s, const char* fmt, ...) = (void*)dbuf_printf;
 
   js_std_dbuf_init(ctx, &dbuf);
 
