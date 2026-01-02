@@ -102,7 +102,7 @@ typedef struct JSRefCountHeader {
 typedef struct __JSValue* JSValue;
 typedef const struct __JSValue* JSValueConst;
 
-#define JS_VALUE_GET_TAG(v) (int)((uintptr_t)(v) & 0xf)
+#define JS_VALUE_GET_TAG(v) (int)((uintptr_t)(v)&0xf)
 /* same as JS_VALUE_GET_TAG, but return JS_TAG_FLOAT64 with NaN boxing */
 #define JS_VALUE_GET_NORM_TAG(v) JS_VALUE_GET_TAG(v)
 #define JS_VALUE_GET_INT(v) (int)((intptr_t)(v) >> 4)
@@ -173,7 +173,7 @@ __JS_NewFloat64(JSContext* ctx, double d) {
 }
 
 #define JS_TAG_IS_FLOAT64(tag) \
-  ((unsigned)((tag) - JS_TAG_FIRST) >= (JS_TAG_FLOAT64 - JS_TAG_FIRST))
+  ((unsigned)((tag)-JS_TAG_FIRST) >= (JS_TAG_FLOAT64 - JS_TAG_FIRST))
 
 /* same as JS_VALUE_GET_TAG, but return JS_TAG_FLOAT64 with NaN boxing */
 static inline int
@@ -217,20 +217,14 @@ typedef struct JSValue {
 #define JS_VALUE_GET_PTR(v) ((v).u.ptr)
 
 #define JS_MKVAL(t, val) \
-  (JSValue) { \
-    .u = {.int32 = val}, .tag = t \
-  }
+  (JSValue) { .u = {.int32 = val}, .tag = t }
 #define JS_MKPTR(t, p) \
-  (JSValue) { \
-    .u = {.ptr = p}, .tag = t \
-  }
+  (JSValue) { .u = {.ptr = p}, .tag = t }
 
 #define JS_TAG_IS_FLOAT64(tag) ((unsigned)(tag) == JS_TAG_FLOAT64)
 
 #define JS_NAN \
-  (JSValue) { \
-    .u = {.float64 = JS_FLOAT64_NAN}, .tag = JS_TAG_FLOAT64 \
-  }
+  (JSValue) { .u = {.float64 = JS_FLOAT64_NAN}, .tag = JS_TAG_FLOAT64 }
 
 static inline JSValue
 __JS_NewFloat64(JSContext* ctx, double d) {
