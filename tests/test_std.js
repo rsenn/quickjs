@@ -253,6 +253,7 @@ function test_timer() {
 test_printf();
 
 test_file1();
+
 test_file2();
 test_getline();
 test_popen();
