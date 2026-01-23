@@ -34,3 +34,7 @@
 	path = qjs-sound
 	url = git@github.com:rsenn/qjs-sound.git
 	branch = main
+[submodule "qjs-rgfw"]
+	path = qjs-rgfw
+	url = git@gitea.com:rsenn/qjs-rgfw.git
+	branch = main
