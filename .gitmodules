@@ -34,3 +34,6 @@
 	path = qjs-rgfw
 	url = git@gitea.com:rsenn/qjs-rgfw.git
 	branch = main
+[submodule "qjs-net"]
+	path = qjs-net
+	url = git@github.com:rsenn/qjs-net.git
