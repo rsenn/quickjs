@@ -88,7 +88,8 @@ endif(CMAKE_ARCH_LIBDIR)
 set(CONFIG_VERSION "${QUICKJS_VERSION}" CACHE STRING "QuickJS version")
 
 #add_definitions(-DCONFIG_PREFIX=\"${CONFIG_PREFIX}\")
-add_definitions(-DCONFIG_VERSION=\"${CONFIG_VERSION}\" -Dasm=__asm__)
+#add_definitions(-DCONFIG_VERSION=\"${CONFIG_VERSION}\")
+add_definitions(-Dasm=__asm__)
 
 set(CONFIG_SHEXT "${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "Shared module extension")
 
