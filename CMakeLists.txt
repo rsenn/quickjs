@@ -436,10 +436,11 @@ endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   if(ANDROID)
-    check_flag("-O1" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
+    check_flag("-O1" HAVE_OPT_NONE_FLAG OPT_NONE_FLAG)
   else(ANDROID)
-    check_flag("-O0" HAVE_OPT_NONE_FLAG CMAKE_C_FLAGS_DEBUG)
+    check_flag("-O0" HAVE_OPT_NONE_FLAG OPT_NONE_FLAG)
   endif(ANDROID)
+  #append_vars(${OPT_NONE_FLAG} CMAKE_C_FLAGS_DEBUG)
 endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
 check_flag("-flto" HAVE_LTO_FLAG)
