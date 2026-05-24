@@ -555,8 +555,7 @@ heapsortx(void* base, size_t nmemb, size_t size, cmp_f cmp, void* opaque) {
 
 static inline void*
 med3(void* a, void* b, void* c, cmp_f cmp, void* opaque) {
-  return cmp(a, b, opaque) < 0 ? (cmp(b, c, opaque) < 0 ? b : (cmp(a, c, opaque) < 0 ? c : a))
-                               : (cmp(b, c, opaque) > 0 ? b : (cmp(a, c, opaque) < 0 ? a : c));
+  return cmp(a, b, opaque) < 0 ? (cmp(b, c, opaque) < 0 ? b : (cmp(a, c, opaque) < 0 ? c : a)) : (cmp(b, c, opaque) > 0 ? b : (cmp(a, c, opaque) < 0 ? a : c));
 }
 
 /* pointer based version with local stack and insertion sort threshhold */

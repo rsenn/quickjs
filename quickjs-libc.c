@@ -481,25 +481,19 @@ js_module_loader_so(JSContext* ctx, const char* module_name) {
   if(filename != module_name)
     js_free(ctx, filename);
   if(!hd) {
-    JS_ThrowReferenceError(ctx,
-                           "could not load module filename '%s' as shared library",
-                           module_name);
+    JS_ThrowReferenceError(ctx, "could not load module filename '%s' as shared library", module_name);
     goto fail;
   }
 
   init = dlsym(hd, "js_init_module");
   if(!init) {
-    JS_ThrowReferenceError(ctx,
-                           "could not load module filename '%s': js_init_module not found",
-                           module_name);
+    JS_ThrowReferenceError(ctx, "could not load module filename '%s': js_init_module not found", module_name);
     goto fail;
   }
 
   m = init(ctx, module_name);
   if(!m) {
-    JS_ThrowReferenceError(ctx,
-                           "could not load module filename '%s': initialization error",
-                           module_name);
+    JS_ThrowReferenceError(ctx, "could not load module filename '%s': initialization error", module_name);
   fail:
     if(hd)
       dlclose(hd);
@@ -510,10 +504,7 @@ js_module_loader_so(JSContext* ctx, const char* module_name) {
 #endif /* !_WIN32 */
 
 int
-js_module_set_import_meta(JSContext* ctx,
-                          JSValueConst func_val,
-                          JS_BOOL use_realpath,
-                          JS_BOOL is_main) {
+js_module_set_import_meta(JSContext* ctx, JSValueConst func_val, JS_BOOL use_realpath, JS_BOOL is_main) {
   JSModuleDef* m;
   char buf[PATH_MAX + 16];
   JSValue meta_obj;
@@ -578,8 +569,7 @@ js_module_loader(JSContext* ctx, const char* module_name, void* opaque) {
     }
 
     /* compile the module */
-    func_val = JS_Eval(
-        ctx, (char*)buf, buf_len, module_name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
+    func_val = JS_Eval(ctx, (char*)buf, buf_len, module_name, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
     js_free(ctx, buf);
     if(JS_IsException(func_val))
       return NULL;
@@ -985,8 +975,7 @@ js_std_file_get(JSContext* ctx, JSValueConst obj) {
 }
 
 static JSValue
-js_std_file_puts(
-    JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
+js_std_file_puts(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
   FILE* f;
   int i;
   const char* str;
@@ -1044,8 +1033,7 @@ js_std_file_flush(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst*
 }
 
 static JSValue
-js_std_file_tell(
-    JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int is_bigint) {
+js_std_file_tell(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int is_bigint) {
   FILE* f = js_std_file_get(ctx, this_val);
   int64_t pos;
   if(!f)
@@ -1116,8 +1104,7 @@ js_std_file_fileno(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst
 }
 
 static JSValue
-js_std_file_read_write(
-    JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
+js_std_file_read_write(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
   FILE* f = js_std_file_get(ctx, this_val);
   uint64_t pos, len;
   size_t size, ret;
@@ -1394,13 +1381,8 @@ done:
       goto fail;
     JS_DefinePropertyValueStr(ctx, ret_obj, "response", response, JS_PROP_C_W_E);
     if(!JS_IsNull(response)) {
-      JS_DefinePropertyValueStr(ctx,
-                                ret_obj,
-                                "responseHeaders",
-                                JS_NewStringLen(ctx, (char*)header_buf->buf, header_buf->size),
-                                JS_PROP_C_W_E);
-      JS_DefinePropertyValueStr(
-          ctx, ret_obj, "status", JS_NewInt32(ctx, status), JS_PROP_C_W_E);
+      JS_DefinePropertyValueStr(ctx, ret_obj, "responseHeaders", JS_NewStringLen(ctx, (char*)header_buf->buf, header_buf->size), JS_PROP_C_W_E);
+      JS_DefinePropertyValueStr(ctx, ret_obj, "status", JS_NewInt32(ctx, status), JS_PROP_C_W_E);
     }
   } else {
     ret_obj = response;
@@ -1466,8 +1448,7 @@ static const JSCFunctionListEntry js_std_funcs[] = {
     JS_PROP_INT32_DEF("SEEK_SET", SEEK_SET, JS_PROP_CONFIGURABLE),
     JS_PROP_INT32_DEF("SEEK_CUR", SEEK_CUR, JS_PROP_CONFIGURABLE),
     JS_PROP_INT32_DEF("SEEK_END", SEEK_END, JS_PROP_CONFIGURABLE),
-    JS_OBJECT_DEF(
-        "Error", js_std_error_props, countof(js_std_error_props), JS_PROP_CONFIGURABLE),
+    JS_OBJECT_DEF("Error", js_std_error_props, countof(js_std_error_props), JS_PROP_CONFIGURABLE),
 };
 
 static const JSCFunctionListEntry js_std_file_proto_funcs[] = {
@@ -1501,10 +1482,7 @@ js_std_init(JSContext* ctx, JSModuleDef* m) {
   /* the class is created once per runtime */
   JS_NewClass(JS_GetRuntime(ctx), js_std_file_class_id, &js_std_file_class);
   proto = JS_NewObject(ctx);
-  JS_SetPropertyFunctionList(ctx,
-                             proto,
-                             js_std_file_proto_funcs,
-                             countof(js_std_file_proto_funcs));
+  JS_SetPropertyFunctionList(ctx, proto, js_std_file_proto_funcs, countof(js_std_file_proto_funcs));
   JS_SetClassProto(ctx, js_std_file_class_id, proto);
 
   JS_SetModuleExportList(ctx, m, js_std_funcs, countof(js_std_funcs));
@@ -1591,8 +1569,7 @@ js_os_seek(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) 
 }
 
 static JSValue
-js_os_read_write(
-    JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
+js_os_read_write(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
   int fd;
   uint64_t pos, len;
   size_t size;
@@ -1663,9 +1640,7 @@ js_os_ttySetRaw(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* a
   _setmode(fd, _O_BINARY);
   if(fd == 0) {
     handle = (HANDLE)_get_osfhandle(1); /* corresponding output */
-    SetConsoleMode(handle,
-                   ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT |
-                       __ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    SetConsoleMode(handle, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT | __ENABLE_VIRTUAL_TERMINAL_PROCESSING);
   }
   return JS_UNDEFINED;
 }
@@ -1800,8 +1775,7 @@ free_rw_handler(JSRuntime* rt, JSOSRWHandler* rh) {
 }
 
 static JSValue
-js_os_setReadHandler(
-    JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
+js_os_setReadHandler(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, int magic) {
   JSRuntime* rt = JS_GetRuntime(ctx);
   JSThreadState* ts = JS_GetRuntimeOpaque(rt);
   JSOSRWHandler* rh;
@@ -2108,8 +2082,7 @@ handle_posted_message(JSRuntime* rt, JSContext* ctx, JSWorkerMessageHandler* por
 
     pthread_mutex_unlock(&ps->mutex);
 
-    data_obj =
-        JS_ReadObject(ctx, msg->data, msg->data_len, JS_READ_OBJ_SAB | JS_READ_OBJ_REFERENCE);
+    data_obj = JS_ReadObject(ctx, msg->data, msg->data_len, JS_READ_OBJ_SAB | JS_READ_OBJ_REFERENCE);
 
     js_free_message(msg);
 
@@ -2178,8 +2151,7 @@ js_os_poll(JSContext* ctx) {
 
   /* XXX: handle signals if useful */
 
-  if(list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers) &&
-     list_empty(&ts->port_list))
+  if(list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers) && list_empty(&ts->port_list))
     return -1; /* no more events */
 
   /* XXX: only timers and basic console input are supported */
@@ -2334,8 +2306,7 @@ js_os_poll(JSContext* ctx) {
     }
   }
 
-  if(list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers) &&
-     list_empty(&ts->port_list))
+  if(list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers) && list_empty(&ts->port_list))
     return -1; /* no more events */
 
   if(!list_empty(&ts->os_timers)) {
@@ -2574,30 +2545,20 @@ js_os_stat(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv, 
     JS_DefinePropertyValueStr(ctx, obj, "rdev", JS_NewInt64(ctx, st.st_rdev), JS_PROP_C_W_E);
     JS_DefinePropertyValueStr(ctx, obj, "size", JS_NewInt64(ctx, st.st_size), JS_PROP_C_W_E);
 #if !defined(_WIN32)
-    JS_DefinePropertyValueStr(
-        ctx, obj, "blocks", JS_NewInt64(ctx, st.st_blocks), JS_PROP_C_W_E);
+    JS_DefinePropertyValueStr(ctx, obj, "blocks", JS_NewInt64(ctx, st.st_blocks), JS_PROP_C_W_E);
 #endif
 #if defined(_WIN32) || defined(__dietlibc__)
-    JS_DefinePropertyValueStr(
-        ctx, obj, "atime", JS_NewInt64(ctx, (int64_t)st.st_atime * 1000), JS_PROP_C_W_E);
-    JS_DefinePropertyValueStr(
-        ctx, obj, "mtime", JS_NewInt64(ctx, (int64_t)st.st_mtime * 1000), JS_PROP_C_W_E);
-    JS_DefinePropertyValueStr(
-        ctx, obj, "ctime", JS_NewInt64(ctx, (int64_t)st.st_ctime * 1000), JS_PROP_C_W_E);
+    JS_DefinePropertyValueStr(ctx, obj, "atime", JS_NewInt64(ctx, (int64_t)st.st_atime * 1000), JS_PROP_C_W_E);
+    JS_DefinePropertyValueStr(ctx, obj, "mtime", JS_NewInt64(ctx, (int64_t)st.st_mtime * 1000), JS_PROP_C_W_E);
+    JS_DefinePropertyValueStr(ctx, obj, "ctime", JS_NewInt64(ctx, (int64_t)st.st_ctime * 1000), JS_PROP_C_W_E);
 #elif defined(__APPLE__)
-    JS_DefinePropertyValueStr(
-        ctx, obj, "atime", JS_NewInt64(ctx, timespec_to_ms(&st.st_atimespec)), JS_PROP_C_W_E);
-    JS_DefinePropertyValueStr(
-        ctx, obj, "mtime", JS_NewInt64(ctx, timespec_to_ms(&st.st_mtimespec)), JS_PROP_C_W_E);
-    JS_DefinePropertyValueStr(
-        ctx, obj, "ctime", JS_NewInt64(ctx, timespec_to_ms(&st.st_ctimespec)), JS_PROP_C_W_E);
+    JS_DefinePropertyValueStr(ctx, obj, "atime", JS_NewInt64(ctx, timespec_to_ms(&st.st_atimespec)), JS_PROP_C_W_E);
+    JS_DefinePropertyValueStr(ctx, obj, "mtime", JS_NewInt64(ctx, timespec_to_ms(&st.st_mtimespec)), JS_PROP_C_W_E);
+    JS_DefinePropertyValueStr(ctx, obj, "ctime", JS_NewInt64(ctx, timespec_to_ms(&st.st_ctimespec)), JS_PROP_C_W_E);
 #else
-    JS_DefinePropertyValueStr(
-        ctx, obj, "atime", JS_NewInt64(ctx, timespec_to_ms(&st.st_atim)), JS_PROP_C_W_E);
-    JS_DefinePropertyValueStr(
-        ctx, obj, "mtime", JS_NewInt64(ctx, timespec_to_ms(&st.st_mtim)), JS_PROP_C_W_E);
-    JS_DefinePropertyValueStr(
-        ctx, obj, "ctime", JS_NewInt64(ctx, timespec_to_ms(&st.st_ctim)), JS_PROP_C_W_E);
+    JS_DefinePropertyValueStr(ctx, obj, "atime", JS_NewInt64(ctx, timespec_to_ms(&st.st_atim)), JS_PROP_C_W_E);
+    JS_DefinePropertyValueStr(ctx, obj, "mtime", JS_NewInt64(ctx, timespec_to_ms(&st.st_mtim)), JS_PROP_C_W_E);
+    JS_DefinePropertyValueStr(ctx, obj, "ctime", JS_NewInt64(ctx, timespec_to_ms(&st.st_ctim)), JS_PROP_C_W_E);
 #endif
   }
   return make_obj_error(ctx, obj, err);
@@ -3345,10 +3306,7 @@ worker_func(void* opaque) {
 }
 
 static JSValue
-js_worker_ctor_internal(JSContext* ctx,
-                        JSValueConst new_target,
-                        JSWorkerMessagePipe* recv_pipe,
-                        JSWorkerMessagePipe* send_pipe) {
+js_worker_ctor_internal(JSContext* ctx, JSValueConst new_target, JSWorkerMessagePipe* recv_pipe, JSWorkerMessagePipe* send_pipe) {
   JSValue obj = JS_UNDEFINED, proto;
   JSWorkerData* s;
 
@@ -3468,12 +3426,7 @@ js_worker_postMessage(JSContext* ctx, JSValueConst this_val, int argc, JSValueCo
   if(!worker)
     return JS_EXCEPTION;
 
-  data = JS_WriteObject2(ctx,
-                         &data_len,
-                         argv[0],
-                         JS_WRITE_OBJ_SAB | JS_WRITE_OBJ_REFERENCE,
-                         &sab_tab,
-                         &sab_tab_len);
+  data = JS_WriteObject2(ctx, &data_len, argv[0], JS_WRITE_OBJ_SAB | JS_WRITE_OBJ_REFERENCE, &sab_tab, &sab_tab_len);
   if(!data)
     return JS_EXCEPTION;
 
@@ -3708,10 +3661,7 @@ js_os_init(JSContext* ctx, JSModuleDef* m) {
     JS_NewClassID(&js_worker_class_id);
     JS_NewClass(JS_GetRuntime(ctx), js_worker_class_id, &js_worker_class);
     proto = JS_NewObject(ctx);
-    JS_SetPropertyFunctionList(ctx,
-                               proto,
-                               js_worker_proto_funcs,
-                               countof(js_worker_proto_funcs));
+    JS_SetPropertyFunctionList(ctx, proto, js_worker_proto_funcs, countof(js_worker_proto_funcs));
 
     obj = JS_NewCFunction2(ctx, js_worker_ctor, "Worker", 1, JS_CFUNC_constructor, 0);
     JS_SetConstructor(ctx, obj, proto);
@@ -3720,12 +3670,7 @@ js_os_init(JSContext* ctx, JSModuleDef* m) {
 
     /* set 'Worker.parent' if necessary */
     if(ts->recv_pipe && ts->send_pipe) {
-      JS_DefinePropertyValueStr(
-          ctx,
-          obj,
-          "parent",
-          js_worker_ctor_internal(ctx, JS_UNDEFINED, ts->recv_pipe, ts->send_pipe),
-          JS_PROP_C_W_E);
+      JS_DefinePropertyValueStr(ctx, obj, "parent", js_worker_ctor_internal(ctx, JS_UNDEFINED, ts->recv_pipe, ts->send_pipe), JS_PROP_C_W_E);
     }
 
     JS_SetModuleExport(ctx, m, "Worker", obj);
@@ -3791,10 +3736,7 @@ js_std_add_helpers(JSContext* ctx, int argc, char** argv) {
   }
 
   JS_SetPropertyStr(ctx, global_obj, "print", JS_NewCFunction(ctx, js_print, "print", 1));
-  JS_SetPropertyStr(ctx,
-                    global_obj,
-                    "__loadScript",
-                    JS_NewCFunction(ctx, js_loadScript, "__loadScript", 1));
+  JS_SetPropertyStr(ctx, global_obj, "__loadScript", JS_NewCFunction(ctx, js_loadScript, "__loadScript", 1));
 
   JS_FreeValue(ctx, global_obj);
 }
@@ -3900,8 +3842,7 @@ js_std_dump_error(JSContext* ctx) {
 }
 
 void
-js_std_promise_rejection_tracker(
-    JSContext* ctx, JSValueConst promise, JSValueConst reason, BOOL is_handled, void* opaque) {
+js_std_promise_rejection_tracker(JSContext* ctx, JSValueConst promise, JSValueConst reason, BOOL is_handled, void* opaque) {
   if(!is_handled) {
     fprintf(stderr, "Possibly unhandled promise rejection: ");
     js_std_dump_error1(ctx, reason);

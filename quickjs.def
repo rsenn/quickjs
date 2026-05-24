@@ -361,3 +361,5 @@ EXPORTS
   unicode_prop
   unicode_script
   unicode_to_utf8
+  JS_PromiseState
+  JS_PromiseResult

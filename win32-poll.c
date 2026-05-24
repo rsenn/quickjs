@@ -143,13 +143,9 @@ typedef struct _IO_STATUS_BLOCK {
   ULONG_PTR Information;
 } IO_STATUS_BLOCK, *PIO_STATUS_BLOCK;
 
-typedef enum _FILE_INFORMATION_CLASS {
-  FilePipeLocalInformation = 24
-} FILE_INFORMATION_CLASS,
-    *PFILE_INFORMATION_CLASS;
+typedef enum _FILE_INFORMATION_CLASS { FilePipeLocalInformation = 24 } FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
 
-typedef DWORD(WINAPI* PNtQueryInformationFile)(
-    HANDLE, IO_STATUS_BLOCK*, VOID*, ULONG, FILE_INFORMATION_CLASS);
+typedef DWORD(WINAPI* PNtQueryInformationFile)(HANDLE, IO_STATUS_BLOCK*, VOID*, ULONG, FILE_INFORMATION_CLASS);
 
 #ifndef PIPE_BUF
 #define PIPE_BUF 512
@@ -172,9 +168,7 @@ windows_compute_revents(HANDLE h, int* p_sought) {
   switch(GetFileType(h)) {
     case FILE_TYPE_PIPE:
       if(!once_only) {
-        NtQueryInformationFile =
-            (PNtQueryInformationFile)GetProcAddress(GetModuleHandle("ntdll.dll"),
-                                                    "NtQueryInformationFile");
+        NtQueryInformationFile = (PNtQueryInformationFile)GetProcAddress(GetModuleHandle("ntdll.dll"), "NtQueryInformationFile");
         once_only = TRUE;
       }
 
@@ -197,10 +191,7 @@ windows_compute_revents(HANDLE h, int* p_sought) {
         memset(&iosb, 0, sizeof(iosb));
         memset(&fpli, 0, sizeof(fpli));
 
-        if(!NtQueryInformationFile ||
-           NtQueryInformationFile(h, &iosb, &fpli, sizeof(fpli), FilePipeLocalInformation) ||
-           fpli.WriteQuotaAvailable >= PIPE_BUF ||
-           (fpli.OutboundQuota < PIPE_BUF && fpli.WriteQuotaAvailable == fpli.OutboundQuota))
+        if(!NtQueryInformationFile || NtQueryInformationFile(h, &iosb, &fpli, sizeof(fpli), FilePipeLocalInformation) || fpli.WriteQuotaAvailable >= PIPE_BUF || (fpli.OutboundQuota < PIPE_BUF && fpli.WriteQuotaAvailable == fpli.OutboundQuota))
           happened |= *p_sought & (POLLOUT | POLLWRNORM | POLLWRBAND);
       }
 
@@ -267,8 +258,7 @@ windows_compute_revents_socket(SOCKET h, int sought, long lNetworkEvents) {
       happened |= (POLLIN | POLLRDNORM) & sought;
 
     /* Distinguish hung-up sockets from other errors.  */
-    else if(r == 0 || error == WSAESHUTDOWN || error == WSAECONNRESET ||
-            error == WSAECONNABORTED || error == WSAENETRESET)
+    else if(r == 0 || error == WSAESHUTDOWN || error == WSAECONNRESET || error == WSAECONNABORTED || error == WSAENETRESET)
       happened |= POLLHUP;
 
     else
@@ -317,8 +307,7 @@ compute_revents(int fd, int sought, fd_set* rfds, fd_set* wfds, fd_set* efds) {
       happened |= (POLLIN | POLLRDNORM) & sought;
 
     /* Distinguish hung-up sockets from other errors.  */
-    else if(socket_errno == ESHUTDOWN || socket_errno == ECONNRESET ||
-            socket_errno == ECONNABORTED || socket_errno == ENETRESET)
+    else if(socket_errno == ESHUTDOWN || socket_errno == ECONNRESET || socket_errno == ECONNABORTED || socket_errno == ENETRESET)
       happened |= POLLHUP;
 
     /* some systems can't use recv() on non-socket, including HP NonStop */
@@ -416,8 +405,7 @@ poll(struct pollfd* pfd, nfds_t nfd, int timeout) {
   /* establish results */
   rc = 0;
   for(i = 0; i < nfd; i++) {
-    pfd[i].revents =
-        (pfd[i].fd < 0 ? 0 : compute_revents(pfd[i].fd, pfd[i].events, &rfds, &wfds, &efds));
+    pfd[i].revents = (pfd[i].fd < 0 ? 0 : compute_revents(pfd[i].fd, pfd[i].events, &rfds, &wfds, &efds));
     rc += pfd[i].revents != 0;
   }
 
@@ -455,8 +443,7 @@ restart:
     pfd[i].revents = 0;
     if(pfd[i].fd < 0)
       continue;
-    if(!(sought &
-         (POLLIN | POLLRDNORM | POLLOUT | POLLWRNORM | POLLWRBAND | POLLPRI | POLLRDBAND)))
+    if(!(sought & (POLLIN | POLLRDNORM | POLLOUT | POLLWRNORM | POLLWRBAND | POLLPRI | POLLRDBAND)))
       continue;
 
     h = (HANDLE)_get_osfhandle(pfd[i].fd);
