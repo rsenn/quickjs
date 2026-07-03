@@ -2189,7 +2189,7 @@ js_os_poll(JSContext* ctx) {
 
   list_for_each(el, &ts->port_list) {
     JSWorkerMessageHandler* port = list_entry(el, JSWorkerMessageHandler, link);
-    if(!JS_IsNull(rh->rw_func[0]))
+    if(!JS_IsNull(port->on_message_func))
       n++;
   }
 
