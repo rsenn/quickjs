@@ -6597,9 +6597,27 @@ static JSValue
 JS_ThrowError2(
     JSContext* ctx, JSErrorEnum error_num, const char* fmt, va_list ap, BOOL add_backtrace) {
   char buf[256];
+  char* msg = buf;
   JSValue obj, ret;
+  va_list ap2;
+  int len;
 
-  vsnprintf(buf, sizeof(buf), fmt, ap);
+  /* fmt/ap can produce a message longer than a fixed stack buffer (e.g. a module load
+     error combining a path, an underlying dlerror() string, and an import chain) - grow
+     onto the heap instead of silently truncating; the common (short) case still avoids
+     an allocation entirely. */
+  va_copy(ap2, ap);
+  len = vsnprintf(buf, sizeof(buf), fmt, ap);
+
+  if(len >= (int)sizeof(buf)) {
+    if((msg = js_malloc(ctx, len + 1)))
+      vsnprintf(msg, len + 1, fmt, ap2);
+    else
+      msg = buf; /* OOM while formatting an error message: fall back to the truncated buffer */
+  }
+
+  va_end(ap2);
+
   obj = JS_NewObjectProtoClass(ctx, ctx->native_error_proto[error_num], JS_CLASS_ERROR);
   if(unlikely(JS_IsException(obj))) {
     /* out of memory: throw JS_NULL to avoid recursing */
@@ -6608,9 +6626,13 @@ JS_ThrowError2(
     JS_DefinePropertyValue(ctx,
                            obj,
                            JS_ATOM_message,
-                           JS_NewString(ctx, buf),
+                           JS_NewString(ctx, msg),
                            JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE);
   }
+
+  if(msg != buf)
+    js_free(ctx, msg);
+
   if(add_backtrace) {
     build_backtrace(ctx, obj, NULL, 0, 0);
   }

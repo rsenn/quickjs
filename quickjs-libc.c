@@ -481,13 +481,15 @@ js_module_loader_so(JSContext* ctx, const char* module_name) {
   if(filename != module_name)
     js_free(ctx, filename);
   if(!hd) {
-    JS_ThrowReferenceError(ctx, "could not load module filename '%s' as shared library", module_name);
+    const char* err = dlerror();
+    JS_ThrowReferenceError(ctx, "could not load module filename '%s' as shared library: %s", module_name, err ? err : "unknown error");
     goto fail;
   }
 
   init = dlsym(hd, "js_init_module");
   if(!init) {
-    JS_ThrowReferenceError(ctx, "could not load module filename '%s': js_init_module not found", module_name);
+    const char* err = dlerror();
+    JS_ThrowReferenceError(ctx, "could not load module filename '%s': js_init_module not found: %s", module_name, err ? err : "unknown error");
     goto fail;
   }
 
