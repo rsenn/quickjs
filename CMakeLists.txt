@@ -818,6 +818,7 @@ option(MODULE_MODULES "Enable MODULES module" ON)
 option(MODULE_NET "Enable qjs-net module" OFF)
 option(MODULE_LWS "Enable qjs-lws module" OFF)
 option(MODULE_SOUND "Enable qjs-sound module" OFF)
+option(MODULE_DEBUGGER "Enable qjs-debugger" ON)
 #option(MODULE_HTTP "Enable HTTP module" ON)
 
 if(MODULE_GLFW)
@@ -847,6 +848,9 @@ endif(MODULE_MODULES)
 if(MODULE_SOUND)
   list(APPEND MODULE_SUBDIRS qjs-sound)
 endif(MODULE_SOUND)
+if(MODULE_DEBUGGER)
+  list(APPEND MODULE_SUBDIRS qjs-debugger)
+endif(MODULE_DEBUGGER)
 message(STATUS "Module subdirectories: ${MODULE_SUBDIRS}")
 
 set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH
