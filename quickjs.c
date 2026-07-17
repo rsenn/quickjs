@@ -54872,8 +54872,15 @@ js_debugger_check_breakpoint(JSContext* ctx, uint32_t current_dirty, const uint8
       }
     }
 
-    if(p >= p_end)
+    if(p >= p_end) {
       b->debugger.last_line_num = line_num;
+
+      // the breakpoint line is the function's last mapped line (e.g. a
+      // final explicit return): no higher line follows in pc2line, so the
+      // loop above never marked it. mark through the end of the bytecode.
+      if(last_line_num == breakpoint_line && line_pc < b->byte_code_len)
+        memset(b->debugger.breakpoints + line_pc, 1, b->byte_code_len - line_pc);
+    }
   }
 
 fail:
