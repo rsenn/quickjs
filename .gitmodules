@@ -1,0 +1,36 @@
+[submodule "qjs-ffi"]
+	path = qjs-ffi
+	url = git@github.com:rsenn/qjs-ffi.git
+	branch = main
+[submodule "qjs-glfw"]
+	path = qjs-glfw
+	url = git@github.com:rsenn/qjs-glfw.git
+	branch = main
+[submodule "qjs-imgui"]
+	path = qjs-imgui
+	url = git@github.com:rsenn/qjs-imgui.git
+	branch = main
+[submodule "qjs-lws"]
+	path = qjs-lws
+	url = git@github.com:rsenn/qjs-lws.git
+	branch = main
+[submodule "qjs-modules"]
+	path = qjs-modules
+	url = git@github.com:rsenn/qjs-modules.git
+	branch = main
+[submodule "qjs-nanovg"]
+	path = qjs-nanovg
+	url = git@github.com:rsenn/qjs-nanovg.git
+	branch = main
+[submodule "qjs-net"]
+	path = qjs-net
+	url = git@github.com:rsenn/qjs-net.git
+	branch = main
+[submodule "qjs-rgfw"]
+	path = qjs-rgfw
+	url = git@github.com:rsenn/qjs-rgfw.git
+	branch = main
+[submodule "qjs-sound"]
+	path = qjs-sound
+	url = git@github.com:rsenn/qjs-sound.git
+	branch = main
