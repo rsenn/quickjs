@@ -43,8 +43,6 @@
 #include "cutils.h"
 #include "quickjs-libc.h"
 
-JSModuleDef *js_module_loader_path(JSContext *ctx, const char *module_name, void *opaque, JSValueConst attributes);
-
 extern const uint8_t qjsc_repl[];
 extern const uint32_t qjsc_repl_size;
 
@@ -476,7 +474,7 @@ int main(int argc, char **argv)
     }
 
     /* loader for ES6 modules */
-    JS_SetModuleLoaderFunc2(rt, NULL, js_module_loader_path, js_module_check_attributes, NULL);
+    JS_SetModuleLoaderFunc2(rt, NULL, js_module_loader, js_module_check_attributes, NULL);
 
     if (dump_unhandled_promise_rejection) {
         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,
