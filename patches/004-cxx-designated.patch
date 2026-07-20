@@ -1,0 +1,83 @@
+# Fixes JS_CFUNC_DEF/JS_CGETSET_DEF/JS_PROP_*_DEF/JS_OBJECT_DEF/JS_ALIAS_DEF in
+# quickjs.h to compile under C++ (tested C++20): each JSCFunctionListEntry
+# initializer macro mixed positional (name, prop_flags, def_type, magic) and
+# designated (.u = {...}) initializer-clauses in the same brace-enclosed
+# list. C allows that mix; C++ requires a single list to be either fully
+# positional or fully designated (P1975/P0329), so g++/clang++ reject it with
+# "either all initializer clauses should be designated or none of them
+# should be". Fix: designate all five outer fields. The nested .u = {...}
+# content is left positional (unchanged) since it's internally consistent
+# on its own -- nesting a positional list inside a designated field, or vice
+# versa, is fine; only mixing *within* one brace level is the problem.
+#
+# Renamed macro parameters that collided with the field names being
+# designated (name->n, magic->m, prop_flags->flags) -- e.g. ".magic = magic"
+# would have the preprocessor substitute the *parameter's value* for the
+# designator token too (".magic" -> ".5" for a magic value of 5), since
+# macro parameter substitution doesn't distinguish "struct field name" from
+# "identifier that happens to match". JS_CFUNC_SPECIAL_DEF's cproto
+# parameter is deliberately left as-is; its body already relies on that
+# same substitution trick (.cproto = func1 picks the union member named
+# after whatever cproto the caller passed, e.g. "constructor") and staying
+# positional at that nesting level, so it was never subject to this bug.
+#
+# Verified: g++ -std=c++20 rejects the original macros and accepts the
+# patched ones (also checked under gcc -std=c11, both before and after).
+#
+# One independent one-line hunk per macro (16 total), so this applies
+# cleanly to quickjs-2026-06-04 (all 16) and to quickjs-2025-09-13 (14 of
+# 16 -- the JS_PROP_ATOM_DEF/JS_PROP_BOOL_DEF hunks cleanly fail there since
+# 2025-09-13 doesn't have those two macros yet; ignore the resulting .rej,
+# it's not a sign of anything else going wrong). Recompiled and re-verified
+# under C++20 against the patched 2025-09-13 header too.
+#
+--- a/quickjs.h
++++ b/quickjs.h
+@@ -1113,1 +1113,1 @@
+-#define JS_CFUNC_DEF(name, length, func1) { name, JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, .u = { .func = { length, JS_CFUNC_generic, { .generic = func1 } } } }
++#define JS_CFUNC_DEF(n, length, func1) { .name = n, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = 0, .u = { .func = { length, JS_CFUNC_generic, { .generic = func1 } } } }
+@@ -1114,1 +1114,1 @@
+-#define JS_CFUNC_MAGIC_DEF(name, length, func1, magic) { name, JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, magic, .u = { .func = { length, JS_CFUNC_generic_magic, { .generic_magic = func1 } } } }
++#define JS_CFUNC_MAGIC_DEF(n, length, func1, m) { .name = n, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = m, .u = { .func = { length, JS_CFUNC_generic_magic, { .generic_magic = func1 } } } }
+@@ -1115,1 +1115,1 @@
+-#define JS_CFUNC_SPECIAL_DEF(name, length, cproto, func1) { name, JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, .u = { .func = { length, JS_CFUNC_ ## cproto, { .cproto = func1 } } } }
++#define JS_CFUNC_SPECIAL_DEF(n, length, cproto, func1) { .name = n, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = 0, .u = { .func = { length, JS_CFUNC_ ## cproto, { .cproto = func1 } } } }
+@@ -1116,1 +1116,1 @@
+-#define JS_ITERATOR_NEXT_DEF(name, length, func1, magic) { name, JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, magic, .u = { .func = { length, JS_CFUNC_iterator_next, { .iterator_next = func1 } } } }
++#define JS_ITERATOR_NEXT_DEF(n, length, func1, m) { .name = n, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CFUNC, .magic = m, .u = { .func = { length, JS_CFUNC_iterator_next, { .iterator_next = func1 } } } }
+@@ -1117,1 +1117,1 @@
+-#define JS_CGETSET_DEF(name, fgetter, fsetter) { name, JS_PROP_CONFIGURABLE, JS_DEF_CGETSET, 0, .u = { .getset = { .get = { .getter = fgetter }, .set = { .setter = fsetter } } } }
++#define JS_CGETSET_DEF(n, fgetter, fsetter) { .name = n, .prop_flags = JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CGETSET, .magic = 0, .u = { .getset = { .get = { .getter = fgetter }, .set = { .setter = fsetter } } } }
+@@ -1118,1 +1118,1 @@
+-#define JS_CGETSET_MAGIC_DEF(name, fgetter, fsetter, magic) { name, JS_PROP_CONFIGURABLE, JS_DEF_CGETSET_MAGIC, magic, .u = { .getset = { .get = { .getter_magic = fgetter }, .set = { .setter_magic = fsetter } } } }
++#define JS_CGETSET_MAGIC_DEF(n, fgetter, fsetter, m) { .name = n, .prop_flags = JS_PROP_CONFIGURABLE, .def_type = JS_DEF_CGETSET_MAGIC, .magic = m, .u = { .getset = { .get = { .getter_magic = fgetter }, .set = { .setter_magic = fsetter } } } }
+@@ -1119,1 +1119,1 @@
+-#define JS_PROP_STRING_DEF(name, cstr, prop_flags) { name, prop_flags, JS_DEF_PROP_STRING, 0, .u = { .str = cstr } }
++#define JS_PROP_STRING_DEF(n, cstr, flags) { .name = n, .prop_flags = flags, .def_type = JS_DEF_PROP_STRING, .magic = 0, .u = { .str = cstr } }
+@@ -1120,1 +1120,1 @@
+-#define JS_PROP_INT32_DEF(name, val, prop_flags) { name, prop_flags, JS_DEF_PROP_INT32, 0, .u = { .i32 = val } }
++#define JS_PROP_INT32_DEF(n, val, flags) { .name = n, .prop_flags = flags, .def_type = JS_DEF_PROP_INT32, .magic = 0, .u = { .i32 = val } }
+@@ -1121,1 +1121,1 @@
+-#define JS_PROP_INT64_DEF(name, val, prop_flags) { name, prop_flags, JS_DEF_PROP_INT64, 0, .u = { .i64 = val } }
++#define JS_PROP_INT64_DEF(n, val, flags) { .name = n, .prop_flags = flags, .def_type = JS_DEF_PROP_INT64, .magic = 0, .u = { .i64 = val } }
+@@ -1122,1 +1122,1 @@
+-#define JS_PROP_DOUBLE_DEF(name, val, prop_flags) { name, prop_flags, JS_DEF_PROP_DOUBLE, 0, .u = { .f64 = val } }
++#define JS_PROP_DOUBLE_DEF(n, val, flags) { .name = n, .prop_flags = flags, .def_type = JS_DEF_PROP_DOUBLE, .magic = 0, .u = { .f64 = val } }
+@@ -1123,1 +1123,1 @@
+-#define JS_PROP_UNDEFINED_DEF(name, prop_flags) { name, prop_flags, JS_DEF_PROP_UNDEFINED, 0, .u = { .i32 = 0 } }
++#define JS_PROP_UNDEFINED_DEF(n, flags) { .name = n, .prop_flags = flags, .def_type = JS_DEF_PROP_UNDEFINED, .magic = 0, .u = { .i32 = 0 } }
+@@ -1124,1 +1124,1 @@
+-#define JS_PROP_ATOM_DEF(name, val, prop_flags) { name, prop_flags, JS_DEF_PROP_ATOM, 0, .u = { .i32 = val } }
++#define JS_PROP_ATOM_DEF(n, val, flags) { .name = n, .prop_flags = flags, .def_type = JS_DEF_PROP_ATOM, .magic = 0, .u = { .i32 = val } }
+@@ -1125,1 +1125,1 @@
+-#define JS_PROP_BOOL_DEF(name, val, prop_flags) { name, prop_flags, JS_DEF_PROP_BOOL, 0, .u = { .i32 = val } }
++#define JS_PROP_BOOL_DEF(n, val, flags) { .name = n, .prop_flags = flags, .def_type = JS_DEF_PROP_BOOL, .magic = 0, .u = { .i32 = val } }
+@@ -1126,1 +1126,1 @@
+-#define JS_OBJECT_DEF(name, tab, len, prop_flags) { name, prop_flags, JS_DEF_OBJECT, 0, .u = { .prop_list = { tab, len } } }
++#define JS_OBJECT_DEF(n, tab, len, flags) { .name = n, .prop_flags = flags, .def_type = JS_DEF_OBJECT, .magic = 0, .u = { .prop_list = { tab, len } } }
+@@ -1127,1 +1127,1 @@
+-#define JS_ALIAS_DEF(name, from) { name, JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_ALIAS, 0, .u = { .alias = { from, -1 } } }
++#define JS_ALIAS_DEF(n, from) { .name = n, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_ALIAS, .magic = 0, .u = { .alias = { from, -1 } } }
+@@ -1128,1 +1128,1 @@
+-#define JS_ALIAS_BASE_DEF(name, from, base) { name, JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_ALIAS, 0, .u = { .alias = { from, base } } }
++#define JS_ALIAS_BASE_DEF(n, from, base) { .name = n, .prop_flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, .def_type = JS_DEF_ALIAS, .magic = 0, .u = { .alias = { from, base } } }
