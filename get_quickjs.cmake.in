@@ -1,0 +1,53 @@
+# Copyright (c) 2020 Kosaki Mezumona
+# This cmake script is distributed under the MIT License.
+# See LICENSE for more details.
+cmake_minimum_required(VERSION 3.2)
+set(QUICKJS_URL @QUICKJS_URL@)
+set(QUICKJS_SHA1 @QUICKJS_SHA1@)
+set(QUICKJS_EXTRAS_URL @QUICKJS_EXTRAS_URL@)
+set(QUICKJS_EXTRAS_SHA1 @QUICKJS_EXTRAS_SHA1@)
+set(QUICKJS_EXTRACT_DIR @QUICKJS_EXTRACT_DIR@)
+set(QUICKJS_SOURCES @QUICKJS_SOURCES@)
+
+set(must_extract FALSE)
+set(quickjs_tar @CMAKE_CURRENT_BINARY_DIR@/quickjs.tar.xz)
+set(quickjs_extras_tar @CMAKE_CURRENT_BINARY_DIR@/quickjs-extra.tar.xz)
+
+if(NOT EXISTS ${quickjs_tar})
+	file(DOWNLOAD
+		${QUICKJS_URL}
+		${quickjs_tar}
+		EXPECTED_HASH SHA1=${QUICKJS_SHA1}
+	)
+	set(must_extract TRUE)
+endif()
+
+if(NOT EXISTS ${quickjs_extras_tar})
+	file(DOWNLOAD
+		${QUICKJS_EXTRAS_URL}
+		${quickjs_extras_tar}
+		EXPECTED_HASH SHA1=${QUICKJS_EXTRAS_SHA1}
+	)
+	set(must_extract TRUE)
+endif()
+
+foreach(source IN LISTS QUICKJS_SOURCES)
+	if (NOT EXISTS ${source})
+		set(must_extract TRUE)
+		break()
+	endif()
+endforeach()
+
+
+if (must_extract)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${QUICKJS_EXTRACT_DIR})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${QUICKJS_EXTRACT_DIR})
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E tar xJ ${quickjs_tar}
+		WORKING_DIRECTORY ${QUICKJS_EXTRACT_DIR}
+	)
+	execute_process(
+		COMMAND ${CMAKE_COMMAND} -E tar xJ ${quickjs_extras_tar}
+		WORKING_DIRECTORY ${QUICKJS_EXTRACT_DIR}
+	)
+endif()

@@ -43,6 +43,10 @@
 #include "cutils.h"
 #include "quickjs-libc.h"
 
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
 JSModuleDef *js_module_loader_path(JSContext *ctx, const char *module_name, void *opaque, JSValueConst attributes);
 
 extern const uint8_t qjsc_repl[];

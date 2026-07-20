@@ -48,6 +48,10 @@
 #include "libunicode.h"
 #include "dtoa.h"
 
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
 #define OPTIMIZE         1
 #define SHORT_OPCODES    1
 #if defined(__EMSCRIPTEN__)
