@@ -55,11 +55,14 @@ if(EMSCRIPTEN)
          "Also emit qjs.html: a browser demo page driving the qjs REPL" ON)
   if(EMSCRIPTEN_BUILD_REPL_HTML)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
-    # The REPL reads stdin a line at a time as the user types into the
-    # page; blocking the C call stack until that happens requires
-    # Asyncify's stack-switching support (see cmake/emscripten/shell-repl.html).
+    # qjs.c's normal interactive REPL blocks mid-interpreter waiting for
+    # the next byte of stdin, which in the browser would require Asyncify
+    # - and Asyncify can't unwind/rewind through JS_CallInternal()'s use of
+    # alloca(). So qjs.html is instead built from a small eval-one-line
+    # driver (see cmake/emscripten/qjs-repl-wasm.c) that the page calls
+    # synchronously per Enter key press: no blocking read, no Asyncify.
     set(CMAKE_EXE_LINKER_FLAGS
-        "${CMAKE_EXE_LINKER_FLAGS} -sASYNCIFY=1 --shell-file \"${CMAKE_CURRENT_SOURCE_DIR}/cmake/emscripten/shell-repl.html\""
+        "${CMAKE_EXE_LINKER_FLAGS} -sEXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"UTF8ToString\"] --shell-file \"${CMAKE_CURRENT_SOURCE_DIR}/cmake/emscripten/shell-repl.html\""
     )
   endif(EMSCRIPTEN_BUILD_REPL_HTML)
 endif(EMSCRIPTEN)
@@ -790,9 +793,13 @@ install(FILES ${QUICKJS_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
 file(GLOB CMAKE_SCRIPTS cmake/*QuickJS*)
 install(FILES ${CMAKE_SCRIPTS} DESTINATION ${QUICKJS_PREFIX}/lib/cmake)
 
-add_executable(
-  qjs qjs.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
-      ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
+if(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
+  add_executable(qjs cmake/emscripten/qjs-repl-wasm.c)
+else(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
+  add_executable(
+    qjs qjs.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
+        ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
+endif(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
 
 target_link_libraries(qjs ${QUICKJS_LIBRARY} ${LIBPTHREAD} ${LIBM}
                       ${SOCKET_LIBRARIES})

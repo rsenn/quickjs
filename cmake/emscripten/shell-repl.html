@@ -18,6 +18,7 @@
       #input-row { display: flex; margin-top: 0.5em; }
       #prompt { padding-right: 0.5em; }
       #input { flex: 1; font-family: monospace; }
+      #input:disabled { color: #888; }
     </style>
   </head>
   <body>
@@ -25,7 +26,7 @@
     <div id="output"></div>
     <div id="input-row">
       <span id="prompt">&gt;</span>
-      <input id="input" type="text" autocomplete="off" autofocus>
+      <input id="input" type="text" autocomplete="off" autofocus disabled>
     </div>
 
     <script type="text/javascript">
@@ -37,35 +38,36 @@
         outputElement.scrollTop = outputElement.scrollHeight;
       }
 
-      // Bytes typed by the user, consumed one at a time by Module['stdin'].
-      // Emscripten's tty layer calls Module['stdin']() once per character,
-      // so lines typed into #input are queued here and drained lazily.
-      var stdinQueue = [];
-      var stdinWake = null;
-
-      function feedInputLine(line) {
-        for (var i = 0; i < line.length; i++) {
-          stdinQueue.push(line.charCodeAt(i));
-        }
-        stdinQueue.push(10); // '\n'
-        if (stdinWake) {
-          var wake = stdinWake;
-          stdinWake = null;
-          wake();
-        }
+      // Each line is a single, synchronous round trip into the wasm module
+      // (qjs_repl_eval() in cmake/emscripten/qjs-repl-wasm.c) rather than
+      // feeding a blocking terminal read, which the qjs.c REPL can't do in
+      // a browser (see the comment at the top of that file).
+      function evalLine(line) {
+        var resultPtr = Module.ccall('qjs_repl_eval', 'number', ['string'], [line]);
+        var result = Module.UTF8ToString(resultPtr);
+        Module.ccall('qjs_repl_free_result', null, ['number'], [resultPtr]);
+        return result;
       }
 
       inputElement.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !inputElement.disabled) {
           var line = inputElement.value;
           inputElement.value = '';
-          feedInputLine(line);
+          appendOutput('> ' + line + '\n');
+          var result = evalLine(line);
+          if (result) appendOutput(result + '\n');
         }
       });
 
       var Module = {
         preRun: [],
-        postRun: [],
+        postRun: [
+          function() {
+            inputElement.disabled = false;
+            inputElement.focus();
+            appendOutput('QuickJS WASM REPL ready. Type an expression and press Enter.\n');
+          }
+        ],
         print: function(text) {
           if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
           appendOutput(text + '\n');
@@ -73,19 +75,6 @@
         printErr: function(text) {
           if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
           appendOutput(text + '\n');
-        },
-        // Requires -sASYNCIFY=1: reading stdin in the browser has to block
-        // the C call stack until the user actually types a line, which is
-        // only possible via Asyncify's stack-switching support.
-        stdin: function() {
-          if (stdinQueue.length > 0) {
-            return stdinQueue.shift();
-          }
-          return Asyncify.handleSleep(function(wakeUp) {
-            stdinWake = function() {
-              wakeUp(stdinQueue.shift());
-            };
-          });
         },
         setStatus: function(text) {
           if (text) appendOutput(text + '\n');
