@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <title>QuickJS REPL (WASM)</title>
+    <style>
+      body { font-family: monospace; margin: 1em; }
+      #output {
+        width: 100%;
+        height: 32em;
+        background: #111;
+        color: #ddd;
+        white-space: pre;
+        overflow-y: scroll;
+        padding: 0.5em;
+        box-sizing: border-box;
+      }
+      #input-row { display: flex; margin-top: 0.5em; }
+      #prompt { padding-right: 0.5em; }
+      #input { flex: 1; font-family: monospace; }
+    </style>
+  </head>
+  <body>
+    <h3>QuickJS REPL (WASM)</h3>
+    <div id="output"></div>
+    <div id="input-row">
+      <span id="prompt">&gt;</span>
+      <input id="input" type="text" autocomplete="off" autofocus>
+    </div>
+
+    <script type="text/javascript">
+      var outputElement = document.getElementById('output');
+      var inputElement = document.getElementById('input');
+
+      function appendOutput(text) {
+        outputElement.textContent += text;
+        outputElement.scrollTop = outputElement.scrollHeight;
+      }
+
+      // Bytes typed by the user, consumed one at a time by Module['stdin'].
+      // Emscripten's tty layer calls Module['stdin']() once per character,
+      // so lines typed into #input are queued here and drained lazily.
+      var stdinQueue = [];
+      var stdinWake = null;
+
+      function feedInputLine(line) {
+        for (var i = 0; i < line.length; i++) {
+          stdinQueue.push(line.charCodeAt(i));
+        }
+        stdinQueue.push(10); // '\n'
+        if (stdinWake) {
+          var wake = stdinWake;
+          stdinWake = null;
+          wake();
+        }
+      }
+
+      inputElement.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          var line = inputElement.value;
+          inputElement.value = '';
+          feedInputLine(line);
+        }
+      });
+
+      var Module = {
+        preRun: [],
+        postRun: [],
+        print: function(text) {
+          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          appendOutput(text + '\n');
+        },
+        printErr: function(text) {
+          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          appendOutput(text + '\n');
+        },
+        // Requires -sASYNCIFY=1: reading stdin in the browser has to block
+        // the C call stack until the user actually types a line, which is
+        // only possible via Asyncify's stack-switching support.
+        stdin: function() {
+          if (stdinQueue.length > 0) {
+            return stdinQueue.shift();
+          }
+          return Asyncify.handleSleep(function(wakeUp) {
+            stdinWake = function() {
+              wakeUp(stdinQueue.shift());
+            };
+          });
+        },
+        setStatus: function(text) {
+          if (text) appendOutput(text + '\n');
+        }
+      };
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>

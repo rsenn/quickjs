@@ -12,21 +12,57 @@ if(CACHE{CMAKE_BUILD_TYPE})
 endif(CACHE{CMAKE_BUILD_TYPE})
 
 option(CONFIG_BIGNUM "Enable bignum support" ON)
-option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
 option(CONFIG_ATOMICS "Enable atomics" ON)
 
 if(WASI OR EMSCRIPTEN)
-  set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
+  if(WASI)
+    # WASI builds have no JS glue, so the build product is the raw .wasm
+    # module. Emscripten instead ships its own JS/Node runtime alongside
+    # the .wasm (the default CMAKE_EXECUTABLE_SUFFIX of .js), which
+    # supplies the syscall shims that quickjs-libc.c needs (fork, dlopen,
+    # popen, socket calls, ...) and that a bare .wasm module has no way to
+    # satisfy on its own.
+    set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
+  endif(WASI)
   option(CONFIG_WORKER "Enable Worker" OFF)
-  option(CONFIG_DEBUGGER "Enable debugger protocol" OFF)
+  # NOTE: quickjs.c calls js_debugger_* unconditionally (no #ifdef
+  # CONFIG_DEBUGGER guards), so quickjs-debugger.c must always be compiled
+  # in or the link fails with undefined symbols. See BUGS.
+  option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
+  option(CONFIG_DLFCN "Enable dlfcn module loader" OFF)
 else(WASI OR EMSCRIPTEN)
   option(CONFIG_WORKER "Enable Worker" ON)
   option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
+  option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
 endif(WASI OR EMSCRIPTEN)
 
 if(CONFIG_WORKER)
   set(USE_WORKER "${CONFIG_WORKER}")
 endif(CONFIG_WORKER)
+
+if(EMSCRIPTEN)
+  option(EMSCRIPTEN_ALLOW_MEMORY_GROWTH "Allow the wasm heap to grow at runtime" ON)
+  if(EMSCRIPTEN_ALLOW_MEMORY_GROWTH)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -sALLOW_MEMORY_GROWTH=1")
+  endif(EMSCRIPTEN_ALLOW_MEMORY_GROWTH)
+  # quickjs-libc.c calls popen()/pclose() (used by std.popen()), which the
+  # wasm sandbox has no equivalent for. Leave the symbol unresolved at link
+  # time instead of failing the build; std.popen() will simply be
+  # unavailable at runtime.
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -sERROR_ON_UNDEFINED_SYMBOLS=0")
+
+  option(EMSCRIPTEN_BUILD_REPL_HTML
+         "Also emit qjs.html: a browser demo page driving the qjs REPL" ON)
+  if(EMSCRIPTEN_BUILD_REPL_HTML)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+    # The REPL reads stdin a line at a time as the user types into the
+    # page; blocking the C call stack until that happens requires
+    # Asyncify's stack-switching support (see cmake/emscripten/shell-repl.html).
+    set(CMAKE_EXE_LINKER_FLAGS
+        "${CMAKE_EXE_LINKER_FLAGS} -sASYNCIFY=1 --shell-file \"${CMAKE_CURRENT_SOURCE_DIR}/cmake/emscripten/shell-repl.html\""
+    )
+  endif(EMSCRIPTEN_BUILD_REPL_HTML)
+endif(EMSCRIPTEN)
 
 option(CONFIG_ALL_UNICODE "Enable all-Unicode support" OFF)
 option(CONFIG_CHECK_JSVALUE "JSValue consistency mode" OFF)
@@ -94,7 +130,7 @@ endif(NOT DEFINED BUILD_SHARED_LIBS)]]
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ${SUPPORT_SHARED_LIBS})
 
-if("${SYSTEM_NAME}" MATCHES ".*wasi")
+if("${SYSTEM_NAME}" MATCHES ".*wasi" OR WASI OR EMSCRIPTEN)
   #message(STATUS "\x1b[1;31mwasienv WASM build\x1b[0m")
   set(BUILD_SHARED_LIBS FALSE)
   set(ENABLE_SHARED FALSE)
@@ -548,9 +584,9 @@ if(WIN32 OR MINGW)
 
 endif(WIN32 OR MINGW)
 
-if(PTHREADS AND HAVE_STDATOMIC_H)
+if(PTHREADS AND HAVE_STDATOMIC_H AND NOT (WASI OR EMSCRIPTEN))
   set(USE_WORKER ON)
-endif(PTHREADS AND HAVE_STDATOMIC_H)
+endif(PTHREADS AND HAVE_STDATOMIC_H AND NOT (WASI OR EMSCRIPTEN))
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   option(USE_EFENCE "Enable electric fence" OFF)
@@ -589,9 +625,9 @@ check_flag("-Wno-discarded-qualifiers" HAVE_WARN_NO_DISCARDED_QUALIFIERS_FLAG CM
 ]]
 option(BUILD_QJSC "Build quickjs compiler" ON)
 
-if(${SYSTEM_NAME} MATCHES wasi)
+if(${SYSTEM_NAME} MATCHES wasi OR WASI OR EMSCRIPTEN)
   set(BUILD_QJSC OFF)
-endif(${SYSTEM_NAME} MATCHES wasi)
+endif(${SYSTEM_NAME} MATCHES wasi OR WASI OR EMSCRIPTEN)
 
 if(LIBDL)
   message(STATUS "LIBDL = ${LIBDL}")
@@ -772,9 +808,9 @@ target_compile_definitions(
   qjs PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
               QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
 
-if(WASI)
+if(WASI OR EMSCRIPTEN)
   set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc")
-endif(WASI)
+endif(WASI OR EMSCRIPTEN)
 
 #dump(LIBPTHREAD)
 

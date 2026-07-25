@@ -1,0 +1,39 @@
+- cxx-mixed-designated-initializer: quickjs.h's JSCFunctionListEntry-building
+  macros (JS_CFUNC_DEF and the 15 others alongside it) each build a
+  brace-enclosed initializer that mixes positional clauses (name, prop_flags,
+  def_type, magic) with a designated clause (.u = {...}) in the same
+  brace-enclosed list. C allows that mix; C++ (P1975/P0329) requires a list
+  to be either fully positional or fully designated, so g++/clang++ reject
+  every one of these macros with "either all initializer clauses should be
+  designated or none of them should be". Confirmed under g++ -std=c++20 on
+  both quickjs-2026-06-04 and quickjs-2025-09-13. Fixed via
+  patches/004-cxx-designated.patch (designates all five outer fields; the
+  nested .u = {...} content is left positional since it's internally
+  consistent on its own).
+
+    // any use of a JS_CFUNC_DEF-family macro in a .cpp translation unit,
+    // e.g. quickjs-libc.c's JSCFunctionListEntry tables compiled as C++:
+    static const JSCFunctionListEntry proto_funcs[] = {
+        JS_CFUNC_DEF("foo", 0, js_foo),
+    };
+    // g++ -std=c++20: error: either all initializer clauses should be
+    // designated or none of them should be
+
+- config-debugger-always-required: the CMake option CONFIG_DEBUGGER (default
+  ON, but was OFF for WASI/EMSCRIPTEN builds before this fix) controls only
+  whether defs.cmake adds quickjs-debugger.c and
+  quickjs-debugger-transport-*.c to QUICKJS_SOURCES. quickjs.c itself calls
+  js_debugger_check(), js_debugger_exception(), js_debugger_free(),
+  js_debugger_free_context() and js_debugger_new_context() unconditionally
+  (no #ifdef CONFIG_DEBUGGER around the call sites in quickjs.c), so
+  building with CONFIG_DEBUGGER=OFF always fails at link time with undefined
+  symbols, on every platform, not just wasm. Found while adding Emscripten
+  support: CMakeLists.txt defaulted CONFIG_DEBUGGER to OFF for
+  WASI/EMSCRIPTEN, which broke the link; changed the wasm-target default
+  back to ON as a build-system-level workaround (see CMakeLists.txt), but
+  the root cause (missing #ifdef guards in quickjs.c) is still present and
+  CONFIG_DEBUGGER=OFF remains broken for every target, including native.
+
+    cmake -B build -DCONFIG_DEBUGGER=OFF && cmake --build build --target qjs
+    # wasm-ld/ld: undefined symbol: js_debugger_check (and 4 related symbols)
+
