@@ -1,0 +1,41 @@
+# Fixes find_line_num() (quickjs.c) dropping the line number for stack
+# frames whose entire function body sits on one source line, printing a
+# bare filename with no ":<line>" instead of the correct declaration
+# line -- while every frame for code spanning multiple lines gets a
+# correct line number.
+#
+# Root cause: find_line_num() treated `!b->debug.pc2line_buf` as
+# equivalent to "function was stripped, no debug info" and returned -1,
+# without distinguishing that case from "debug info present, but this
+# function's whole bytecode maps to one unchanging line so the pc2line
+# delta stream is legitimately empty". At bytecode-generation time,
+# `b->debug.pc2line_buf = js_realloc(ctx, fd->pc2line.buf,
+# fd->pc2line.size)` and js_realloc(ctx, ptr, 0) is documented to return
+# NULL for a zero-size request -- so a one-line function ends up with
+# has_debug=1 but pc2line_buf=NULL, and find_line_num() silently dropped
+# the line instead of falling back to b->debug.line_num (the function's
+# own declared line, sitting right there on the same struct).
+#
+# Targets find_line_num() in quickjs.c; verified against
+# quickjs-2026-06-04. Should apply cleanly to any release with the same
+# `if(!b->has_debug || !b->debug.pc2line_buf) { return -1; }` guard at
+# the top of find_line_num().
+#
+--- a/quickjs.c
++++ b/quickjs.c
+@@ -6427,10 +6427,14 @@ find_line_num(JSContext* ctx, JSFunctionBytecode* b, uint32_t pc_value) {
+   int new_line_num, line_num, pc, v, ret;
+   unsigned int op;
+
+-  if(!b->has_debug || !b->debug.pc2line_buf) {
++  if(!b->has_debug) {
+     /* function was stripped */
+     return -1;
+   }
++  if(!b->debug.pc2line_buf) {
++    /* whole function maps to a single line: empty pc2line stream */
++    return b->debug.line_num;
++  }
+
+   p = b->debug.pc2line_buf;
+   p_end = p + b->debug.pc2line_len;

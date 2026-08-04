@@ -37,3 +37,53 @@
     cmake -B build -DCONFIG_DEBUGGER=OFF && cmake --build build --target qjs
     # wasm-ld/ld: undefined symbol: js_debugger_check (and 4 related symbols)
 
+- missing-line-number-single-line-function: a stack frame for a function
+  whose entire body (declaration through the throwing statement) sits on
+  one source line prints with no `:<line>` at all - just the bare
+  filename - while every frame for code on its own line gets a correct
+  line number. Root cause: find_line_num() (quickjs.c:6425) treats
+  `!b->debug.pc2line_buf` as "function was stripped, no debug info" and
+  returns -1 (quickjs.c:6431-6433) without ever distinguishing that case
+  from "debug info present, but this function's whole bytecode maps to
+  one unchanging line so the pc2line delta stream is legitimately empty".
+  At bytecode-generation time (quickjs.c:32798)
+  `b->debug.pc2line_buf = js_realloc(ctx, fd->pc2line.buf, fd->pc2line.size)`
+  and js_realloc(ctx, ptr, 0) is documented to return NULL for a
+  zero-size request (quickjs.c:1385-1392, `!ret && size != 0` explicitly
+  excludes size==0 from being treated as an OOM failure) - so a one-line
+  function ends up with has_debug=1 but pc2line_buf=NULL, and
+  find_line_num() silently drops the line instead of falling back to
+  b->debug.line_num (the function's own declared line, sitting right
+  there on the same struct). Splitting the identical code across multiple
+  lines makes the pc2line stream non-empty and the bug disappears. Found
+  while writing an exception/stack-trace test suite for qjs-modules
+  (tests/test_exceptions.js there documents this as a known-failing case).
+
+    function foo() { throw new Error("boom"); }
+    function bar() { foo(); }
+    bar();
+    // actual (foo/bar frames have no line number):
+    //   at foo (script.js)
+    //   at bar (script.js)
+    //   at <anonymous> (script.js:3)
+    // expected: every frame carries a `:<line>`, e.g. "at foo (script.js:1)"
+
+- no-column-number-tracking: quickjs.c never tracks source column
+  positions anywhere - not in the parser's token/error reporting, not in
+  the per-function pc2line debug stream (there is no pc2col equivalent),
+  and not on thrown Error objects (no `.columnNumber`, and `.stack`
+  frames never carry a column, only a line). The only place a column
+  even appears is js_debugger_current_location() (quickjs.c:54678-54697),
+  which fills in a JSDebuggerLocation struct that has a `column` field,
+  but the code hardcodes it: `location.column = 0;` with the comment
+  "quickjs has no column info." This isn't a case of column info being
+  tracked somewhere and just not surfaced - there is no source of truth
+  for it anywhere in the engine to surface. Confirmed by grepping
+  quickjs.c for any column/col-related field or variable name: none
+  exist outside that one hardcoded 0.
+
+    try { null.foo; } catch(e) { console.log(e.stack, e.columnNumber); }
+    // actual: e.stack has a line number but no column; e.columnNumber
+    //         is undefined
+    // expected (for parity with V8/JSC): a column pointing at `.foo`
+

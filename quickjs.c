@@ -6427,9 +6427,13 @@ find_line_num(JSContext* ctx, JSFunctionBytecode* b, uint32_t pc_value) {
   int new_line_num, line_num, pc, v, ret;
   unsigned int op;
 
-  if(!b->has_debug || !b->debug.pc2line_buf) {
+  if(!b->has_debug) {
     /* function was stripped */
     return -1;
+  }
+  if(!b->debug.pc2line_buf) {
+    /* whole function maps to a single line: empty pc2line stream */
+    return b->debug.line_num;
   }
 
   p = b->debug.pc2line_buf;
