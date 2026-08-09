@@ -210,6 +210,7 @@ cfg-mingw32() {
     TOOLCHAIN=/opt/cmake-toolchains/mingw32.cmake \
     cfg-mingw "$@")
 }
+
 cfg-mingw64() {
   (host=x86_64-w64-mingw32
   prefix=/usr/$host/sys-root/mingw \
