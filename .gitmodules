@@ -34,9 +34,6 @@
 	path = qjs-rgfw
 	url = git@github.com:rsenn/qjs-rgfw.git
 	branch = main
-[submodule "qjs-net"]
-	path = qjs-net
-	url = git@github.com:rsenn/qjs-net.git
 [submodule "qjs-debugger"]
 	path = qjs-debugger
 	url = git@github.com:rsenn/qjs-debugger.git
