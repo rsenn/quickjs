@@ -18,7 +18,7 @@
 if(NOT DEFINED ENV{EMSDK})
   message(
     FATAL_ERROR
-    "EMSDK environment variable is not set. Run 'source <emsdk>/emsdk_env.sh' first, or configure with emcmake instead of this toolchain file."
+      "EMSDK environment variable is not set. Run 'source <emsdk>/emsdk_env.sh' first, or configure with emcmake instead of this toolchain file."
   )
 endif()
 
@@ -28,7 +28,7 @@ set(EMSCRIPTEN_SDK_TOOLCHAIN
 if(NOT EXISTS "${EMSCRIPTEN_SDK_TOOLCHAIN}")
   message(
     FATAL_ERROR
-    "Could not find Emscripten's own CMake toolchain file at ${EMSCRIPTEN_SDK_TOOLCHAIN}"
+      "Could not find Emscripten's own CMake toolchain file at ${EMSCRIPTEN_SDK_TOOLCHAIN}"
   )
 endif()
 

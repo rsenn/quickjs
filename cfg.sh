@@ -90,6 +90,29 @@ cfg() {
   } 2>&1 && echo "Configured in '$builddir'" 1>&2) | tee "${builddir##*/}.log"
 }
 
+cfg-linux32 () 
+{ 
+    ( build=$(gcc -dumpmachine | sed 's|-pc-|-|g');
+    host=${build%%-*}-linux-gnu;
+    host=i686-${host#*-};
+    if type i686-linux-gnu-gcc 2> /dev/null > /dev/null; then
+        CC=i686-linux-gnu-gcc;
+        export CC;
+    else
+        if type i686-pc-linux-gnu-gcc 2> /dev/null > /dev/null; then
+            CC=i686-pc-linux-gnu-gcc;
+            export CC;
+        else
+            : ${CC="gcc"};
+            CFLAGS="${CFLAGS:+$CFLAGS }-m32";
+            export CC CFLAGS;
+        fi;
+    fi;
+    export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig;
+    : ${builddir=build/$host};
+    cfg -DCMAKE_SYSTEM_LIBRARY_PATH=/usr/lib/i386-linux-gnu "$@" )
+}
+
 cfg-android()
 {
  (build=$(cc -dumpmachine)
@@ -218,68 +241,6 @@ cfg-mingw64() {
     cfg-mingw "$@")
 }
 
-cfg-emscripten() {
-  (
-    build=$(gcc -dumpmachine | sed 's|-pc-|-|g')
-    host=${build/-gnu/-emscriptenlibc}
-    builddir=build/${host%-*}-emscripten
-
-    prefix=$(which emcc | sed 's|/emcc$|/system|')
-    libdir=$prefix/lib
-    bindir=$prefix/bin
-
-    export TOOLCHAIN=/opt/cmake-toolchains/Emscripten-wasm.cmake
-
-    CC="emcc" \
-      PKG_CONFIG="PKG_CONFIG_PATH=$libdir/pkgconfig pkg-config" \
-      cfg \
-      -DCMAKE_INSTALL_PREFIX="$prefix" \
-      -DENABLE_SHARED=OFF \
-      -DSHARED_LIBS=OFF \
-      -DBUILD_SHARED_LIBS=OFF \
-      "$@"
-  )
-}
-
-cfg-wasi() {
-  (
-    build=$(gcc -dumpmachine | sed 's|-pc-|-|g')
-    host=${build/-gnu/-wasi}
-    builddir=build/wasm32-unknown-wasi
-
-    prefix=/opt/wasi-sdk
-    libdir=$prefix/lib
-    bindir=$prefix/bin
-
-    export TOOLCHAIN=/opt/cmake-toolchains/wasi-sdk.cmake
-
-    CFLAGS="-w -D_WASI_EMULATED_SIGNAL" \
-      cfg \
-      -DCMAKE_INSTALL_PREFIX="$prefix" \
-      -DMODULE_{GLFW,IMGUI,NANOVG,NET,FFI}=OFF \
-      "$@"
-  )
-}
-
-cfg-wasienv() {
-  (
-    build=$(gcc -dumpmachine | sed 's|-pc-|-|g')
-    host=${build/-gnu/-wasienv}
-    builddir=build/wasm32-unknown-wasienv
-
-    prefix=/opt/wasienv
-    libdir=$prefix/lib
-    bindir=$prefix/bin
-
-    export TOOLCHAIN=/opt/cmake-toolchains/wasienv.cmake
-
-    CFLAGS="-w -D_WASI_EMULATED_SIGNAL" \
-      cfg \
-      -DCMAKE_INSTALL_PREFIX="$prefix" \
-      -DMODULE_{GLFW,IMGUI,NANOVG,NET,FFI}=OFF \
-      "$@"
-  )
-}
 
 cfg-clang() {
   (
@@ -463,49 +424,63 @@ cfg-android64() {
     cfg -DCMAKE_INSTALL_PREFIX=/opt/aarch64-linux-android/sysroot/usr -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN:-/opt/cmake-toolchains/android64.cmake} -DANDROID_NATIVE_API_LEVEL=21 -DPKG_CONFIG_EXECUTABLE=aarch64-linux-android-pkg-config -DCMAKE_PREFIX_PATH=/opt/aarch64-linux-android/sysroot/usr -DCMAKE_MAKE_PROGRAM=/usr/bin/make "$@"
   )
 }
-
+ 
 cfg-emscripten() {
+ (CC="emcc" CXX="em++" \
+  LDFLAGS="-sWASM=1 -sLLD_REPORT_UNDEFINED" \
+  CFLAGS="-sUSE_PTHREADS=0 -DEMSCRIPTEN=1" \
+  CXXFLAGS="-sUSE_PTHREADS=0 -DEMSCRIPTEN=1" \
+  TOOLCHAIN="${EMSCRIPTEN:=dirname $(which emcc)}/cmake/Modules/Platform/Emscripten.cmake" \
+  builddir=build/emscripten \
+  cfg \
+    -DCMAKE_EXE_LINKER_FLAGS="-s WASM=1 -sEXPORTED_RUNTIME_METHODS=['callMain'] -sINVOKE_RUN=0" \
+    -DCMAKE_EXECUTABLE_SUFFIX=".html" \
+    -DENABLE_SHARED=OFF \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DENABLE_PIC=FALSE \
+    "$@")
+}
+ 
+cfg-wasi() {
   (
-    build=$(cc -dumpmachine | sed 's|-pc-|-|g')
-    host=$(emcc -dumpmachine)
-    : ${builddir=build/${host%-*}-emscripten}
-    : ${prefix=$EMSCRIPTEN/system}
-    : ${libdir=$prefix/lib}
-    : ${bindir=$prefix/bin}
-    : ${EMSCRIPTEN=$EMSDK/upstream/emscripten}
-    export TOOLCHAIN="${EMSCRIPTEN}/cmake/Modules/Platform/Emscripten.cmake"
+    build=$(gcc -dumpmachine | sed 's|-pc-|-|g')
+    host=${build/-gnu/-wasi}
+    builddir=build/wasm32-unknown-wasi
 
-    PREFIX_PATH=$(
-      set -- /opt/*-wasm
-      IFS=";"
-      echo "$*"
-    )
-    LIBRARY_PATH=$(
-      set -- /opt/*-wasm/lib
-      IFS=";"
-      echo "$*"
-    )
-    PKG_CONFIG_PATH=$(
-      set -- /opt/*-wasm/lib/pkgconfig
-      IFS=":"
-      echo "$*"
-    ) #${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}
-    PKG_CONFIG_PATH="${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}${EMSCRIPTEN}/system/lib/pkgconfig"
-    export PKG_CONFIG_PATH
-    echo PKG_CONFIG_PATH="${PKG_CONFIG_PATH}"
-    CC="emcc" CXX="em++" TYPE="Release" \
-      CFLAGS="'-sUSE_PTHREADS=0'" \
-      CXXFLAGS="'-sUSE_PTHREADS=0'" \
-      CMAKE_WRAPPER="emcmake" \
-      prefix=/opt/${PWD##*/}-wasm \
+    prefix=/opt/wasi-sdk
+    libdir=$prefix/lib
+    bindir=$prefix/bin
+
+    export TOOLCHAIN=/opt/cmake-toolchains/wasi-sdk.cmake
+
+    CFLAGS="-w -D_WASI_EMULATED_SIGNAL" \
       cfg \
-      -DCMAKE_PREFIX_PATH="$PREFIX_PATH" \
-      -DCMAKE_LIBRARY_PATH="$LIBRARY_PATH" \
-      -DENABLE_PIC=FALSE \
+      -DCMAKE_INSTALL_PREFIX="$prefix" \
+      -DMODULE_{GLFW,IMGUI,NANOVG,NET,FFI}=OFF \
       "$@"
   )
 }
 
+cfg-wasienv() {
+  (
+    build=$(gcc -dumpmachine | sed 's|-pc-|-|g')
+    host=${build/-gnu/-wasienv}
+    builddir=build/wasm32-unknown-wasienv
+
+    prefix=/opt/wasienv
+    libdir=$prefix/lib
+    bindir=$prefix/bin
+
+    export TOOLCHAIN=/opt/cmake-toolchains/wasienv.cmake
+
+    CFLAGS="-w -D_WASI_EMULATED_SIGNAL" \
+      cfg \
+      -DCMAKE_INSTALL_PREFIX="$prefix" \
+      -DMODULE_{GLFW,IMGUI,NANOVG,NET,FFI}=OFF \
+      "$@"
+  )
+}
+ 
 cfg-aarch64() {
  (: ${build=$(cc -dumpmachine | sed 's|-pc-|-|g')}
   : ${host=aarch64-${build#*-}}
