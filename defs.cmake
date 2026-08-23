@@ -13,13 +13,13 @@ file(READ "${QUICKJS_SOURCES_ROOT}/VERSION" version)
 string(STRIP "${version}" QUICKJS_VERSION)
 
 if(NOT QUICKJS_VERSION)
-  set(QUICKJS_VERSION "2024-01-13")
+  set(QUICKJS_VERSION "2026-06-04")
 endif(NOT QUICKJS_VERSION)
 
 if(NOT QUICKJS_PREFIX)
   set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}")
 endif(NOT QUICKJS_PREFIX)
-set(QUICKJS_SOVERSION 1.1)
+set(QUICKJS_SOVERSION 1.4)
 set(QUICKJS_URL https://bellard.org/quickjs/quickjs-${QUICKJS_VERSION}.tar.xz)
 set(QUICKJS_SHA1 371eae0896cc9e9f50864cb34f37d9481d843ce1)
 set(QUICKJS_EXTRAS_URL https://bellard.org/quickjs/quickjs-extras-${QUICKJS_VERSION}.tar.xz)
@@ -28,23 +28,12 @@ set(QUICKJS_EXTRACT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sources)
 if(NOT QUICKJS_SOURCES_ROOT)
   set(QUICKJS_SOURCES_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 endif(NOT QUICKJS_SOURCES_ROOT)
-if(EXISTS ${QUICKJS_SOURCES_ROOT}/libbf.h)
-  set(QUICKJS_BIGNUM_INCLUDE libbf.h)
-  set(QUICKJS_BIGNUM_SOURCE ${QUICKJS_SOURCES_ROOT}/libbf.c)
-else(EXISTS ${QUICKJS_SOURCES_ROOT}/libbf.h)
-  set(QUICKJS_BIGNUM_INCLUDE dtoa.h)
-  set(QUICKJS_BIGNUM_SOURCE ${QUICKJS_SOURCES_ROOT}/dtoa.c)
-endif(EXISTS ${QUICKJS_SOURCES_ROOT}/libbf.h)
-
-set(QUICKJS_INCLUDES cutils.h ${QUICKJS_BIGNUM_INCLUDE} libregexp-opcode.h libregexp.h libunicode-table.h libunicode.h list.h quickjs-atom.h quickjs-libc.h quickjs-opcode.h quickjs-debugger.h
+set(QUICKJS_INCLUDES cutils.h libregexp-opcode.h libregexp.h libunicode-table.h libunicode.h list.h quickjs-atom.h quickjs-libc.h quickjs-opcode.h quickjs-debugger.h
                      quickjs.h unicode_gen_def.h)
 
 set(QUICKJS_SOURCES
-    ${QUICKJS_SOURCES_ROOT}/cutils.c ${QUICKJS_BIGNUM_SOURCE} ${QUICKJS_SOURCES_ROOT}/libregexp.c ${QUICKJS_SOURCES_ROOT}/libunicode.c ${QUICKJS_SOURCES_ROOT}/quickjs.c
+    ${QUICKJS_SOURCES_ROOT}/cutils.c ${QUICKJS_SOURCES_ROOT}/libregexp.c ${QUICKJS_SOURCES_ROOT}/libunicode.c ${QUICKJS_SOURCES_ROOT}/quickjs.c
     ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c ${QUICKJS_INCLUDES})
-if(EXISTS ${QUICKJS_SOURCES_ROOT}/win32-poll.c)
-  set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/win32-poll.c)
-endif(EXISTS ${QUICKJS_SOURCES_ROOT}/win32-poll.c)
 
 #message("CONFIG_DEBUGGER = ${CONFIG_DEBUGGER}")
 if(CONFIG_DEBUGGER)

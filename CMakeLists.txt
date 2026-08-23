@@ -1,5 +1,5 @@
-# Copyright (c) 2020 Kosaki Mezumona This cmake script is distributed under the MIT License. See LICENSE for more details.
 cmake_minimum_required(VERSION 3.5)
+
 project(quickjs C)
 
 message("Building project [1;31m${PROJECT_NAME}[0m")
@@ -11,22 +11,66 @@ if(CACHE{CMAKE_BUILD_TYPE})
                                                RelWithDebInfo)
 endif(CACHE{CMAKE_BUILD_TYPE})
 
+option(BUILD_STATIC_LIBS "Build libquickjs.a" ON)
+
 option(CONFIG_BIGNUM "Enable bignum support" ON)
-option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
 option(CONFIG_ATOMICS "Enable atomics" ON)
 
 if(WASI OR EMSCRIPTEN)
-  set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
+  if(WASI)
+    # WASI builds have no JS glue, so the build product is the raw .wasm
+    # module. Emscripten instead ships its own JS/Node runtime alongside
+    # the .wasm (the default CMAKE_EXECUTABLE_SUFFIX of .js), which
+    # supplies the syscall shims that quickjs-libc.c needs (fork, dlopen,
+    # popen, socket calls, ...) and that a bare .wasm module has no way to
+    # satisfy on its own.
+    set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
+  endif(WASI)
   option(CONFIG_WORKER "Enable Worker" OFF)
-  option(CONFIG_DEBUGGER "Enable debugger protocol" OFF)
+  # NOTE: quickjs.c calls js_debugger_* unconditionally (no #ifdef
+  # CONFIG_DEBUGGER guards), so quickjs-debugger.c must always be compiled
+  # in or the link fails with undefined symbols. See BUGS.
+  option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
+  option(CONFIG_DLFCN "Enable dlfcn module loader" OFF)
 else(WASI OR EMSCRIPTEN)
   option(CONFIG_WORKER "Enable Worker" ON)
   option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
+  option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
 endif(WASI OR EMSCRIPTEN)
 
 if(CONFIG_WORKER)
   set(USE_WORKER "${CONFIG_WORKER}")
 endif(CONFIG_WORKER)
+
+if(EMSCRIPTEN)
+  option(EMSCRIPTEN_ALLOW_MEMORY_GROWTH
+         "Allow the wasm heap to grow at runtime" ON)
+  if(EMSCRIPTEN_ALLOW_MEMORY_GROWTH)
+    set(CMAKE_EXE_LINKER_FLAGS
+        "${CMAKE_EXE_LINKER_FLAGS} -sALLOW_MEMORY_GROWTH=1")
+  endif(EMSCRIPTEN_ALLOW_MEMORY_GROWTH)
+  # quickjs-libc.c calls popen()/pclose() (used by std.popen()), which the
+  # wasm sandbox has no equivalent for. Leave the symbol unresolved at link
+  # time instead of failing the build; std.popen() will simply be
+  # unavailable at runtime.
+  set(CMAKE_EXE_LINKER_FLAGS
+      "${CMAKE_EXE_LINKER_FLAGS} -sERROR_ON_UNDEFINED_SYMBOLS=0")
+
+  option(EMSCRIPTEN_BUILD_REPL_HTML
+         "Also emit qjs.html: a browser demo page driving the qjs REPL" ON)
+  if(EMSCRIPTEN_BUILD_REPL_HTML)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+    # qjs.c's normal interactive REPL blocks mid-interpreter waiting for
+    # the next byte of stdin, which in the browser would require Asyncify
+    # - and Asyncify can't unwind/rewind through JS_CallInternal()'s use of
+    # alloca(). So qjs.html is instead built from a small eval-one-line
+    # driver (see cmake/emscripten/qjs-repl-wasm.c) that the page calls
+    # synchronously per Enter key press: no blocking read, no Asyncify.
+    set(CMAKE_EXE_LINKER_FLAGS
+        "${CMAKE_EXE_LINKER_FLAGS} -sEXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"UTF8ToString\"] --shell-file \"${CMAKE_CURRENT_SOURCE_DIR}/cmake/emscripten/shell-repl.html\""
+    )
+  endif(EMSCRIPTEN_BUILD_REPL_HTML)
+endif(EMSCRIPTEN)
 
 option(CONFIG_ALL_UNICODE "Enable all-Unicode support" OFF)
 option(CONFIG_CHECK_JSVALUE "JSValue consistency mode" OFF)
@@ -94,7 +138,7 @@ endif(NOT DEFINED BUILD_SHARED_LIBS)]]
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ${SUPPORT_SHARED_LIBS})
 
-if("${SYSTEM_NAME}" MATCHES ".*wasi")
+if("${SYSTEM_NAME}" MATCHES ".*wasi" OR WASI OR EMSCRIPTEN)
   #message(STATUS "\x1b[1;31mwasienv WASM build\x1b[0m")
   set(BUILD_SHARED_LIBS FALSE)
   set(ENABLE_SHARED FALSE)
@@ -136,8 +180,8 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
   set(DEBUG ON)
 else(CMAKE_BUILD_TYPE MATCHES "Debug")
   set(DEBUG OFF)
-  add_definitions(-DNDEBUG)
 endif(CMAKE_BUILD_TYPE MATCHES "Debug")
+add_definitions(-DNDEBUG)
 
 string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
@@ -548,9 +592,9 @@ if(WIN32 OR MINGW)
 
 endif(WIN32 OR MINGW)
 
-if(PTHREADS AND HAVE_STDATOMIC_H)
+if(PTHREADS AND HAVE_STDATOMIC_H AND NOT (WASI OR EMSCRIPTEN))
   set(USE_WORKER ON)
-endif(PTHREADS AND HAVE_STDATOMIC_H)
+endif(PTHREADS AND HAVE_STDATOMIC_H AND NOT (WASI OR EMSCRIPTEN))
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   option(USE_EFENCE "Enable electric fence" OFF)
@@ -589,9 +633,9 @@ check_flag("-Wno-discarded-qualifiers" HAVE_WARN_NO_DISCARDED_QUALIFIERS_FLAG CM
 ]]
 option(BUILD_QJSC "Build quickjs compiler" ON)
 
-if(${SYSTEM_NAME} MATCHES wasi)
+if(${SYSTEM_NAME} MATCHES wasi OR WASI OR EMSCRIPTEN)
   set(BUILD_QJSC OFF)
-endif(${SYSTEM_NAME} MATCHES wasi)
+endif(${SYSTEM_NAME} MATCHES wasi OR WASI OR EMSCRIPTEN)
 
 if(LIBDL)
   message(STATUS "LIBDL = ${LIBDL}")
@@ -618,22 +662,14 @@ add_custom_command(
   COMMENT "Generate from repl.js using qjs compiler" SOURCES
           ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
-  set(QJSCALC_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
-  set(QJSCALC_FLAG -fbignum)
-
-  add_custom_command(
-    OUTPUT qjscalc.c
-    COMMAND "${QJSC}" ${QJSCALC_FLAG} -c -o ./qjscalc.c -m
-            ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
-    DEPENDS ${QJSC_DEPS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES
-            ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
-else(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
-  # dropped upstream along with CONFIG_BIGNUM/libbf (quickjs-2025-04-26+)
-  set(QJSCALC_SOURCES)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
+add_custom_command(
+  OUTPUT qjscalc.c
+  COMMAND "${QJSC}" -fbignum -c -o ./qjscalc.c -m
+          ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
+  DEPENDS ${QJSC_DEPS}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES
+          ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
 
 add_custom_target(
   hello.c
@@ -725,30 +761,34 @@ if(DLL_TARGETS)
   get_target_property(SO_PREFIX ${SO_NAME} PREFIX)
 
   set(SHARED_LIBRARY_NAME "${SO_PREFIX}${SO_OUTPUT}${CONFIG_SHEXT}")
+  set(STATIC_LIBRARY_NAME "lib${SO_OUTPUT}.a")
 
   if("${CONFIG_SHEXT}" STREQUAL ".dll")
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SHARED_LIBRARY_NAME}
-            DESTINATION ${QUICKJS_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
+            DESTINATION bin)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${STATIC_LIBRARY_NAME}
+            DESTINATION lib)
 
     if(NOT "${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL "")
       set(IMPORT_LIBRARY_NAME "lib${SO_OUTPUT}${CMAKE_IMPORT_LIBRARY_SUFFIX}")
 
       install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${IMPORT_LIBRARY_NAME}
-              DESTINATION ${QUICKJS_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+              DESTINATION lib)
     endif(NOT "${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL "")
 
   elseif("${CONFIG_SHEXT}" STREQUAL ".dll")
 
-    install(
-      TARGETS ${LIB_TARGETS}
-      LIBRARY DESTINATION ${QUICKJS_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${QUICKJS_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+    install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
   endif("${CONFIG_SHEXT}" STREQUAL ".dll")
 
 else(DLL_TARGETS)
   if(LIB_TARGETS)
-    install(TARGETS ${LIB_TARGETS} DESTINATION ${QUICKJS_LIBRARY_DIR})
+    install(TARGETS ${LIB_TARGETS} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
   endif(LIB_TARGETS)
 endif(DLL_TARGETS)
 
@@ -762,9 +802,14 @@ install(FILES ${QUICKJS_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h
 file(GLOB CMAKE_SCRIPTS cmake/*QuickJS*)
 install(FILES ${CMAKE_SCRIPTS} DESTINATION ${QUICKJS_PREFIX}/lib/cmake)
 
-add_executable(
-  qjs qjs.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
-      ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${QJSCALC_SOURCES})
+if(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
+  add_executable(qjs cmake/emscripten/qjs-repl-wasm.c)
+else(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
+  add_executable(
+    qjs
+    qjs.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
+    ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
+endif(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
 
 target_link_libraries(qjs ${QUICKJS_LIBRARY} ${LIBPTHREAD} ${LIBM}
                       ${SOCKET_LIBRARIES})
@@ -780,9 +825,9 @@ target_compile_definitions(
   qjs PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
               QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
 
-if(WASI)
+if(WASI OR EMSCRIPTEN)
   set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc")
-endif(WASI)
+endif(WASI OR EMSCRIPTEN)
 
 #dump(LIBPTHREAD)
 
@@ -808,11 +853,9 @@ if(BUILD_QJSC)
 endif(BUILD_QJSC)
 
 install(TARGETS qjs DESTINATION ${QUICKJS_BINARY_DIR})
-if(QJSCALC_SOURCES)
-  install(
-    CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)"
-  )
-endif(QJSCALC_SOURCES)
+install(
+  CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)"
+)
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -820,47 +863,69 @@ set(QUICKJS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(MODULE_SUBDIRS "")
 
-option(MODULE_GLFW "Enable GLFW module" OFF)
-option(MODULE_NANOVG "Enable NanoVG module" OFF)
-option(MODULE_IMGUI "Enable ImGui module" OFF)
-option(MODULE_FFI "Enable FFI module" ON)
-option(MODULE_MODULES "Enable MODULES module" ON)
-option(MODULE_NET "Enable qjs-net module" OFF)
-option(MODULE_LWS "Enable qjs-lws module" OFF)
-option(MODULE_SOUND "Enable qjs-sound module" OFF)
-option(MODULE_DEBUGGER "Enable qjs-debugger" ON)
-#option(MODULE_HTTP "Enable HTTP module" ON)
+if(EXISTS qjs-glfw)
+  option(MODULE_GLFW "Enable GLFW module" OFF)
+  if(MODULE_GLFW)
+    list(APPEND MODULE_SUBDIRS qjs-glfw)
+  endif(MODULE_GLFW)
+endif(EXISTS qjs-glfw)
 
-if(MODULE_GLFW)
-  list(APPEND MODULE_SUBDIRS qjs-glfw)
-endif(MODULE_GLFW)
-if(MODULE_NANOVG)
-  list(APPEND MODULE_SUBDIRS qjs-nanovg)
-endif(MODULE_NANOVG)
-if(MODULE_IMGUI)
-  list(APPEND MODULE_SUBDIRS qjs-imgui)
-endif(MODULE_IMGUI)
-if(MODULE_FFI)
-  list(APPEND MODULE_SUBDIRS qjs-ffi)
-endif(MODULE_FFI)
-if(MODULE_NET)
-  list(APPEND MODULE_SUBDIRS qjs-net)
-endif(MODULE_NET)
-if(MODULE_LWS)
-  list(APPEND MODULE_SUBDIRS qjs-lws)
-endif(MODULE_LWS)
-#if(MODULE_HTTP)
-#  list(APPEND MODULE_SUBDIRS qjs-http)
-#endif(MODULE_HTTP)
-if(MODULE_MODULES)
-  list(APPEND MODULE_SUBDIRS qjs-modules)
-endif(MODULE_MODULES)
-if(MODULE_SOUND)
-  list(APPEND MODULE_SUBDIRS qjs-sound)
-endif(MODULE_SOUND)
-if(MODULE_DEBUGGER)
-  list(APPEND MODULE_SUBDIRS qjs-debugger)
-endif(MODULE_DEBUGGER)
+if(EXISTS qjs-nanovg)
+  option(MODULE_NANOVG "Enable NanoVG module" OFF)
+  if(MODULE_NANOVG)
+    list(APPEND MODULE_SUBDIRS qjs-nanovg)
+  endif(MODULE_NANOVG)
+endif(EXISTS qjs-nanovg)
+
+if(EXISTS qjs-imgui)
+  option(MODULE_IMGUI "Enable ImGui module" OFF)
+  if(MODULE_IMGUI)
+    list(APPEND MODULE_SUBDIRS qjs-imgui)
+  endif(MODULE_IMGUI)
+endif(EXISTS qjs-imgui)
+
+if(EXISTS qjs-ffi)
+  option(MODULE_FFI "Enable FFI module" ON)
+  if(MODULE_FFI)
+    list(APPEND MODULE_SUBDIRS qjs-ffi)
+  endif(MODULE_FFI)
+endif(EXISTS qjs-ffi)
+
+if(EXISTS qjs-net)
+  option(MODULE_NET "Enable qjs-net module" OFF)
+  if(MODULE_NET)
+    list(APPEND MODULE_SUBDIRS qjs-net)
+  endif(MODULE_NET)
+endif(EXISTS qjs-net)
+
+if(EXISTS qjs-lws)
+  option(MODULE_LWS "Enable qjs-lws module" OFF)
+  if(MODULE_LWS)
+    list(APPEND MODULE_SUBDIRS qjs-lws)
+  endif(MODULE_LWS)
+endif(EXISTS qjs-lws)
+
+if(EXISTS qjs-modules)
+  option(MODULE_MODULES "Enable MODULES module" ON)
+  if(MODULE_MODULES)
+    list(APPEND MODULE_SUBDIRS qjs-modules)
+  endif(MODULE_MODULES)
+endif(EXISTS qjs-modules)
+
+if(EXISTS qjs-sound)
+  option(MODULE_SOUND "Enable qjs-sound module" OFF)
+  if(MODULE_SOUND)
+    list(APPEND MODULE_SUBDIRS qjs-sound)
+  endif(MODULE_SOUND)
+endif(EXISTS qjs-sound)
+
+if(EXISTS qjs-debugger)
+  option(MODULE_DEBUGGER "Enable qjs-debugger" ON)
+  if(MODULE_DEBUGGER)
+    list(APPEND MODULE_SUBDIRS qjs-debugger)
+  endif(MODULE_DEBUGGER)
+endif(EXISTS qjs-debugger)
+
 message(STATUS "Module subdirectories: ${MODULE_SUBDIRS}")
 
 set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH
