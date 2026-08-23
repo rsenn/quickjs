@@ -87,3 +87,18 @@
     //         is undefined
     // expected (for parity with V8/JSC): a column pointing at `.foo`
 
+- quickjs-install-prefix-always-empty (CMakeLists.txt:684): QUICKJS_INSTALL_PREFIX
+  is only ever assigned on a commented-out line (684, "#set(QUICKJS_INSTALL_PREFIX
+  ...)"), so every other use of it - the RPATH/INSTALL_RPATH properties (lines
+  731-732, 819-820, 841-843) and the QUICKJS_PREFIX compile definitions baked
+  into the qjs/qjsc targets (lines 697, 718, 825, 848) - always evaluates to an
+  empty string, regardless of CMAKE_INSTALL_PREFIX or any user setting. Found
+  while fixing the related QUICKJS_PREFIX cache-variable bug just above it in
+  the file; not fixed here since it's unclear whether these call sites were
+  meant to reference QUICKJS_INSTALL_PREFIX (a distinct, never-populated
+  variable) or the QUICKJS_PREFIX cache variable instead.
+
+    cmake -B build -DCMAKE_INSTALL_PREFIX=/opt/quickjs && cmake --build build
+    # binaries end up with RPATH "/lib" (not "/opt/quickjs/lib") and
+    # QUICKJS_PREFIX="" baked in as a compile definition
+
