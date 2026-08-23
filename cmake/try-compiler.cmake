@@ -1,5 +1,5 @@
-# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying file Copyright.txt or
-# https://cmake.org/licensing for details.
+# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
+# file Copyright.txt or https://cmake.org/licensing for details.
 
 #[=[
 
@@ -46,16 +46,20 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
   string(REPLACE ";" " " comment "${comment}")
 
   if(NOT lang MATCHES "^(C|CXX|Fortran|ASM)$")
-    # other possible languages are not supported log message to keep trace of this problem...
+    # other possible languages are not supported log message to keep trace of
+    # this problem...
     file(
       APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
       "Function 'CMAKE_CHECK_COMPILER_FLAG' called with unsupported language: ${lang}\n"
     )
-    set(${result} FALSE CACHE INTERNAL ${comment})
+    set(${result}
+        FALSE
+        CACHE INTERNAL ${comment})
     return()
   endif()
   if(lang STREQUAL "ASM")
-    # assume ASM compiler is a multi-language compiler, so supports C language as well
+    # assume ASM compiler is a multi-language compiler, so supports C language
+    # as well
     set(check_lang C)
   else()
     set(check_lang ${lang})
@@ -136,11 +140,15 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
 
   # Record result in the cache so we can avoid re-testing every CMake run
   if(COMPILER_FLAG_RESULT)
-    set(${result} FALSE CACHE INTERNAL ${comment})
+    set(${result}
+        FALSE
+        CACHE INTERNAL ${comment})
   else()
     foreach(regex IN LISTS CCCF_FAIL_REGEX)
       if(COMPILER_FLAG_OUTPUT MATCHES "${regex}")
-        set(${result} FALSE CACHE INTERNAL ${comment})
+        set(${result}
+            FALSE
+            CACHE INTERNAL ${comment})
       endif()
     endforeach()
   endif()
@@ -151,10 +159,14 @@ function(CMAKE_TRY_COMPILER_FLAG lang flag result)
       "is supported for ${lang} language failed with the following output:\n"
       "${COMPILER_FLAG_OUTPUT}\n")
     if(CCCF_OUTPUT_VARIABLE)
-      set(${CCCF_OUTPUT_VARIABLE} "${COMPILER_FLAG_OUTPUT}" PARENT_SCOPE)
+      set(${CCCF_OUTPUT_VARIABLE}
+          "${COMPILER_FLAG_OUTPUT}"
+          PARENT_SCOPE)
     endif()
     return()
   endif()
 
-  set(${result} TRUE CACHE INTERNAL ${comment})
+  set(${result}
+      TRUE
+      CACHE INTERNAL ${comment})
 endfunction()

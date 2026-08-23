@@ -14,7 +14,9 @@ macro(append_vars STR)
     endif(NOT LIST MATCHES ".*${STR}.*")
     string(REPLACE ";" " " LIST "${LIST}")
     # message("New value for ${L}: ${LIST}")
-    set("${L}" "${LIST}" PARENT_SCOPE)
+    set("${L}"
+        "${LIST}"
+        PARENT_SCOPE)
   endforeach(L ${ARGN})
 endmacro(append_vars STR)
 
@@ -34,7 +36,10 @@ function(check_flag FLAG VAR)
     endif(ARGN)
     message(STATUS "Compiler flag ${FLAG} ... supported")
   endif(RESULT)
-endfunction(check_flag FLAG VAR)
+endfunction(
+  check_flag
+  FLAG
+  VAR)
 
 macro(check_flags FLAGS)
   message(STATUS "Checking flags ${FLAGS} ${ARGN}")
@@ -46,7 +51,7 @@ endmacro(check_flags FLAGS)
 macro(check_nowarn_flag FLAG)
   canonicalize(VARNAME "${FLAG}")
   check_c_compiler_flag("${FLAG}" "${VARNAME}")
-  #dump(${VARNAME})
+  # dump(${VARNAME})
 
   if(${VARNAME})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
@@ -69,7 +74,7 @@ macro(ADD_NOWARN_FLAGS)
     nowarn_flag(-Wno-deprecated-enum-enum-conversion)
   endif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang.*")
 
-  #dump(CMAKE_C_FLAGS CMAKE_CXX_FLAGS) dump(CMAKE_CXX_FLAGS_DEBUG)
+  # dump(CMAKE_C_FLAGS CMAKE_CXX_FLAGS) dump(CMAKE_CXX_FLAGS_DEBUG)
 endmacro(ADD_NOWARN_FLAGS)
 
 macro(check_pic_flag)
@@ -90,13 +95,15 @@ macro(check_opt_none_flag)
   check_c_compiler_flag("-O0" OPT_CXX_OPT_NONE)
   if(OPT_C_OPT_NONE)
     if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O0")
-      set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0"
+      set(CMAKE_C_FLAGS_DEBUG
+          "${CMAKE_C_FLAGS_DEBUG} -O0"
           CACHE STRING "C compiler options")
     endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O0")
   endif(OPT_C_OPT_NONE)
   if(OPT_CXX_OPT_NONE)
     if(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-O0")
-      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0"
+      set(CMAKE_CXX_FLAGS_DEBUG
+          "${CMAKE_CXX_FLAGS_DEBUG} -O0"
           CACHE STRING "C++ compiler options")
     endif(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-O0")
   endif(OPT_CXX_OPT_NONE)
@@ -107,13 +114,15 @@ macro(check_opt_1_flag)
   check_c_compiler_flag("-O1" OPT_CXX_OPT_1)
   if(OPT_C_OPT_1)
     if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O1")
-      set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O1"
+      set(CMAKE_C_FLAGS_DEBUG
+          "${CMAKE_C_FLAGS_DEBUG} -O1"
           CACHE STRING "C compiler options")
     endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O1")
   endif(OPT_C_OPT_1)
   if(OPT_CXX_OPT_1)
     if(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-O1")
-      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O1"
+      set(CMAKE_CXX_FLAGS_DEBUG
+          "${CMAKE_CXX_FLAGS_DEBUG} -O1"
           CACHE STRING "C++ compiler options")
     endif(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-O1")
   endif(OPT_CXX_OPT_1)
@@ -124,13 +133,15 @@ macro(check_debug_gdb_flag)
   check_c_compiler_flag("-ggdb" OPT_CXX_G_GDB)
   if(OPT_C_G_GDB)
     if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-ggdb")
-      set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb"
+      set(CMAKE_C_FLAGS_DEBUG
+          "${CMAKE_C_FLAGS_DEBUG} -ggdb"
           CACHE STRING "C compiler options")
     endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-ggdb")
   endif(OPT_C_G_GDB)
   if(OPT_CXX_G_GDB)
     if(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-ggdb")
-      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb"
+      set(CMAKE_CXX_FLAGS_DEBUG
+          "${CMAKE_CXX_FLAGS_DEBUG} -ggdb"
           CACHE STRING "C++ compiler options")
     endif(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-ggdb")
   endif(OPT_CXX_G_GDB)
@@ -150,16 +161,19 @@ macro(check_c_standard_flag)
         string(REGEX REPLACE "\\+" "x" C_STANDARD_NAME "${C_STANDARD_VALUE}")
         string(TOUPPER "${C_STANDARD_NAME}" C_STANDARD_NAME)
         string(REGEX REPLACE "CXX" "" C_STANDARD_VERSION "${C_STANDARD_NAME}")
-        #message("C_STANDARD_NAME = ${C_STANDARD_NAME}")
-        #message("C_STANDARD_VERSION = ${C_STANDARD_VERSION}")
+        # message("C_STANDARD_NAME = ${C_STANDARD_NAME}")
+        # message("C_STANDARD_VERSION = ${C_STANDARD_VERSION}")
 
         if(NOT C_STANDARD_NAME STREQUAL "")
           add_definitions(-D"${C_STANDARD_NAME}")
         endif(NOT C_STANDARD_NAME STREQUAL "")
 
-        set(C_STANDARD_VALUE "${C_STANDARD}" CACHE STRING "C standard")
-        set(C_STANDARD_FLAG "-std=${C_STANDARD}" CACHE STRING
-                                                       "C standard argument")
+        set(C_STANDARD_VALUE
+            "${C_STANDARD}"
+            CACHE STRING "C standard")
+        set(C_STANDARD_FLAG
+            "-std=${C_STANDARD}"
+            CACHE STRING "C standard argument")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_STANDARD_FLAG}")
         break()
       endif(C_STANDARD_${C_STANDARD_NUM})
@@ -180,7 +194,7 @@ endmacro(check_c_standard_flag)
 macro(check_nowarn_flag FLAG)
   canonicalize(VARNAME "${FLAG}")
   check_c_compiler_flag("${FLAG}" "${VARNAME}")
-  #dump(${VARNAME})
+  # dump(${VARNAME})
 
   if(${VARNAME})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")

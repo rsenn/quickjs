@@ -21,7 +21,8 @@ macro(find_quickjs)
   endif(NOT QUICKJS_PREFIX)
 
   if(NOT QUICKJS_PREFIX)
-    set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}"
+    set(QUICKJS_PREFIX
+        "${CMAKE_INSTALL_PREFIX}"
         CACHE PATH "QuickJS install directory")
   endif(NOT QUICKJS_PREFIX)
 
@@ -34,7 +35,8 @@ macro(find_quickjs)
     set(QUICKJS_INSTALL_DIR "${QUICKJS_PREFIX}")
   endif("${QUICKJS_INSTALL_DIR}" STREQUAL "")
 
-  set(QUICKJS_INSTALL_PREFIX "${QUICKJS_INSTALL_DIR}"
+  set(QUICKJS_INSTALL_PREFIX
+      "${QUICKJS_INSTALL_DIR}"
       CACHE PATH "QuickJS installation prefix")
 
   if(CACHE{CMAKE_BUILD_TYPE})
@@ -78,14 +80,16 @@ macro(find_quickjs)
 
   if(QUICKJS_INCLUDE_DIR)
     message("QuickJS include dir: ${QUICKJS_INCLUDE_DIR}")
-    set(QUICKJS_INCLUDE_DIR "${QUICKJS_INCLUDE_DIR}"
+    set(QUICKJS_INCLUDE_DIR
+        "${QUICKJS_INCLUDE_DIR}"
         CACHE PATH "QuickJS include directory")
     link_directories(${QUICKJS_INCLUDE_DIR})
   endif(QUICKJS_INCLUDE_DIR)
 
   if(NOT QUICKJS_LIBRARY_DIR)
     if(EXISTS "${QUICKJS_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-      set(QUICKJS_LIBRARY_DIR "${QUICKJS_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+      set(QUICKJS_LIBRARY_DIR
+          "${QUICKJS_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
           CACHE PATH "QuickJS library directory")
     endif(EXISTS "${QUICKJS_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
   endif(NOT QUICKJS_LIBRARY_DIR)
@@ -99,7 +103,8 @@ macro(find_quickjs)
 
   if(QUICKJS_LIBRARY_DIR)
     message("QuickJS library dir: ${QUICKJS_LIBRARY_DIR}")
-    set(QUICKJS_LIBRARY_DIR "${QUICKJS_LIBRARY_DIR}"
+    set(QUICKJS_LIBRARY_DIR
+        "${QUICKJS_LIBRARY_DIR}"
         CACHE PATH "QuickJS library directory")
     link_directories(${QUICKJS_LIBRARY_DIR})
   endif(QUICKJS_LIBRARY_DIR)
@@ -163,10 +168,14 @@ macro(find_quickjs)
     add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
   endif(HAVE_QUICKJS_CONFIG_H)
 
-  find_program(QJS qjs PATHS "${CMAKE_CURRENT_BINARY_DIR}/.."
-                             "${QUICKJS_PREFIX}/bin" ENV PATH NO_DEFAULT_PATH)
-  find_program(QJSC qjsc PATHS "${CMAKE_CURRENT_BINARY_DIR}/.."
-                               "${QUICKJS_PREFIX}/bin" ENV PATH NO_DEFAULT_PATH)
+  find_program(
+    QJS qjs
+    PATHS "${CMAKE_CURRENT_BINARY_DIR}/.." "${QUICKJS_PREFIX}/bin" ENV PATH
+    NO_DEFAULT_PATH)
+  find_program(
+    QJSC qjsc
+    PATHS "${CMAKE_CURRENT_BINARY_DIR}/.." "${QUICKJS_PREFIX}/bin" ENV PATH
+    NO_DEFAULT_PATH)
 
   set(CUTILS_H ${CMAKE_CURRENT_SOURCE_DIR}/../cutils.h)
   set(QUICKJS_H ${CMAKE_CURRENT_SOURCE_DIR}/../quickjs.h)
@@ -174,7 +183,8 @@ endmacro(find_quickjs)
 
 macro(configure_quickjs)
   if(NOT QUICKJS_PREFIX)
-    set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}"
+    set(QUICKJS_PREFIX
+        "${CMAKE_INSTALL_PREFIX}"
         CACHE PATH "QuickJS install directory")
   endif(NOT QUICKJS_PREFIX)
 
@@ -183,7 +193,8 @@ macro(configure_quickjs)
   endif(NOT CMAKE_INSTALL_LIBDIR)
 
   execute_process(
-    COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
+    COMMAND ${CMAKE_C_COMPILER} -dumpmachine
+    OUTPUT_VARIABLE HOST_SYSTEM_NAME
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   if(NOT QUICKJS_C_MODULE_DIR)
@@ -195,9 +206,11 @@ macro(configure_quickjs)
     set(QUICKJS_JS_MODULE_DIR "${QUICKJS_PREFIX}/lib/quickjs")
   endif(NOT QUICKJS_JS_MODULE_DIR)
 
-  set(QUICKJS_C_MODULE_DIR "${QUICKJS_C_MODULE_DIR}"
+  set(QUICKJS_C_MODULE_DIR
+      "${QUICKJS_C_MODULE_DIR}"
       CACHE PATH "QuickJS native C modules directory")
-  set(QUICKJS_JS_MODULE_DIR "${QUICKJS_JS_MODULE_DIR}"
+  set(QUICKJS_JS_MODULE_DIR
+      "${QUICKJS_JS_MODULE_DIR}"
       CACHE PATH "QuickJS JavaScript modules directory")
 
   if(NOT QUICKJS_CONFIGURATION_SHOWN)
@@ -219,12 +232,10 @@ endmacro(configure_quickjs)
 macro(configure_quickjs_module_path)
   set(MODULE_PATH "")
 
-  #if(NOT "${SYSTEM_NAME}" STREQUAL "")
-  #  add_unique(MODULE_PATH "${QUICKJS_LIBRARY_DIR}/${SYSTEM_NAME}quickjs")
-  #endif()
+  # if(NOT "${SYSTEM_NAME}" STREQUAL "") add_unique(MODULE_PATH
+  # "${QUICKJS_LIBRARY_DIR}/${SYSTEM_NAME}quickjs") endif()
 
-  #dump(QUICKJS_C_MODULE_DIR)
-  #dump(QUICKJS_JS_MODULE_DIR)
+  # dump(QUICKJS_C_MODULE_DIR) dump(QUICKJS_JS_MODULE_DIR)
 
   add_unique(MODULE_PATH "${QUICKJS_C_MODULE_DIR}" "${QUICKJS_JS_MODULE_DIR}")
 
@@ -232,8 +243,9 @@ macro(configure_quickjs_module_path)
     string(REPLACE ":" ";" MODULE_PATH "${MODULE_PATH}")
   endif(NOT WIN32)
 
-  set(QUICKJS_MODULE_PATH "${MODULE_PATH}" CACHE PATH
-                                                 "QuickJS modules search path")
+  set(QUICKJS_MODULE_PATH
+      "${MODULE_PATH}"
+      CACHE PATH "QuickJS modules search path")
 
   message(STATUS "\tmodule search path: ${QUICKJS_MODULE_PATH}")
 endmacro(configure_quickjs_module_path)

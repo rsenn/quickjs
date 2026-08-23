@@ -26,8 +26,8 @@ set(CMAKE_MODULE_PATH /opt/wasienv/lib/cmake)
 set(CMAKE_PREFIX_PATH /opt/wasienv)
 set(CMAKE_SYSTEM_PREFIX_PATH /opt/wasienv)
 
-# adjust the default behaviour of the FIND_XXX() commands: search headers and libraries in the
-# target environment, search programs in the host environment
+# adjust the default behaviour of the FIND_XXX() commands: search headers and
+# libraries in the target environment, search programs in the host environment
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
