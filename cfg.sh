@@ -426,12 +426,12 @@ cfg-android64() {
 }
  
 cfg-emscripten() {
- (CC="emcc" CXX="em++" \
+ (: ${builddir=build/emscripten}
+  CC="emcc" CXX="em++" \
   LDFLAGS="-sWASM=1 -sLLD_REPORT_UNDEFINED" \
-  CFLAGS="-sUSE_PTHREADS=0 -DEMSCRIPTEN=1" \
-  CXXFLAGS="-sUSE_PTHREADS=0 -DEMSCRIPTEN=1" \
-  TOOLCHAIN="${EMSCRIPTEN:=dirname $(which emcc)}/cmake/Modules/Platform/Emscripten.cmake" \
-  builddir=build/emscripten \
+  CFLAGS="-DEMSCRIPTEN=1" \
+  CXXFLAGS="-DEMSCRIPTEN=1" \
+  TOOLCHAIN="${EMSCRIPTEN:=$(dirname $(which emcc))}/cmake/Modules/Platform/Emscripten.cmake" \
   cfg \
     -DCMAKE_EXE_LINKER_FLAGS="-s WASM=1 -sEXPORTED_RUNTIME_METHODS=['callMain'] -sINVOKE_RUN=0" \
     -DCMAKE_EXECUTABLE_SUFFIX=".html" \
