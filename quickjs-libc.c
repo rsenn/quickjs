@@ -2244,12 +2244,20 @@ js_os_poll(JSContext* ctx) {
 
       assert(fds[i].fd == rh->fd);
 
-      if(fds[i].revents & (POLLIN /*|POLLHUP*/)) {
+      /* POLLHUP/POLLERR/POLLNVAL are reported regardless of which events were
+         requested, so each side's check must be gated on that side's own handler
+         being registered (not just checked once for both, like the old
+         `if(JS_IsNull(rw_func[0]) && JS_IsNull(rw_func[1])) continue;` above does) -
+         otherwise a fd registered with only a write handler whose peer hangs up
+         would try to call_handler() a JS_NULL rw_func[0]. Both POLLIN and hangup/
+         error must count as "readable" here: a read on a hung-up/EOF-only fd
+         returns 0 immediately rather than blocking, exactly like real data would. */
+      if(!JS_IsNull(rh->rw_func[0]) && (fds[i].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL))) {
         call_handler(ctx, rh->rw_func[0]);
         /* must stop because the list may have been modified */
         goto done;
       }
-      if(fds[i].revents & POLLOUT) {
+      if(!JS_IsNull(rh->rw_func[1]) && (fds[i].revents & (POLLOUT | POLLHUP | POLLERR | POLLNVAL))) {
         call_handler(ctx, rh->rw_func[1]);
         /* must stop because the list may have been modified */
         goto done;
