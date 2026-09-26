@@ -7,9 +7,6 @@
 /* CONFIG_ALL_UNICODE - Define this if you want all-Unicode support */
 #cmakedefine CONFIG_ALL_UNICODE 1
 
-/* CONFIG_BIGNUM - Define this if you want BigNum support */
-#cmakedefine CONFIG_BIGNUM 1
-
 /* CONFIG_PRINTF_RNDN - define it if printf uses the RNDN rounding mode instead of RNDNA */
 #cmakedefine CONFIG_PRINTF_RNDN 1
 
