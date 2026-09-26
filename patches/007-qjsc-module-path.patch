@@ -1,0 +1,59 @@
+# Makes qjsc resolve bare module specifiers via QUICKJS_MODULE_PATH.
+#
+# jsc_module_loader() only opened specifiers as files relative to the cwd,
+# so `qjsc -m` on a script importing a native module such as 'path' failed
+# with "could not load module filename 'path'" even though qjs (patched by
+# 002-find-module.patch) loads it fine. Bare names now go through
+# js_find_module() from quickjs-find-module.c; a hit ending in ".so" is
+# treated as a dynamically loaded binary module, anything else is compiled.
+#
+diff --git a/qjsc.c b/qjsc.c
+index ff7d5aa..9e57cd6 100644
+--- a/qjsc.c
++++ b/qjsc.c
+@@ -240,21 +240,34 @@ static void find_unique_cname(char *cname, size_t cname_size)
+     pstrcpy(cname, cname_size, cname1);
+ }
+ 
++char *js_find_module(JSContext *ctx, const char *module_name);
++
+ JSModuleDef *jsc_module_loader(JSContext *ctx,
+                                const char *module_name, void *opaque,
+                                JSValueConst attributes)
+ {
+     JSModuleDef *m;
+     namelist_entry_t *e;
++    char *resolved = NULL;
++    const char *file = module_name;
++
++    /* bare specifiers are looked up on QUICKJS_MODULE_PATH, like qjs does */
++    if (!strchr(module_name, '.') && !strchr(module_name, '/')) {
++        resolved = js_find_module(ctx, module_name);
++        if (resolved)
++            file = resolved;
++    }
+ 
+     /* check if it is a declared C or system module */
+     e = namelist_find(&cmodule_list, module_name);
+     if (e) {
++        js_free(ctx, resolved);
+         /* add in the static init module list */
+         namelist_add(&init_module_list, e->name, e->short_name, 0);
+         /* create a dummy module */
+         m = JS_NewCModule(ctx, module_name, js_module_dummy_init);
+-    } else if (has_suffix(module_name, ".so")) {
++    } else if (has_suffix(file, ".so")) {
++        js_free(ctx, resolved);
+         fprintf(stderr, "Warning: binary module '%s' will be dynamically loaded\n", module_name);
+         /* create a dummy module */
+         m = JS_NewCModule(ctx, module_name, js_module_dummy_init);
+@@ -267,7 +280,8 @@ JSModuleDef *jsc_module_loader(JSContext *ctx,
+         char cname[1024];
+         int res;
+         
+-        buf = js_load_file(ctx, &buf_len, module_name);
++        buf = js_load_file(ctx, &buf_len, file);
++        js_free(ctx, resolved);
+         if (!buf) {
+             JS_ThrowReferenceError(ctx, "could not load module filename '%s'",
+                                    module_name);
