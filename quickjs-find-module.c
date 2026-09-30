@@ -38,7 +38,7 @@ const char js_default_module_path[] =
 #ifdef HOST_SYSTEM_NAME
     QUICKJS_PREFIX "/lib/" HOST_SYSTEM_NAME "/quickjs" LISTSEP_STR
 #endif
-        QUICKJS_PREFIX "/lib/quickjs"
+    QUICKJS_PREFIX "/lib/quickjs"
 #endif
     ;
 
@@ -57,10 +57,8 @@ strchrs(const char* in, const char needles[]) {
 char*
 js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
   const char *module_path, *p, *q;
-  char  filename[PATH_MAX];
-  size_t n, m;
   struct stat st;
-  char listsep[3] = { LISTSEP_CHAR, ';', 0}, pathsep = PATHSEP_CHAR;
+  char filename[PATH_MAX], listsep[3] = {LISTSEP_CHAR, ';', 0}, pathsep = PATHSEP_CHAR;
 
   if((module_path = getenv("QUICKJS_MODULE_PATH")) == NULL)
     module_path = js_default_module_path;
@@ -71,7 +69,7 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
   }
 
   for(p = module_path; *p; p = q) {
-    n =  strchrs(p, listsep);
+    size_t m, n = strchrs(p, listsep);
 
     if(*(q = p + n))
       ++q;
@@ -95,13 +93,10 @@ js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
 char*
 js_find_module(JSContext* ctx, const char* module_name) {
   char* ret = NULL;
-  size_t len;
-
-  len = strlen(module_name);
+  size_t len = strlen(module_name);
 
   if(!strchr(module_name, '.')) {
-    ret = js_find_module_ext(ctx, module_name, CONFIG_SHEXT);
-    if(ret == NULL)
+    if((ret = js_find_module_ext(ctx, module_name, CONFIG_SHEXT)) == NULL)
       ret = js_find_module_ext(ctx, module_name, ".js");
   } else {
     ret = js_find_module_ext(ctx, module_name, "");
@@ -112,14 +107,14 @@ js_find_module(JSContext* ctx, const char* module_name) {
 
 static JSModuleDef*
 js_find_module_path(JSContext* ctx, const char* module_name, void* opaque, JSValueConst attributes) {
-  char* filename;
   JSModuleDef* ret = NULL;
-  filename =
-      module_name[strchrs(module_name, "." PATHSEP_STR)] ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
+  char* filename = module_name[strchrs(module_name, "." PATHSEP_STR)] ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
+
   if(filename) {
     ret = js_module_loader(ctx, filename, opaque, attributes);
     js_free(ctx, filename);
   }
+
   return ret;
 }
 
