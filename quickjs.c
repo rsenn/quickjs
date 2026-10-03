@@ -7508,10 +7508,12 @@ static int find_line_num(JSContext *ctx, JSFunctionBytecode *b,
         }
     }
  done:
-    *pcol_num = col_num;
+    if (pcol_num)
+        *pcol_num = col_num;
     return line_num;
  fail:
-    *pcol_num = 0;
+    if (pcol_num)
+        *pcol_num = 0;
     return 0;
 }
 
@@ -17936,6 +17938,9 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
         int call_argc;
         JSValue *call_argv;
 
+        /* sf->cur_pc is still uninitialized here; the debugger reads it (pc - 1 is
+           the first opcode, as with the per-opcode checks) */
+        sf->cur_pc = pc + 1;
         js_debugger_check(ctx, NULL);
 
         SWITCH(pc) {

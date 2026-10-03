@@ -34,3 +34,6 @@
 	path = qjs-debugger
 	url = git@github.com:rsenn/qjs-debugger.git
 	branch = main
+[submodule "qjs-opencv"]
+	path = qjs-opencv
+	url = git@github.com:rsenn/qjs-opencv.git
