@@ -11,9 +11,45 @@
 # js_module_loader_path()/js_find_module_path() and register the loader
 # with JS_SetModuleLoaderFunc() instead.
 #
+# qjs.c only uses js_module_loader_path() when CONFIG_FIND_MODULE is defined
+# (-DCONFIG_FIND_MODULE, or the CONFIG_FIND_MODULE cmake option from patch
+# 005 via quickjs-config.h); otherwise it registers the stock
+# js_module_loader. When the option is off quickjs-find-module.c is not
+# compiled into the library at all.
+#
+diff --git a/qjs.c b/qjs.c
+index 3ee6340..6caf49e 100644
+--- a/qjs.c
++++ b/qjs.c
+@@ -43,6 +43,13 @@
+ #include "cutils.h"
+ #include "quickjs-libc.h"
+ 
++#ifdef CONFIG_FIND_MODULE
++JSModuleDef *js_module_loader_path(JSContext *ctx, const char *module_name, void *opaque, JSValueConst attributes);
++#define QJS_MODULE_LOADER js_module_loader_path
++#else
++#define QJS_MODULE_LOADER js_module_loader
++#endif
++
+ extern const uint8_t qjsc_repl[];
+ extern const uint32_t qjsc_repl_size;
+ 
+@@ -474,7 +481,7 @@ int main(int argc, char **argv)
+     }
+ 
+     /* loader for ES6 modules */
+-    JS_SetModuleLoaderFunc2(rt, NULL, js_module_loader, js_module_check_attributes, NULL);
++    JS_SetModuleLoaderFunc2(rt, NULL, QJS_MODULE_LOADER, js_module_check_attributes, NULL);
+ 
+     if (dump_unhandled_promise_rejection) {
+         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,
+diff --git a/quickjs-find-module.c b/quickjs-find-module.c
+new file mode 100644
+index 0000000..e400bc7
 --- /dev/null
 +++ b/quickjs-find-module.c
-@@ -0,0 +1,141 @@
+@@ -0,0 +1,136 @@
 +#include "quickjs-config.h"
 +#include "quickjs.h"
 +#include "cutils.h"
@@ -54,7 +90,7 @@
 +#ifdef HOST_SYSTEM_NAME
 +    QUICKJS_PREFIX "/lib/" HOST_SYSTEM_NAME "/quickjs" LISTSEP_STR
 +#endif
-+        QUICKJS_PREFIX "/lib/quickjs"
++    QUICKJS_PREFIX "/lib/quickjs"
 +#endif
 +    ;
 +
@@ -73,10 +109,8 @@
 +char*
 +js_find_module_ext(JSContext* ctx, const char* module_name, const char* ext) {
 +  const char *module_path, *p, *q;
-+  char  filename[PATH_MAX];
-+  size_t n, m;
 +  struct stat st;
-+  char listsep[3] = { LISTSEP_CHAR, ';', 0}, pathsep = PATHSEP_CHAR;
++  char filename[PATH_MAX], listsep[3] = {LISTSEP_CHAR, ';', 0}, pathsep = PATHSEP_CHAR;
 +
 +  if((module_path = getenv("QUICKJS_MODULE_PATH")) == NULL)
 +    module_path = js_default_module_path;
@@ -87,7 +121,7 @@
 +  }
 +
 +  for(p = module_path; *p; p = q) {
-+    n =  strchrs(p, listsep);
++    size_t m, n = strchrs(p, listsep);
 +
 +    if(*(q = p + n))
 +      ++q;
@@ -111,13 +145,10 @@
 +char*
 +js_find_module(JSContext* ctx, const char* module_name) {
 +  char* ret = NULL;
-+  size_t len;
-+
-+  len = strlen(module_name);
++  size_t len = strlen(module_name);
 +
 +  if(!strchr(module_name, '.')) {
-+    ret = js_find_module_ext(ctx, module_name, CONFIG_SHEXT);
-+    if(ret == NULL)
++    if((ret = js_find_module_ext(ctx, module_name, CONFIG_SHEXT)) == NULL)
 +      ret = js_find_module_ext(ctx, module_name, ".js");
 +  } else {
 +    ret = js_find_module_ext(ctx, module_name, "");
@@ -128,14 +159,14 @@
 +
 +static JSModuleDef*
 +js_find_module_path(JSContext* ctx, const char* module_name, void* opaque, JSValueConst attributes) {
-+  char* filename;
 +  JSModuleDef* ret = NULL;
-+  filename =
-+      module_name[strchrs(module_name, "." PATHSEP_STR)] ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
++  char* filename = module_name[strchrs(module_name, "." PATHSEP_STR)] ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
++
 +  if(filename) {
 +    ret = js_module_loader(ctx, filename, opaque, attributes);
 +    js_free(ctx, filename);
 +  }
++
 +  return ret;
 +}
 +
@@ -155,23 +186,3 @@
 +js_std_get_module_loader_func() {
 +  return module_loader_path;
 +}
---- a/qjs.c	2025-09-18 10:25:07.000000000 +0200
-+++ b/qjs.c	2026-07-20 00:20:33.814246627 +0200
-@@ -43,6 +43,8 @@
- #include "cutils.h"
- #include "quickjs-libc.h"
- 
-+JSModuleDef *js_module_loader_path(JSContext *ctx, const char *module_name, void *opaque, JSValueConst attributes);
-+
- extern const uint8_t qjsc_repl[];
- extern const uint32_t qjsc_repl_size;
- 
-@@ -465,7 +467,7 @@
-     }
- 
-     /* loader for ES6 modules */
--    JS_SetModuleLoaderFunc2(rt, NULL, js_module_loader, js_module_check_attributes, NULL);
-+    JS_SetModuleLoaderFunc2(rt, NULL, js_module_loader_path, js_module_check_attributes, NULL);
- 
-     if (dump_unhandled_promise_rejection) {
-         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,

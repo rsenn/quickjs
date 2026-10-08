@@ -76,4 +76,3 @@ if(NOT CMAKE_ARCH_LIBDIR)
 endif(NOT CMAKE_ARCH_LIBDIR)
 
 # message("${CMAKE_C_COMPILER}: ${CMAKE_C_COMPILER}")
-message(STATUS "Architecture-specific library directory: ${CMAKE_ARCH_LIBDIR}")

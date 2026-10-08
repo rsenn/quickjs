@@ -43,13 +43,16 @@
 #include "cutils.h"
 #include "list.h"
 #include "quickjs.h"
-#include "quickjs-debugger.h"
 #include "libregexp.h"
 #include "libunicode.h"
 #include "dtoa.h"
 
 #ifdef HAVE_QUICKJS_CONFIG_H
 #include "quickjs-config.h"
+#endif
+
+#ifdef QUICKJS_DEBUGGER
+#include "quickjs-debugger.h"
 #endif
 
 #define OPTIMIZE         1
@@ -394,7 +397,9 @@ struct JSRuntime {
     JSShape **shape_hash;
     void *user_opaque;
 
+#ifdef QUICKJS_DEBUGGER
     JSDebuggerInfo debugger_info;
+#endif
 };
 
 struct JSClass {
@@ -728,7 +733,9 @@ typedef struct JSFunctionBytecode {
         uint8_t *pc2line_buf;
         char *source;
     } debug;
+#ifdef QUICKJS_DEBUGGER
     struct JSDebuggerFunctionInfo debugger;
+#endif
 } JSFunctionBytecode;
 
 typedef struct JSBoundFunction {
@@ -2412,7 +2419,9 @@ void JS_SetRuntimeInfo(JSRuntime *rt, const char *s)
 
 void JS_FreeRuntime(JSRuntime *rt)
 {
+#ifdef QUICKJS_DEBUGGER
     js_debugger_free(rt, &rt->debugger_info);
+#endif
 
     struct list_head *el, *el1;
     int i;
@@ -2632,7 +2641,9 @@ JSContext *JS_NewContextRaw(JSRuntime *rt)
         return NULL;
     }
 
+#ifdef QUICKJS_DEBUGGER
     js_debugger_new_context(ctx);
+#endif
 
     return ctx;
 }
@@ -2811,7 +2822,9 @@ void JS_FreeContext(JSContext *ctx)
     }
 #endif
 
+#ifdef QUICKJS_DEBUGGER
     js_debugger_free_context(ctx);
+#endif
 
     js_free_modules(ctx, JS_FREE_MODULE_ALL);
 
@@ -7373,7 +7386,9 @@ JSValue JS_Throw(JSContext *ctx, JSValue obj)
     JS_FreeValue(ctx, rt->current_exception);
     rt->current_exception = obj;
     rt->current_exception_is_uncatchable = FALSE;
+#ifdef QUICKJS_DEBUGGER
     js_debugger_exception(ctx);
+#endif
     return JS_EXCEPTION;
 }
 
@@ -17804,11 +17819,15 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
 
 #if !DIRECT_DISPATCH
 #define SWITCH(pc)      switch (opcode = *pc++)
+#ifdef QUICKJS_DEBUGGER
 #define CASE(op) \
     case op: \
         if (caller_ctx->rt->debugger_info.transport_close) \
             js_debugger_check(ctx, pc); \
         stub_##op
+#else
+#define CASE(op)        case op
+#endif
 #define DEFAULT         default
 #define BREAK           break
 #else
@@ -17822,6 +17841,7 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
 #include "quickjs-opcode.h"
         [ OP_COUNT ... 255 ] = &&case_default
     };
+#ifdef QUICKJS_DEBUGGER
     static const void * const debugger_dispatch_table[256] = {
 #define DEF(id, size, n_pop, n_push, f) && case_debugger_OP_ ## id,
 #if SHORT_OPCODES
@@ -17832,19 +17852,30 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
 #include "quickjs-opcode.h"
         [ OP_COUNT ... 255 ] = &&case_default
     };
+#endif /* QUICKJS_DEBUGGER */
+#ifdef QUICKJS_DEBUGGER
 #define SWITCH(pc)      goto *active_dispatch_table[opcode = *pc++];
+#else
+#define SWITCH(pc)      goto *dispatch_table[opcode = *pc++];
+#endif
 #ifdef OPCODE_ASM_LABEL
 #define CASE(op)        case_ ## op: asm volatile("label_" #op ":\n.globl label_" #op); dummy_case_ ## op
 #else
+#ifdef QUICKJS_DEBUGGER
 #define CASE(op) \
     case_debugger_##op: js_debugger_check(ctx, pc); \
     case_##op
+#else
+#define CASE(op)        case_##op
+#endif
 #endif
 #define DEFAULT         case_default
 #define BREAK           SWITCH(pc)
 
+#ifdef QUICKJS_DEBUGGER
     const void * const *active_dispatch_table =
         caller_ctx->rt->debugger_info.transport_close ? debugger_dispatch_table : dispatch_table;
+#endif
 #endif
 
     if (js_poll_interrupts(caller_ctx))
@@ -17940,8 +17971,10 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
 
         /* sf->cur_pc is still uninitialized here; the debugger reads it (pc - 1 is
            the first opcode, as with the per-opcode checks) */
+#ifdef QUICKJS_DEBUGGER
         sf->cur_pc = pc + 1;
         js_debugger_check(ctx, NULL);
+#endif
 
         SWITCH(pc) {
         CASE(OP_push_i32):
@@ -36240,8 +36273,10 @@ static void free_function_bytecode(JSRuntime *rt, JSFunctionBytecode *b)
         js_free_rt(rt, b->debug.pc2line_buf);
         js_free_rt(rt, b->debug.source);
 
+#ifdef QUICKJS_DEBUGGER
         if (b->debugger.breakpoints)
             js_free_rt(rt, b->debugger.breakpoints);
+#endif
     }
 
     remove_gc_object(&b->header);
@@ -61241,6 +61276,7 @@ int JS_AddIntrinsicWeakRef(JSContext *ctx)
     return 0;
 }
 
+#ifdef QUICKJS_DEBUGGER
 JSDebuggerLocation
 js_debugger_current_location(JSContext* ctx, const uint8_t* cur_pc) {
   JSDebuggerLocation location;
@@ -61685,3 +61721,4 @@ js_debugger_evaluate(JSContext* ctx, int stack_index, JSValue expression) {
   }
   return JS_UNDEFINED;
 }
+#endif /* QUICKJS_DEBUGGER */

@@ -4,7 +4,7 @@
 #error No quickjs-config.h
 #endif
 
-#ifdef CONFIG_DEBUGGER
+#ifdef QUICKJS_DEBUGGER
 #include "quickjs-debugger.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -198,4 +198,4 @@ js_debugger_wait_connection(JSContext* ctx, const char* address) {
   js_debugger_attach(ctx, js_transport_read, js_transport_write, js_transport_peek, js_transport_close, data);
 }
 
-#endif /* defined(CONFIG_DEBUGGER) */
+#endif /* defined(QUICKJS_DEBUGGER) */

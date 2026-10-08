@@ -240,7 +240,9 @@ static void find_unique_cname(char *cname, size_t cname_size)
     pstrcpy(cname, cname_size, cname1);
 }
 
+#ifdef CONFIG_FIND_MODULE
 char *js_find_module(JSContext *ctx, const char *module_name);
+#endif
 
 JSModuleDef *jsc_module_loader(JSContext *ctx,
                                const char *module_name, void *opaque,
@@ -251,12 +253,14 @@ JSModuleDef *jsc_module_loader(JSContext *ctx,
     char *resolved = NULL;
     const char *file = module_name;
 
+#ifdef CONFIG_FIND_MODULE
     /* bare specifiers are looked up on QUICKJS_MODULE_PATH, like qjs does */
     if (!strchr(module_name, '.') && !strchr(module_name, '/')) {
         resolved = js_find_module(ctx, module_name);
         if (resolved)
             file = resolved;
     }
+#endif
 
     /* check if it is a declared C or system module */
     e = namelist_find(&cmodule_list, module_name);

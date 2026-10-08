@@ -7,15 +7,20 @@
 # js_find_module() from quickjs-find-module.c; a hit ending in ".so" is
 # treated as a dynamically loaded binary module, anything else is compiled.
 #
+# The lookup is compiled only when CONFIG_FIND_MODULE is defined (see 002 and
+# 005); without it qjsc keeps the file-relative behaviour.
+#
 diff --git a/qjsc.c b/qjsc.c
-index ff7d5aa..9e57cd6 100644
+index ff7d5aa..dd1f13e 100644
 --- a/qjsc.c
 +++ b/qjsc.c
-@@ -240,21 +240,34 @@ static void find_unique_cname(char *cname, size_t cname_size)
+@@ -240,21 +240,38 @@ static void find_unique_cname(char *cname, size_t cname_size)
      pstrcpy(cname, cname_size, cname1);
  }
  
++#ifdef CONFIG_FIND_MODULE
 +char *js_find_module(JSContext *ctx, const char *module_name);
++#endif
 +
  JSModuleDef *jsc_module_loader(JSContext *ctx,
                                 const char *module_name, void *opaque,
@@ -26,12 +31,14 @@ index ff7d5aa..9e57cd6 100644
 +    char *resolved = NULL;
 +    const char *file = module_name;
 +
++#ifdef CONFIG_FIND_MODULE
 +    /* bare specifiers are looked up on QUICKJS_MODULE_PATH, like qjs does */
 +    if (!strchr(module_name, '.') && !strchr(module_name, '/')) {
 +        resolved = js_find_module(ctx, module_name);
 +        if (resolved)
 +            file = resolved;
 +    }
++#endif
  
      /* check if it is a declared C or system module */
      e = namelist_find(&cmodule_list, module_name);
@@ -47,7 +54,7 @@ index ff7d5aa..9e57cd6 100644
          fprintf(stderr, "Warning: binary module '%s' will be dynamically loaded\n", module_name);
          /* create a dummy module */
          m = JS_NewCModule(ctx, module_name, js_module_dummy_init);
-@@ -267,7 +280,8 @@ JSModuleDef *jsc_module_loader(JSContext *ctx,
+@@ -267,7 +284,8 @@ JSModuleDef *jsc_module_loader(JSContext *ctx,
          char cname[1024];
          int res;
          

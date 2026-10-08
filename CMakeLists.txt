@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 3.5)
 
 project(quickjs C)
 
-message("Building project [1;31m${PROJECT_NAME}[0m")
+message("")
+string(ASCII 27 ESC)
+message("${ESC}[1;36m== ${PROJECT_NAME} ==${ESC}[0m")
+
+# Keep the configure probes quiet; results are summarized below.
+set(CMAKE_REQUIRED_QUIET ON)
 
 set(DISABLE_WERROR TRUE)
 
@@ -25,16 +30,14 @@ if(WASI OR EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
   endif(WASI)
   option(CONFIG_WORKER "Enable Worker" OFF)
-  # NOTE: quickjs.c calls js_debugger_* unconditionally (no #ifdef
-  # CONFIG_DEBUGGER guards), so quickjs-debugger.c must always be compiled in or
-  # the link fails with undefined symbols. See BUGS.
-  option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
   option(CONFIG_DLFCN "Enable dlfcn module loader" OFF)
 else(WASI OR EMSCRIPTEN)
   option(CONFIG_WORKER "Enable Worker" ON)
-  option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
   option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
 endif(WASI OR EMSCRIPTEN)
+
+option(QUICKJS_DEBUGGER
+       "Enable the debugger (quickjs-debugger*.c and its hooks in quickjs.c)" ON)
 
 if(CONFIG_WORKER)
   set(USE_WORKER "${CONFIG_WORKER}")
@@ -70,17 +73,24 @@ if(EMSCRIPTEN)
   endif(EMSCRIPTEN_BUILD_REPL_HTML)
 endif(EMSCRIPTEN)
 
+option(CONFIG_FIND_MODULE
+       "Resolve bare module names on the module search path (quickjs-find-module.c)" ON)
 option(CONFIG_ALL_UNICODE "Enable all-Unicode support" OFF)
 option(CONFIG_CHECK_JSVALUE "JSValue consistency mode" OFF)
 
+set(CMAKE_MESSAGE_LOG_LEVEL_SAVED "${CMAKE_MESSAGE_LOG_LEVEL}")
+set(CMAKE_MESSAGE_LOG_LEVEL WARNING)
 include(FindThreads)
+set(CMAKE_MESSAGE_LOG_LEVEL "${CMAKE_MESSAGE_LOG_LEVEL_SAVED}")
 include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseMultiArch.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-libraries.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Functions.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Checks.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Compat.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/try-compiler.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckFlags.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-shared.cmake)
@@ -101,7 +111,6 @@ string(REGEX REPLACE "android[0-9]*" "android" HOST_SYSTEM_NAME
 set(HOST_SYSTEM "${HOST_SYSTEM_NAME}")
 set(TARGET_SYSTEM "${HOST_SYSTEM_NAME}")
 
-dump(HOST_SYSTEM TARGET_SYSTEM)
 
 set(MSYS
     FALSE
@@ -124,14 +133,19 @@ endif(C_STANDARD_FLAG)
 configure_quickjs()
 configure_quickjs_module_path()
 
-message(STATUS "!!! C module directory: ${QUICKJS_C_MODULE_DIR}")
 
 if(NOT QUICKJS_BUILD_ROOT)
   set(QUICKJS_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}")
 endif(NOT QUICKJS_BUILD_ROOT)
 
-message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")
-message(STATUS "System name: ${SYSTEM_NAME}")
+message_table(
+  "Platform"
+  "host" "${HOST_SYSTEM}"
+  "target" "${SYSTEM_NAME}"
+  "compiler" "${CMAKE_C_COMPILER}"
+  "build type" "${CMAKE_BUILD_TYPE}"
+  "C standard" "${C_STANDARD_VALUE}"
+  "arch libdir" "${CMAKE_ARCH_LIBDIR}")
 
 #[[if(NOT DEFINED BUILD_SHARED_LIBS)
   set(BUILD_SHARED_LIBS "${SUPPORT_SHARED_LIBS}" CACHE BOOL "Build quickjs as shared library")
@@ -155,11 +169,9 @@ set(SOCKET_LIBRARIES
 
 # link_libraries( ${LIBM} ${LIBPTHREAD})
 
-if(CONFIG_DEBUGGER)
-  message(STATUS "Enabling quickjs-debugger")
-
-  set(CONFIG_DEBUGGER 1)
-  # add_definitions(-DCONFIG_DEBUGGER)
+if(QUICKJS_DEBUGGER)
+  set(QUICKJS_DEBUGGER 1)
+  # add_definitions(-DQUICKJS_DEBUGGER)
   list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_DEFAULT_SOURCE=1 -D_BSD_SOURCE=1)
   check_include_file("netdb.h" HAVE_NETDB_H)
   if(HAVE_NETDB_H)
@@ -179,7 +191,7 @@ if(CONFIG_DEBUGGER)
       check_function_exists(inet_aton HAVE_INET_ATON)
     endif(NOT HAVE_INET_PTON)
   endif(NOT HAVE_GETHOSTBYNAME)
-endif(CONFIG_DEBUGGER)
+endif(QUICKJS_DEBUGGER)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
   set(DEBUG ON)
@@ -327,25 +339,19 @@ set(get_quickjs_cmake ${CMAKE_CURRENT_BINARY_DIR}/get_quickjs.cmake)
 macro(check_include NAME)
   string(TOUPPER "${NAME}" TMP)
   string(REPLACE . _ VARNAME "${TMP}")
-  set(CMAKE_REQUIRED_QUIET OFF)
-  message(STATUS "Checking for ${NAME} ...")
   check_include_file("${NAME}" "HAVE_${VARNAME}")
   set(FOUND "not found")
   if(HAVE_${VARNAME})
     list(APPEND CMAKE_EXTRA_INCLUDE_FILES "${NAME}")
     set(FOUND "found")
   endif(HAVE_${VARNAME})
-  message(STATUS "Checking for ${NAME} ... ${FOUND}")
 endmacro(check_include NAME)
 
 macro(check_function NAME)
   string(TOUPPER "${NAME}" TMP)
   string(REPLACE . _ VARNAME "${TMP}")
-  set(CMAKE_REQUIRED_QUIET OFF)
-  message(STATUS "Checking for ${NAME})() ...")
   check_function_exists("${NAME}" "HAVE_${VARNAME}")
   set(FOUND "not found")
-  message(STATUS "Checking for ${NAME}() ... ${FOUND}")
 endmacro(check_function NAME)
 
 check_include(signal.h)
@@ -413,8 +419,6 @@ macro(check_builtin NAME VAR)
       "${RESULT}"
       PARENT_SCOPE)
 
-  message(STATUS "Checking builtin ${NAME} -- ${MSG}")
-  set(CMAKE_REQUIRED_QUIET FALSE)
 endmacro(
   check_builtin
   NAME
@@ -513,7 +517,6 @@ endif(NOT HAVE_STDATOMIC_H)
 # list(JOIN CMAKE_EXTRA_INCLUDE_FILES " " EXTRA_INCLUDE_FILES)
 string(REPLACE ";" " " EXTRA_INCLUDE_FILES "${CMAKE_EXTRA_INCLUDE_FILES}")
 
-message(STATUS "Extra includes: ${EXTRA_INCLUDE_FILES}")
 
 if(HAVE_SIGNAL_H)
   list(APPEND CMAKE_EXTRA_INCLUDE_FILES "signal.h")
@@ -556,29 +559,29 @@ if(MSYS OR CYGWIN)
   add_definitions(-DDONT_HAVE_MALLOC_USABLE_SIZE=1)
 endif()
 
-check_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings"
+probe_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings"
             CMAKE_C_FLAGS)
 
-check_flags(
+probe_flags(
   "-Wall;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation"
   CMAKE_C_FLAGS_DEBUG)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL
                                              "RelWithDebInfo")
-  check_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
+  probe_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
 endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL
                                                 "RelWithDebInfo")
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   if(ANDROID)
-    check_flag("-O1" HAVE_OPT_NONE_FLAG OPT_NONE_FLAG)
+    probe_flag("-O1" HAVE_OPT_NONE_FLAG OPT_NONE_FLAG)
   else(ANDROID)
-    check_flag("-O0" HAVE_OPT_NONE_FLAG OPT_NONE_FLAG)
+    probe_flag("-O0" HAVE_OPT_NONE_FLAG OPT_NONE_FLAG)
   endif(ANDROID)
   # append_vars(${OPT_NONE_FLAG} CMAKE_C_FLAGS_DEBUG)
 endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
-check_flag("-flto" HAVE_LTO_FLAG)
+probe_flag("-flto" HAVE_LTO_FLAG)
 if(HAVE_LTO_FLAG)
   set(CONFIG_LTO
       TRUE
@@ -591,7 +594,6 @@ if(CONFIG_LTO)
 endif(CONFIG_LTO)
 
 if(ENABLE_LTO)
-  message(STATUS "Enabling link-time optimization")
   # append_vars("-flto" CMAKE_C_FLAGS CMAKE_EXE_LINKER_FLAGS)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
@@ -605,12 +607,10 @@ endif(WASI OR WASM)
 if(NOT HAVE_SIZEOF_SIGHANDLER_T)
   check_type_size(sighandler_t SIZEOF_SIGHANDLER_T)
   if(HAVE_SIZEOF_SIGHANDLER_T)
-    message(STATUS "Size of sighandler_t... ${SIZEOF_SIGHANDLER_T}")
   else(HAVE_SIZEOF_SIGHANDLER_T)
     check_type_size(__sighandler_t SIZEOF___SIGHANDLER_T)
     if(HAVE_SIZEOF___SIGHANDLER_T)
       add_definitions(-Dsighandler_t=__sighandler_t)
-      message(STATUS "Size of __sighandler_t... ${SIZEOF___SIGHANDLER_T}")
     endif(HAVE_SIZEOF___SIGHANDLER_T)
   endif(HAVE_SIZEOF_SIGHANDLER_T)
 endif(NOT HAVE_SIZEOF_SIGHANDLER_T)
@@ -716,18 +716,18 @@ string(REPLACE "-O3" "-Os" CMAKE_C_FLAGS_MINSIZEREL
 if(NOT WIN32)
   if(NOT MINGW)
     if(UNIX)
-      check_flag("-rdynamic" HAVE_LINK_RDYNAMIC_FLAG LINK_EXPORT)
+      probe_flag("-rdynamic" HAVE_LINK_RDYNAMIC_FLAG LINK_EXPORT)
     endif(UNIX)
   endif(NOT MINGW)
 endif(NOT WIN32)
 # message("LINK_EXPORT = ${LINK_EXPORT}")
 #[[
-check_flag("-Wno-sign-compare" HAVE_WARN_NO_SIGN_COMPARE_FLAG CMAKE_C_FLAGS)
-check_flag("-Wno-missing-field-initializers" HAVE_WARN_NO_MISSING_FIELD_INITIALIZERS_FLAG CMAKE_C_FLAGS)
-check_flag("-Wno-unused-parameter" HAVE_WARN_NO_UNUSED_PARAMETER_FLAG CMAKE_C_FLAGS)
-check_flag("-Wno-array-bounds" HAVE_WARN_NO_ARRAY_BOUNDS_FLAG CMAKE_C_FLAGS)
-check_flag("-Wno-format-truncation" HAVE_WARN_NO_FORMAT_TRUNCATION_FLAG CMAKE_C_FLAGS)
-check_flag("-Wno-discarded-qualifiers" HAVE_WARN_NO_DISCARDED_QUALIFIERS_FLAG CMAKE_C_FLAGS)
+probe_flag("-Wno-sign-compare" HAVE_WARN_NO_SIGN_COMPARE_FLAG CMAKE_C_FLAGS)
+probe_flag("-Wno-missing-field-initializers" HAVE_WARN_NO_MISSING_FIELD_INITIALIZERS_FLAG CMAKE_C_FLAGS)
+probe_flag("-Wno-unused-parameter" HAVE_WARN_NO_UNUSED_PARAMETER_FLAG CMAKE_C_FLAGS)
+probe_flag("-Wno-array-bounds" HAVE_WARN_NO_ARRAY_BOUNDS_FLAG CMAKE_C_FLAGS)
+probe_flag("-Wno-format-truncation" HAVE_WARN_NO_FORMAT_TRUNCATION_FLAG CMAKE_C_FLAGS)
+probe_flag("-Wno-discarded-qualifiers" HAVE_WARN_NO_DISCARDED_QUALIFIERS_FLAG CMAKE_C_FLAGS)
 ]]
 option(BUILD_QJSC "Build quickjs compiler" ON)
 
@@ -741,7 +741,6 @@ endif(
   OR EMSCRIPTEN)
 
 if(LIBDL)
-  message(STATUS "LIBDL = ${LIBDL}")
   link_libraries(${LIBDL})
 endif(LIBDL)
 
@@ -819,7 +818,6 @@ endif(BUILD_STATIC_LIBS)
 # message("target_link_libraries ${A_NAME} PRIVATE ${LIBM} ${LIBPTHREAD}")
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
-  message("Building shared library: YES")
   add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_INCLUDES}
                                 ${QUICKJS_SOURCES_DEBUGGER})
   set(LIB_TARGETS ${LIB_TARGETS} ${SO_NAME})
@@ -834,8 +832,6 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
     set(SO_PREFIX "lib")
   endif()
 
-  message("RPATH: ${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}")
-  message("QUICKJS_LIBRARY_DIR: ${QUICKJS_LIBRARY_DIR}")
   set_target_properties(
     ${SO_NAME}
     PROPERTIES SOVERSION "${QUICKJS_SOVERSION}"
@@ -855,7 +851,6 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
                                           ${SOCKET_LIBRARIES})
 
 else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
-  message("Building shared library: NO")
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 
 # dump(LIB_TARGETS) dump(SYSTEM_NAME) dump(HOST_SYSTEM_NAME) dump(DIET)
@@ -977,72 +972,57 @@ add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(QUICKJS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake)
+
 set(MODULE_SUBDIRS "")
+add_quickjs_modules_subdirs(
+  GLFW
+  NanoVG
+  ImGui:OFF
+  FFI
+  Net:OFF
+  LWS
+  Modules
+  OpenCV:OFF
+  Sound:OFF
+  Debugger:${QUICKJS_DEBUGGER}
+)
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjs-glfw)
-  option(MODULE_GLFW "Enable GLFW module" OFF)
-  if(MODULE_GLFW)
-    list(APPEND MODULE_SUBDIRS qjs-glfw)
-  endif(MODULE_GLFW)
-endif(EXISTS qjs-glfw)
+get_property(FLAGS_OK GLOBAL PROPERTY QJS_FLAGS_OK)
+get_property(FLAGS_FAIL GLOBAL PROPERTY QJS_FLAGS_FAIL)
+list(REMOVE_DUPLICATES FLAGS_OK)
+list(REMOVE_DUPLICATES CMAKE_EXTRA_INCLUDE_FILES)
+string(REPLACE ";" " " EXTRA_INCLUDE_FILES "${CMAKE_EXTRA_INCLUDE_FILES}")
+separate_arguments(SUMMARY_C_FLAGS UNIX_COMMAND "${CMAKE_C_FLAGS}")
+list(REMOVE_DUPLICATES SUMMARY_C_FLAGS)
+string(REPLACE ";" " " SUMMARY_C_FLAGS "${SUMMARY_C_FLAGS}")
+if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
+  set(LIBRARY_KIND "shared (rpath ${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR})")
+else()
+  set(LIBRARY_KIND "static")
+endif()
+if(QUICKJS_DEBUGGER)
+  set(DEBUGGER_STATE "enabled")
+endif()
+if(CONFIG_FIND_MODULE)
+  set(FIND_MODULE_STATE "enabled")
+endif()
+if(ENABLE_LTO)
+  set(LTO_STATE "enabled")
+elseif(HAVE_LTO_FLAG)
+  set(LTO_STATE "supported, off (-DENABLE_LTO=ON)")
+endif()
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjs-nanovg)
-  option(MODULE_NANOVG "Enable NanoVG module" OFF)
-  if(MODULE_NANOVG)
-    list(APPEND MODULE_SUBDIRS qjs-nanovg)
-  endif(MODULE_NANOVG)
-endif(EXISTS qjs-nanovg)
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjs-imgui)
-  option(MODULE_IMGUI "Enable ImGui module" OFF)
-  if(MODULE_IMGUI)
-    list(APPEND MODULE_SUBDIRS qjs-imgui)
-  endif(MODULE_IMGUI)
-endif(EXISTS qjs-imgui)
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjs-ffi)
-  option(MODULE_FFI "Enable FFI module" ON)
-  if(MODULE_FFI)
-    list(APPEND MODULE_SUBDIRS qjs-ffi)
-  endif(MODULE_FFI)
-endif(EXISTS qjs-ffi)
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjs-net)
-  option(MODULE_NET "Enable qjs-net module" OFF)
-  if(MODULE_NET)
-    list(APPEND MODULE_SUBDIRS qjs-net)
-  endif(MODULE_NET)
-endif(EXISTS qjs-net)
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjs-lws)
-  option(MODULE_LWS "Enable qjs-lws module" OFF)
-  if(MODULE_LWS)
-    list(APPEND MODULE_SUBDIRS qjs-lws)
-  endif(MODULE_LWS)
-endif(EXISTS qjs-lws)
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules)
-  option(MODULE_MODULES "Enable MODULES module" ON)
-  if(MODULE_MODULES)
-    list(APPEND MODULE_SUBDIRS qjs-modules)
-  endif(MODULE_MODULES)
-endif(EXISTS qjs-modules)
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjs-sound)
-  option(MODULE_SOUND "Enable qjs-sound module" OFF)
-  if(MODULE_SOUND)
-    list(APPEND MODULE_SUBDIRS qjs-sound)
-  endif(MODULE_SOUND)
-endif(EXISTS qjs-sound)
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjs-debugger)
-  option(MODULE_DEBUGGER "Enable qjs-debugger" ON)
-  if(MODULE_DEBUGGER)
-    list(APPEND MODULE_SUBDIRS qjs-debugger)
-  endif(MODULE_DEBUGGER)
-endif(EXISTS qjs-debugger)
-
-message(STATUS "Module subdirectories: ${MODULE_SUBDIRS}")
+message_table(
+  "Build"
+  "library" "${LIBRARY_KIND}"
+  "debugger" "${DEBUGGER_STATE}"
+  "find-module" "${FIND_MODULE_STATE}"
+  "LTO" "${LTO_STATE}"
+  "libdl" "${LIBDL}"
+  "headers" "${EXTRA_INCLUDE_FILES}"
+  "C flags" "${SUMMARY_C_FLAGS}"
+  "unsupported" "${FLAGS_FAIL}")
 
 set(QUICKJS_PREFIX
     "${CMAKE_INSTALL_PREFIX}"
@@ -1051,9 +1031,20 @@ set(QUICKJS_SOURCES_ROOT
     "${CMAKE_CURRENT_SOURCE_DIR}"
     CACHE PATH "QuickJS source directory")
 
+option(QUICKJS_VERBOSE_MODULES "Show the configure output of each module" OFF)
+
 foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
-    add_subdirectory(${MODULE_SUBDIR})
+    if(QUICKJS_VERBOSE_MODULES)
+      add_subdirectory(${MODULE_SUBDIR})
+    else(QUICKJS_VERBOSE_MODULES)
+      # Only warnings and errors from the modules; progress is one line each.
+      message(STATUS "Module ${MODULE_SUBDIR}")
+      set(MODULE_LOG_LEVEL_SAVED "${CMAKE_MESSAGE_LOG_LEVEL}")
+      set(CMAKE_MESSAGE_LOG_LEVEL WARNING)
+      add_subdirectory(${MODULE_SUBDIR})
+      set(CMAKE_MESSAGE_LOG_LEVEL "${MODULE_LOG_LEVEL_SAVED}")
+    endif(QUICKJS_VERBOSE_MODULES)
   endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
 endforeach(MODULE_SUBDIR ${MODULE_SUBDIRS})
 

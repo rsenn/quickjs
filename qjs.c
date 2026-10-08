@@ -47,7 +47,12 @@
 #include "quickjs-config.h"
 #endif
 
+#ifdef CONFIG_FIND_MODULE
 JSModuleDef *js_module_loader_path(JSContext *ctx, const char *module_name, void *opaque, JSValueConst attributes);
+#define QJS_MODULE_LOADER js_module_loader_path
+#else
+#define QJS_MODULE_LOADER js_module_loader
+#endif
 
 extern const uint8_t qjsc_repl[];
 extern const uint32_t qjsc_repl_size;
@@ -480,7 +485,7 @@ int main(int argc, char **argv)
     }
 
     /* loader for ES6 modules */
-    JS_SetModuleLoaderFunc2(rt, NULL, js_module_loader_path, js_module_check_attributes, NULL);
+    JS_SetModuleLoaderFunc2(rt, NULL, QJS_MODULE_LOADER, js_module_check_attributes, NULL);
 
     if (dump_unhandled_promise_rejection) {
         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,

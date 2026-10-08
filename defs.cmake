@@ -38,7 +38,6 @@ set(QUICKJS_INCLUDES
     libunicode.h
     list.h
     quickjs-atom.h
-    quickjs-debugger.h
     quickjs-libc.h
     quickjs-opcode.h
     quickjs.h
@@ -51,11 +50,14 @@ set(QUICKJS_SOURCES
     ${QUICKJS_SOURCES_ROOT}/libunicode.c
     ${QUICKJS_SOURCES_ROOT}/quickjs.c
     ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c
-    ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c
     ${QUICKJS_INCLUDES})
 
-# message("CONFIG_DEBUGGER = ${CONFIG_DEBUGGER}")
-if(CONFIG_DEBUGGER)
+if(CONFIG_FIND_MODULE)
+  list(APPEND QUICKJS_SOURCES ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c)
+endif(CONFIG_FIND_MODULE)
+
+if(QUICKJS_DEBUGGER)
+  list(APPEND QUICKJS_INCLUDES ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.h)
   set(QUICKJS_SOURCES
       ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
       ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
@@ -63,8 +65,7 @@ if(CONFIG_DEBUGGER)
   # set(QUICKJS_SOURCES ${QUICKJS_SOURCES}
   # ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
   # ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
-  message(STATUS "Enabling quickjs-debugger")
-endif(CONFIG_DEBUGGER)
+endif(QUICKJS_DEBUGGER)
 
 if(WIN32)
   set(QUICKJS_SOURCES ${QUICKJS_SOURCES} quickjs.def)

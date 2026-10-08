@@ -2,7 +2,7 @@
 #include "quickjs-config.h"
 #endif
 
-#ifdef CONFIG_DEBUGGER
+#ifdef QUICKJS_DEBUGGER
 
 #ifdef __MSYS__
 #define __INSIDE_CYGWIN_NET__ 1
@@ -179,4 +179,4 @@ js_debugger_wait_connection(JSContext* ctx, const char* address) {
   js_debugger_attach(ctx, js_transport_read, js_transport_write, js_transport_peek, js_transport_close, data);
 }
 
-#endif /* defined(CONFIG_DEBUGGER) */
+#endif /* defined(QUICKJS_DEBUGGER) */

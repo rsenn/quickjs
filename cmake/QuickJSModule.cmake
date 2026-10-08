@@ -99,7 +99,7 @@ function(make_module_header SOURCE)
   make_script(
     "${SCRIPT}"
     "message(\"Generating module '${NAME}'\")\nremake_module(${SOURCE})\n"
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Functions.cmake;${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Compat.cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake"
   )
   add_custom_target(
     ${BASE}.h ALL
@@ -324,6 +324,37 @@ function(make_module FNAME)
                           "${CMAKE_CURRENT_BINARY_DIR}")
   target_link_libraries(${TARGET_NAME}-static INTERFACE ${QUICKJS_LIBRARY})
 
+endfunction()
+
+function(add_quickjs_modules_subdirs)
+  set(subdirs "")
+  
+  foreach(arg ${ARGN})
+    # Check if the argument specifies a custom default (e.g., ImGui:OFF)
+    if(arg MATCHES "^([^:]+):(.+)$")
+      set(mod "${CMAKE_MATCH_1}")
+      set(default_val "${CMAKE_MATCH_2}")
+    else()
+      set(mod "${arg}")
+      set(default_val "ON")
+    endif()
+
+    string(TOLOWER "${mod}" mod_lower)
+    set(subdir "qjs-${mod_lower}")
+
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}")
+      string(TOUPPER "${mod}" mod_upper)
+      set(option_name "MODULE_${mod_upper}")
+
+      option(${option_name} "Enable ${mod} module" ${default_val})
+      if(${option_name})
+        list(APPEND subdirs "${subdir}")
+      endif()
+    endif()
+  endforeach()
+
+  # Set MODULE_SUBDIRS in the parent scope
+  set(MODULE_SUBDIRS "${subdirs}" PARENT_SCOPE)
 endfunction()
 
 if(WASI OR EMSCRIPTEN)

@@ -5,6 +5,18 @@
 # qjs-* module subdirectories (qjs-ffi, qjs-modules, qjs-debugger, ...) if
 # present -- see MODULE_* options in CMakeLists.txt.
 #
+# Regenerated from the current tree: the cmake system now takes its helper
+# functions from the qjs-modules submodule (qjs-modules/cmake/Functions.cmake,
+# Checks.cmake and Compat.cmake) instead of a local cmake/functions.cmake,
+# so qjs-modules must be checked out next to it. Configure output is a short
+# set of tables (message_table); module subdirectories only show warnings
+# unless -DQUICKJS_VERBOSE_MODULES=ON. New options:
+#   * QUICKJS_DEBUGGER (ON)   - build quickjs-debugger*.c and enable the
+#     hooks in quickjs.c (renamed from CONFIG_DEBUGGER); qjs-debugger is
+#     skipped when it is off.
+#   * CONFIG_FIND_MODULE (ON) - build quickjs-find-module.c and let qjs/qjsc
+#     resolve bare module names on the module search path.
+#
 # Apply after patches/001, 002 and 004 (003 doesn't apply to
 # quickjs-2026-06-04 -- see its own header). Three small companion hunks
 # in quickjs.c/qjs.c/qjsc.c add '#ifdef HAVE_QUICKJS_CONFIG_H / #include
@@ -26,7 +38,7 @@
 #     bignum calculator; QJSCALC_SOURCES is empty and everything
 #     downstream of it is skipped when it's absent).
 #
-# Verified end-to-end against quickjs-2026-06-04 with patches
+# Originally verified end-to-end against quickjs-2026-06-04 with patches
 # 001+002+004 applied: cmake -S . -B build && cmake --build build
 # succeeds (qjs, qjsc, libquickjs.so), `qjs --help` reports
 # "QuickJS version 2026-06-04", `qjs -e '1+2'`-style eval works, and
@@ -42,15 +54,20 @@ index 0000000..84c048a
 +/build/
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 new file mode 100644
-index 0000000..4ab56d7
+index 0000000..62c749b
 --- /dev/null
 +++ b/CMakeLists.txt
-@@ -0,0 +1,883 @@
-+# Copyright (c) 2020 Kosaki Mezumona This cmake script is distributed under the MIT License. See LICENSE for more details.
+@@ -0,0 +1,1057 @@
 +cmake_minimum_required(VERSION 3.5)
++
 +project(quickjs C)
 +
-+message("Building project [1;31m${PROJECT_NAME}[0m")
++message("")
++string(ASCII 27 ESC)
++message("${ESC}[1;36m== ${PROJECT_NAME} ==${ESC}[0m")
++
++# Keep the configure probes quiet; results are summarized below.
++set(CMAKE_REQUIRED_QUIET ON)
 +
 +set(DISABLE_WERROR TRUE)
 +
@@ -59,34 +76,81 @@ index 0000000..4ab56d7
 +                                               RelWithDebInfo)
 +endif(CACHE{CMAKE_BUILD_TYPE})
 +
-+option(CONFIG_BIGNUM "Enable bignum support" ON)
-+option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
++option(BUILD_STATIC_LIBS "Build libquickjs.a" ON)
++
 +option(CONFIG_ATOMICS "Enable atomics" ON)
 +
 +if(WASI OR EMSCRIPTEN)
-+  set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
++  if(WASI)
++    # WASI builds have no JS glue, so the build product is the raw .wasm module.
++    # Emscripten instead ships its own JS/Node runtime alongside the .wasm (the
++    # default CMAKE_EXECUTABLE_SUFFIX of .js), which supplies the syscall shims
++    # that quickjs-libc.c needs (fork, dlopen, popen, socket calls, ...) and
++    # that a bare .wasm module has no way to satisfy on its own.
++    set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
++  endif(WASI)
 +  option(CONFIG_WORKER "Enable Worker" OFF)
-+  option(CONFIG_DEBUGGER "Enable debugger protocol" OFF)
++  option(CONFIG_DLFCN "Enable dlfcn module loader" OFF)
 +else(WASI OR EMSCRIPTEN)
 +  option(CONFIG_WORKER "Enable Worker" ON)
-+  option(CONFIG_DEBUGGER "Enable debugger protocol" ON)
++  option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
 +endif(WASI OR EMSCRIPTEN)
++
++option(QUICKJS_DEBUGGER
++       "Enable the debugger (quickjs-debugger*.c and its hooks in quickjs.c)" ON)
 +
 +if(CONFIG_WORKER)
 +  set(USE_WORKER "${CONFIG_WORKER}")
 +endif(CONFIG_WORKER)
 +
++if(EMSCRIPTEN)
++  option(EMSCRIPTEN_ALLOW_MEMORY_GROWTH
++         "Allow the wasm heap to grow at runtime" ON)
++  if(EMSCRIPTEN_ALLOW_MEMORY_GROWTH)
++    set(CMAKE_EXE_LINKER_FLAGS
++        "${CMAKE_EXE_LINKER_FLAGS} -sALLOW_MEMORY_GROWTH=1")
++  endif(EMSCRIPTEN_ALLOW_MEMORY_GROWTH)
++  # quickjs-libc.c calls popen()/pclose() (used by std.popen()), which the wasm
++  # sandbox has no equivalent for. Leave the symbol unresolved at link time
++  # instead of failing the build; std.popen() will simply be unavailable at
++  # runtime.
++  set(CMAKE_EXE_LINKER_FLAGS
++      "${CMAKE_EXE_LINKER_FLAGS} -sERROR_ON_UNDEFINED_SYMBOLS=0")
++
++  option(EMSCRIPTEN_BUILD_REPL_HTML
++         "Also emit qjs.html: a browser demo page driving the qjs REPL" ON)
++  if(EMSCRIPTEN_BUILD_REPL_HTML)
++    set(CMAKE_EXECUTABLE_SUFFIX ".html")
++    # qjs.c's normal interactive REPL blocks mid-interpreter waiting for the
++    # next byte of stdin, which in the browser would require Asyncify - and
++    # Asyncify can't unwind/rewind through JS_CallInternal()'s use of alloca().
++    # So qjs.html is instead built from a small eval-one-line driver (see
++    # cmake/emscripten/qjs-repl-wasm.c) that the page calls synchronously per
++    # Enter key press: no blocking read, no Asyncify.
++    set(CMAKE_EXE_LINKER_FLAGS
++        "${CMAKE_EXE_LINKER_FLAGS} -sEXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"UTF8ToString\"] --shell-file \"${CMAKE_CURRENT_SOURCE_DIR}/cmake/emscripten/shell-repl.html\""
++    )
++  endif(EMSCRIPTEN_BUILD_REPL_HTML)
++endif(EMSCRIPTEN)
++
++option(CONFIG_FIND_MODULE
++       "Resolve bare module names on the module search path (quickjs-find-module.c)" ON)
 +option(CONFIG_ALL_UNICODE "Enable all-Unicode support" OFF)
 +option(CONFIG_CHECK_JSVALUE "JSValue consistency mode" OFF)
 +
++set(CMAKE_MESSAGE_LOG_LEVEL_SAVED "${CMAKE_MESSAGE_LOG_LEVEL}")
++set(CMAKE_MESSAGE_LOG_LEVEL WARNING)
 +include(FindThreads)
++set(CMAKE_MESSAGE_LOG_LEVEL "${CMAKE_MESSAGE_LOG_LEVEL_SAVED}")
 +include(CheckIncludeFile)
 +include(CheckFunctionExists)
 +include(CheckSymbolExists)
 +include(CheckTypeSize)
 +include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseMultiArch.cmake)
 +include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-libraries.cmake)
-+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake)
++include(${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Functions.cmake)
++include(${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Checks.cmake)
++include(${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Compat.cmake)
 +include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/try-compiler.cmake)
 +include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckFlags.cmake)
 +include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/check-shared.cmake)
@@ -94,7 +158,8 @@ index 0000000..4ab56d7
 +include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindQuickJS.cmake)
 +
 +execute_process(
-+  COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
++  COMMAND ${CMAKE_C_COMPILER} -dumpmachine
++  OUTPUT_VARIABLE HOST_SYSTEM_NAME
 +  OUTPUT_STRIP_TRAILING_WHITESPACE)
 +
 +string(REGEX REPLACE "-unknown-" "-" SYSTEM_NAME "${SYSTEM_NAME}")
@@ -106,9 +171,10 @@ index 0000000..4ab56d7
 +set(HOST_SYSTEM "${HOST_SYSTEM_NAME}")
 +set(TARGET_SYSTEM "${HOST_SYSTEM_NAME}")
 +
-+dump(HOST_SYSTEM TARGET_SYSTEM)
 +
-+set(MSYS FALSE CACHE BOOL "Msys system")
++set(MSYS
++    FALSE
++    CACHE BOOL "Msys system")
 +if(HOST_SYSTEM_NAME MATCHES msys)
 +  set(MSYS TRUE)
 +endif(HOST_SYSTEM_NAME MATCHES msys)
@@ -120,21 +186,26 @@ index 0000000..4ab56d7
 +
 +if(C_STANDARD_FLAG)
 +  set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${C_STANDARD_FLAG})
-+  #list(APPEND CMAKE_C_FLAGS ${C_STANDARD_FLAG})
++  # list(APPEND CMAKE_C_FLAGS ${C_STANDARD_FLAG})
 +  string(REPLACE ";" " " CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_STANDARD_FLAG}")
 +endif(C_STANDARD_FLAG)
 +
 +configure_quickjs()
 +configure_quickjs_module_path()
 +
-+message(STATUS "!!! C module directory: ${QUICKJS_C_MODULE_DIR}")
 +
 +if(NOT QUICKJS_BUILD_ROOT)
 +  set(QUICKJS_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}")
 +endif(NOT QUICKJS_BUILD_ROOT)
 +
-+message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")
-+message(STATUS "System name: ${SYSTEM_NAME}")
++message_table(
++  "Platform"
++  "host" "${HOST_SYSTEM}"
++  "target" "${SYSTEM_NAME}"
++  "compiler" "${CMAKE_C_COMPILER}"
++  "build type" "${CMAKE_BUILD_TYPE}"
++  "C standard" "${C_STANDARD_VALUE}"
++  "arch libdir" "${CMAKE_ARCH_LIBDIR}")
 +
 +#[[if(NOT DEFINED BUILD_SHARED_LIBS)
 +  set(BUILD_SHARED_LIBS "${SUPPORT_SHARED_LIBS}" CACHE BOOL "Build quickjs as shared library")
@@ -142,30 +213,32 @@ index 0000000..4ab56d7
 +
 +option(BUILD_SHARED_LIBS "Build shared libraries" ${SUPPORT_SHARED_LIBS})
 +
-+if("${SYSTEM_NAME}" MATCHES ".*wasi")
-+  #message(STATUS "\x1b[1;31mwasienv WASM build\x1b[0m")
++if("${SYSTEM_NAME}" MATCHES ".*wasi"
++   OR WASI
++   OR EMSCRIPTEN)
++  # message(STATUS "\x1b[1;31mwasienv WASM build\x1b[0m")
 +  set(BUILD_SHARED_LIBS FALSE)
 +  set(ENABLE_SHARED FALSE)
 +elseif(WIN32 OR MINGW)
 +  set(SOCKET_LIBRARIES ws2_32)
 +  set(BUILD_SHARED_LIBS TRUE)
 +endif()
-+set(SOCKET_LIBRARIES "${SOCKET_LIBRARIES}" CACHE STRING "Socket libraries")
++set(SOCKET_LIBRARIES
++    "${SOCKET_LIBRARIES}"
++    CACHE STRING "Socket libraries")
 +
 +# link_libraries( ${LIBM} ${LIBPTHREAD})
 +
-+if(CONFIG_DEBUGGER)
-+  message(STATUS "Enabling quickjs-debugger")
-+
-+  set(CONFIG_DEBUGGER 1)
-+  #add_definitions(-DCONFIG_DEBUGGER)
++if(QUICKJS_DEBUGGER)
++  set(QUICKJS_DEBUGGER 1)
++  # add_definitions(-DQUICKJS_DEBUGGER)
 +  list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_DEFAULT_SOURCE=1 -D_BSD_SOURCE=1)
 +  check_include_file("netdb.h" HAVE_NETDB_H)
 +  if(HAVE_NETDB_H)
 +    list(APPEND CMAKE_REQUIRED_INCLUDES netdb.h)
 +  endif(HAVE_NETDB_H)
 +
-+  #check_function_exists(gethostbyname_r HAVE_GETHOSTBYNAME_R)
++  # check_function_exists(gethostbyname_r HAVE_GETHOSTBYNAME_R)
 +  check_function_exists(gethostbyname HAVE_GETHOSTBYNAME)
 +  if(NOT HAVE_GETHOSTBYNAME)
 +    check_include_file("arpa/inet.h" HAVE_ARPA_INET_H)
@@ -178,14 +251,14 @@ index 0000000..4ab56d7
 +      check_function_exists(inet_aton HAVE_INET_ATON)
 +    endif(NOT HAVE_INET_PTON)
 +  endif(NOT HAVE_GETHOSTBYNAME)
-+endif(CONFIG_DEBUGGER)
++endif(QUICKJS_DEBUGGER)
 +
 +if(CMAKE_BUILD_TYPE MATCHES "Debug")
 +  set(DEBUG ON)
 +else(CMAKE_BUILD_TYPE MATCHES "Debug")
 +  set(DEBUG OFF)
-+  add_definitions(-DNDEBUG)
 +endif(CMAKE_BUILD_TYPE MATCHES "Debug")
++add_definitions(-DNDEBUG)
 +
 +string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 +
@@ -211,18 +284,24 @@ index 0000000..4ab56d7
 +option(DUMP_BYTECODE "Enable dump BYTECODE" OFF)
 +option(DUMP_LEAKS "Enable dump LEAKS" ${DUMP})
 +
-+set(DUMP_REDIR "" CACHE STRING "printf-like macro for all DUMP_* options")
++set(DUMP_REDIR
++    ""
++    CACHE STRING "printf-like macro for all DUMP_* options")
 +
 +if("${DUMP_REDIR}" STREQUAL "printf")
 +  set(DUMP_REDIR "")
 +endif("${DUMP_REDIR}" STREQUAL "printf")
 +
 +if("${DUMP_REDIR}" STREQUAL "")
-+  set(DUMP_MACRO OFF CACHE INTERNAL "Enable dump macro")
-+  #unset(DUMP_REDIR)
++  set(DUMP_MACRO
++      OFF
++      CACHE INTERNAL "Enable dump macro")
++  # unset(DUMP_REDIR)
 +  set(DUMP_DEFINE "")
 +else("${DUMP_REDIR}" STREQUAL "")
-+  set(DUMP_MACRO ON CACHE INTERNAL "Enable dump macro")
++  set(DUMP_MACRO
++      ON
++      CACHE INTERNAL "Enable dump macro")
 +  if(NOT "${DUMP_REDIR}" MATCHES ".*[()].*")
 +    set(DUMP_REDIR "${DUMP_REDIR}(__VA_ARGS__)")
 +  endif(NOT "${DUMP_REDIR}" MATCHES ".*[()].*")
@@ -234,30 +313,59 @@ index 0000000..4ab56d7
 +
 +foreach(
 +  DEF
-+  DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE
-+  DUMP_PROMISE DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT
-+  DUMP_BYTECODE DUMP_LEAKS)
++  DUMP_GC
++  DUMP_MEM
++  DUMP_OBJECTS
++  DUMP_SHAPES
++  DUMP_CC_TABLE
++  DUMP_GC_FREE
++  DUMP_PROMISE
++  DUMP_REOP
++  DUMP_TABLE_SIZE
++  DUMP_MODULE_RESOLVE
++  DUMP_READ_OBJECT
++  DUMP_BYTECODE
++  DUMP_LEAKS)
 +  if(${${DEF}})
 +    add_definitions(-D${DEF}=1)
 +  endif(${${DEF}})
 +endforeach(
-+  DEF DUMP_GC DUMP_MEM DUMP_OBJECTS DUMP_SHAPES DUMP_CC_TABLE DUMP_GC_FREE
-+  DUMP_PROMISE DUMP_REOP DUMP_TABLE_SIZE DUMP_MODULE_RESOLVE DUMP_READ_OBJECT
-+  DUMP_BYTECODE DUMP_LEAKS)
++  DEF
++  DUMP_GC
++  DUMP_MEM
++  DUMP_OBJECTS
++  DUMP_SHAPES
++  DUMP_CC_TABLE
++  DUMP_GC_FREE
++  DUMP_PROMISE
++  DUMP_REOP
++  DUMP_TABLE_SIZE
++  DUMP_MODULE_RESOLVE
++  DUMP_READ_OBJECT
++  DUMP_BYTECODE
++  DUMP_LEAKS)
 +
 +if(SYSTEM_NAME MATCHES "diet")
-+  set(DIET TRUE CACHE BOOL "dietlibc")
-+  set(LIBDL "" CACHE STRING "dl library" FORCE)
++  set(DIET
++      TRUE
++      CACHE BOOL "dietlibc")
++  set(LIBDL
++      ""
++      CACHE STRING "dl library" FORCE)
 +endif(SYSTEM_NAME MATCHES "diet")
 +if(DIET)
 +  set(BUILD_SHARED_LIBS OFF)
 +endif(DIET)
 +
 +if(NOT BUILD_SHARED_LIBS)
-+  set(BUILD_STATIC_LIBS ON CACHE BOOL "Build static libraries")
++  set(BUILD_STATIC_LIBS
++      ON
++      CACHE BOOL "Build static libraries")
 +endif(NOT BUILD_SHARED_LIBS)
 +if(NOT BUILD_STATIC_LIBS AND NOT BUILD_SHARED_LIBS)
-+  set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
++  set(BUILD_SHARED_LIBS
++      ON
++      CACHE BOOL "Build shared libraries")
 +endif(NOT BUILD_STATIC_LIBS AND NOT BUILD_SHARED_LIBS)
 +
 +if(BUILD_STATIC_LIBS)
@@ -265,7 +373,9 @@ index 0000000..4ab56d7
 +  set(SO_NAME ${PROJECT_NAME}-shared)
 +  set(DLL_TARGETS)
 +  if(NOT QUICKJS_LIBRARY)
-+    set(QUICKJS_LIBRARY "${A_NAME}" CACHE PATH "QuickJS library")
++    set(QUICKJS_LIBRARY
++        "${A_NAME}"
++        CACHE PATH "QuickJS library")
 +  endif(NOT QUICKJS_LIBRARY)
 +endif(BUILD_STATIC_LIBS)
 +
@@ -274,7 +384,9 @@ index 0000000..4ab56d7
 +  set(SO_NAME ${PROJECT_NAME})
 +  set(DLL_TARGETS ${SO_NAME})
 +  if(NOT QUICKJS_LIBRARY)
-+    set(QUICKJS_LIBRARY "${SO_NAME}" CACHE PATH "QuickJS library")
++    set(QUICKJS_LIBRARY
++        "${SO_NAME}"
++        CACHE PATH "QuickJS library")
 +  endif(NOT QUICKJS_LIBRARY)
 +endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 +
@@ -287,25 +399,19 @@ index 0000000..4ab56d7
 +macro(check_include NAME)
 +  string(TOUPPER "${NAME}" TMP)
 +  string(REPLACE . _ VARNAME "${TMP}")
-+  set(CMAKE_REQUIRED_QUIET OFF)
-+  message(STATUS "Checking for ${NAME} ...")
 +  check_include_file("${NAME}" "HAVE_${VARNAME}")
 +  set(FOUND "not found")
 +  if(HAVE_${VARNAME})
 +    list(APPEND CMAKE_EXTRA_INCLUDE_FILES "${NAME}")
 +    set(FOUND "found")
 +  endif(HAVE_${VARNAME})
-+  message(STATUS "Checking for ${NAME} ... ${FOUND}")
 +endmacro(check_include NAME)
 +
 +macro(check_function NAME)
 +  string(TOUPPER "${NAME}" TMP)
 +  string(REPLACE . _ VARNAME "${TMP}")
-+  set(CMAKE_REQUIRED_QUIET OFF)
-+  message(STATUS "Checking for ${NAME})() ...")
 +  check_function_exists("${NAME}" "HAVE_${VARNAME}")
 +  set(FOUND "not found")
-+  message(STATUS "Checking for ${NAME}() ... ${FOUND}")
 +endmacro(check_function NAME)
 +
 +check_include(signal.h)
@@ -342,7 +448,8 @@ index 0000000..4ab56d7
 +  add_definitions("-DINFINITY=\"__builtin_inf()\"")
 +endif(NOT HAVE_INFINITY)
 +
-+# check_function_exists(trunc HAVE_TRUNC) if(NOT HAVE_TRUNC) add_definitions("-D\"trunc(x)=__builtin_trunc(x)\"") endif(NOT HAVE_TRUNC)
++# check_function_exists(trunc HAVE_TRUNC) if(NOT HAVE_TRUNC)
++# add_definitions("-D\"trunc(x)=__builtin_trunc(x)\"") endif(NOT HAVE_TRUNC)
 +
 +set(HAVE_VARIABLES)
 +
@@ -352,8 +459,12 @@ index 0000000..4ab56d7
 +    set(SOURCE "int main() { void *ptr;  ptr = &${NAME}; return ptr != 0; }")
 +    set(C_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/try-${NAME}.c")
 +    file(WRITE "${C_SOURCE}" "${SOURCE}")
-+    try_compile(RESULT "${CMAKE_CURRENT_BINARY_DIR}" "${C_SOURCE}"
-+                OUTPUT_VARIABLE OUTPUT LINK_OPTIONS -c LINK_LIBRARIES "${ARGN}")
++    try_compile(
++      RESULT "${CMAKE_CURRENT_BINARY_DIR}"
++      "${C_SOURCE}"
++      OUTPUT_VARIABLE OUTPUT
++      LINK_OPTIONS -c
++      LINK_LIBRARIES "${ARGN}")
 +
 +    if(NOT RESULT)
 +      set(RESULT FALSE)
@@ -364,11 +475,14 @@ index 0000000..4ab56d7
 +  else(RESULT)
 +    set(MSG missing)
 +  endif(RESULT)
-+  set("${VAR}" "${RESULT}" PARENT_SCOPE)
++  set("${VAR}"
++      "${RESULT}"
++      PARENT_SCOPE)
 +
-+  message(STATUS "Checking builtin ${NAME} -- ${MSG}")
-+  set(CMAKE_REQUIRED_QUIET FALSE)
-+endmacro(check_builtin NAME VAR)
++endmacro(
++  check_builtin
++  NAME
++  VAR)
 +
 +function(check_func NAME)
 +  string(TOUPPER "${NAME}" UNAME)
@@ -384,25 +498,62 @@ index 0000000..4ab56d7
 +  else(LIB)
 +    check_function_exists(${NAME} RESULT)
 +  endif(LIB)
-+  set("HAVE_${UNAME}" "${RESULT}" PARENT_SCOPE)
++  set("HAVE_${UNAME}"
++      "${RESULT}"
++      PARENT_SCOPE)
 +
 +  if(NOT RESULT)
 +    check_builtin("${BUILTIN}" B_RESULT)
-+    set("HAVE_${BUILTIN}" "${B_RESULT}" PARENT_SCOPE)
++    set("HAVE_${BUILTIN}"
++        "${B_RESULT}"
++        PARENT_SCOPE)
 +    if(B_RESULT)
 +      # add_definitions("-D${NAME}(x...)=${BUILTIN}(x)")
 +    endif(B_RESULT)
 +  endif(NOT RESULT)
 +  if(RESULT)
 +    list(APPEND HAVE_VARIABLES HAVE_${UNAME})
-+    set(HAVE_VARIABLES "${HAVE_VARIABLES}" PARENT_SCOPE)
++    set(HAVE_VARIABLES
++        "${HAVE_VARIABLES}"
++        PARENT_SCOPE)
 +  endif(RESULT)
 +endfunction(check_func NAME)
 +
 +set(MATH_FUNCS
-+    acos acosh asin asinh atan atan2 atanh cbrt ceil cos cosh exp expm1 fabs
-+    fesetround floor fmax fmin fmod hypot isfinite log log10 log1p log2 lrint
-+    pow round sin sinh sqrt tan tanh trunc)
++    acos
++    acosh
++    asin
++    asinh
++    atan
++    atan2
++    atanh
++    cbrt
++    ceil
++    cos
++    cosh
++    exp
++    expm1
++    fabs
++    fesetround
++    floor
++    fmax
++    fmin
++    fmod
++    hypot
++    isfinite
++    log
++    log10
++    log1p
++    log2
++    lrint
++    pow
++    round
++    sin
++    sinh
++    sqrt
++    tan
++    tanh
++    trunc)
 +foreach(MATH_FUNC ${MATH_FUNCS})
 +  check_func(${MATH_FUNC} ${LIBM})
 +endforeach(MATH_FUNC ${MATH_FUNCS})
@@ -426,7 +577,6 @@ index 0000000..4ab56d7
 +# list(JOIN CMAKE_EXTRA_INCLUDE_FILES " " EXTRA_INCLUDE_FILES)
 +string(REPLACE ";" " " EXTRA_INCLUDE_FILES "${CMAKE_EXTRA_INCLUDE_FILES}")
 +
-+message(STATUS "Extra includes: ${EXTRA_INCLUDE_FILES}")
 +
 +if(HAVE_SIGNAL_H)
 +  list(APPEND CMAKE_EXTRA_INCLUDE_FILES "signal.h")
@@ -469,31 +619,32 @@ index 0000000..4ab56d7
 +  add_definitions(-DDONT_HAVE_MALLOC_USABLE_SIZE=1)
 +endif()
 +
-+check_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings"
++probe_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings"
 +            CMAKE_C_FLAGS)
 +
-+check_flags(
++probe_flags(
 +  "-Wall;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation"
 +  CMAKE_C_FLAGS_DEBUG)
 +
 +if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL
 +                                             "RelWithDebInfo")
-+  check_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
++  probe_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
 +endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL
 +                                                "RelWithDebInfo")
 +
 +if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 +  if(ANDROID)
-+    check_flag("-O1" HAVE_OPT_NONE_FLAG OPT_NONE_FLAG)
++    probe_flag("-O1" HAVE_OPT_NONE_FLAG OPT_NONE_FLAG)
 +  else(ANDROID)
-+    check_flag("-O0" HAVE_OPT_NONE_FLAG OPT_NONE_FLAG)
++    probe_flag("-O0" HAVE_OPT_NONE_FLAG OPT_NONE_FLAG)
 +  endif(ANDROID)
-+  #append_vars(${OPT_NONE_FLAG} CMAKE_C_FLAGS_DEBUG)
++  # append_vars(${OPT_NONE_FLAG} CMAKE_C_FLAGS_DEBUG)
 +endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 +
-+check_flag("-flto" HAVE_LTO_FLAG)
++probe_flag("-flto" HAVE_LTO_FLAG)
 +if(HAVE_LTO_FLAG)
-+  set(CONFIG_LTO TRUE
++  set(CONFIG_LTO
++      TRUE
 +      CACHE BOOL "Define if your compiler supports link-time optimization")
 +  option(ENABLE_LTO "Enable link-time optimization" OFF)
 +endif(HAVE_LTO_FLAG)
@@ -503,8 +654,7 @@ index 0000000..4ab56d7
 +endif(CONFIG_LTO)
 +
 +if(ENABLE_LTO)
-+  message(STATUS "Enabling link-time optimization")
-+  #append_vars("-flto" CMAKE_C_FLAGS CMAKE_EXE_LINKER_FLAGS)
++  # append_vars("-flto" CMAKE_C_FLAGS CMAKE_EXE_LINKER_FLAGS)
 +  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto")
 +  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
 +endif(ENABLE_LTO)
@@ -517,12 +667,10 @@ index 0000000..4ab56d7
 +if(NOT HAVE_SIZEOF_SIGHANDLER_T)
 +  check_type_size(sighandler_t SIZEOF_SIGHANDLER_T)
 +  if(HAVE_SIZEOF_SIGHANDLER_T)
-+    message(STATUS "Size of sighandler_t... ${SIZEOF_SIGHANDLER_T}")
 +  else(HAVE_SIZEOF_SIGHANDLER_T)
 +    check_type_size(__sighandler_t SIZEOF___SIGHANDLER_T)
 +    if(HAVE_SIZEOF___SIGHANDLER_T)
 +      add_definitions(-Dsighandler_t=__sighandler_t)
-+      message(STATUS "Size of __sighandler_t... ${SIZEOF___SIGHANDLER_T}")
 +    endif(HAVE_SIZEOF___SIGHANDLER_T)
 +  endif(HAVE_SIZEOF_SIGHANDLER_T)
 +endif(NOT HAVE_SIZEOF_SIGHANDLER_T)
@@ -532,14 +680,15 @@ index 0000000..4ab56d7
 +check_include_def(dlfcn.h)
 +check_include_def(stdatomic.h)
 +check_include_def(alloca.h)
-+#check_include_def(malloc.h)
++# check_include_def(malloc.h)
 +check_library_exists(pthread pthread_create "${CMAKE_LIBRARY_PATH}" PTHREADS)
 +
-+#include(CheckSymbolExists)
-+#check_symbol_exists(alloca "" ALLOCA_EXISTS)
++# include(CheckSymbolExists) check_symbol_exists(alloca "" ALLOCA_EXISTS)
 +check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
 +if(HAVE_LIBPTHREAD)
-+  set(THRD_LIBRARY pthread CACHE STRING "threading library")
++  set(THRD_LIBRARY
++      pthread
++      CACHE STRING "threading library")
 +endif(HAVE_LIBPTHREAD)
 +
 +try_code(
@@ -596,9 +745,14 @@ index 0000000..4ab56d7
 +
 +endif(WIN32 OR MINGW)
 +
-+if(PTHREADS AND HAVE_STDATOMIC_H)
++if(PTHREADS
++   AND HAVE_STDATOMIC_H
++   AND NOT (WASI OR EMSCRIPTEN))
 +  set(USE_WORKER ON)
-+endif(PTHREADS AND HAVE_STDATOMIC_H)
++endif(
++  PTHREADS
++  AND HAVE_STDATOMIC_H
++  AND NOT (WASI OR EMSCRIPTEN))
 +
 +if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 +  option(USE_EFENCE "Enable electric fence" OFF)
@@ -622,39 +776,47 @@ index 0000000..4ab56d7
 +if(NOT WIN32)
 +  if(NOT MINGW)
 +    if(UNIX)
-+      check_flag("-rdynamic" HAVE_LINK_RDYNAMIC_FLAG LINK_EXPORT)
++      probe_flag("-rdynamic" HAVE_LINK_RDYNAMIC_FLAG LINK_EXPORT)
 +    endif(UNIX)
 +  endif(NOT MINGW)
 +endif(NOT WIN32)
 +# message("LINK_EXPORT = ${LINK_EXPORT}")
 +#[[
-+check_flag("-Wno-sign-compare" HAVE_WARN_NO_SIGN_COMPARE_FLAG CMAKE_C_FLAGS)
-+check_flag("-Wno-missing-field-initializers" HAVE_WARN_NO_MISSING_FIELD_INITIALIZERS_FLAG CMAKE_C_FLAGS)
-+check_flag("-Wno-unused-parameter" HAVE_WARN_NO_UNUSED_PARAMETER_FLAG CMAKE_C_FLAGS)
-+check_flag("-Wno-array-bounds" HAVE_WARN_NO_ARRAY_BOUNDS_FLAG CMAKE_C_FLAGS)
-+check_flag("-Wno-format-truncation" HAVE_WARN_NO_FORMAT_TRUNCATION_FLAG CMAKE_C_FLAGS)
-+check_flag("-Wno-discarded-qualifiers" HAVE_WARN_NO_DISCARDED_QUALIFIERS_FLAG CMAKE_C_FLAGS)
++probe_flag("-Wno-sign-compare" HAVE_WARN_NO_SIGN_COMPARE_FLAG CMAKE_C_FLAGS)
++probe_flag("-Wno-missing-field-initializers" HAVE_WARN_NO_MISSING_FIELD_INITIALIZERS_FLAG CMAKE_C_FLAGS)
++probe_flag("-Wno-unused-parameter" HAVE_WARN_NO_UNUSED_PARAMETER_FLAG CMAKE_C_FLAGS)
++probe_flag("-Wno-array-bounds" HAVE_WARN_NO_ARRAY_BOUNDS_FLAG CMAKE_C_FLAGS)
++probe_flag("-Wno-format-truncation" HAVE_WARN_NO_FORMAT_TRUNCATION_FLAG CMAKE_C_FLAGS)
++probe_flag("-Wno-discarded-qualifiers" HAVE_WARN_NO_DISCARDED_QUALIFIERS_FLAG CMAKE_C_FLAGS)
 +]]
 +option(BUILD_QJSC "Build quickjs compiler" ON)
 +
-+if(${SYSTEM_NAME} MATCHES wasi)
++if(${SYSTEM_NAME} MATCHES wasi
++   OR WASI
++   OR EMSCRIPTEN)
 +  set(BUILD_QJSC OFF)
-+endif(${SYSTEM_NAME} MATCHES wasi)
++endif(
++  ${SYSTEM_NAME} MATCHES wasi
++  OR WASI
++  OR EMSCRIPTEN)
 +
 +if(LIBDL)
-+  message(STATUS "LIBDL = ${LIBDL}")
 +  link_libraries(${LIBDL})
 +endif(LIBDL)
 +
 +if(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
 +  set(QJS "qjsc")
 +  set(QJS_DEPS)
-+  set(QJSC "qjsc" CACHE STRING "QuickJS compiler")
++  set(QJSC
++      "qjsc"
++      CACHE STRING "QuickJS compiler")
 +  set(QJSC_DEPS)
 +else(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
 +  set(QJS "${CMAKE_CURRENT_BINARY_DIR}/qjs")
 +  set(QJS_DEPS qjs)
-+  set(QJSC "${CMAKE_CURRENT_BINARY_DIR}/qjsc" CACHE STRING "QuickJS compiler")
++  set(QJSC
++      "${CMAKE_CURRENT_BINARY_DIR}/qjsc"
++      CACHE STRING "QuickJS compiler")
 +  set(QJSC_DEPS qjsc)
 +endif(CMAKE_CROSSCOMPILING OR NOT BUILD_QJSC)
 +
@@ -666,22 +828,16 @@ index 0000000..4ab56d7
 +  COMMENT "Generate from repl.js using qjs compiler" SOURCES
 +          ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
 +
-+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
-+  set(QJSCALC_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
-+  set(QJSCALC_FLAG -fbignum)
-+
++if(EXISTS qjscalc.js)
 +  add_custom_command(
 +    OUTPUT qjscalc.c
-+    COMMAND "${QJSC}" ${QJSCALC_FLAG} -c -o ./qjscalc.c -m
++    COMMAND "${QJSC}" -fbignum -c -o ./qjscalc.c -m
 +            ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
 +    DEPENDS ${QJSC_DEPS}
 +    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 +    COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES
 +            ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
-+else(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
-+  # dropped upstream along with CONFIG_BIGNUM/libbf (quickjs-2025-04-26+)
-+  set(QJSCALC_SOURCES)
-+endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
++endif(EXISTS qjscalc.js)
 +
 +add_custom_target(
 +  hello.c
@@ -694,8 +850,9 @@ index 0000000..4ab56d7
 +
 +configure_file(${get_quickjs_cmake_in} ${get_quickjs_cmake} @ONLY)
 +
-+#set(QUICKJS_INSTALL_PREFIX  "${CMAKE_INSTALL_PREFIX}")
-+set(QUICKJS_PREFIX "${QUICKJS_INSTALL_PREFIX}"
++# set(QUICKJS_INSTALL_PREFIX  "${CMAKE_INSTALL_PREFIX}")
++set(QUICKJS_PREFIX
++    "${QUICKJS_PREFIX}"
 +    CACHE PATH "QuickJS installation prefix")
 +
 +configure_file(quickjs-config.cmake.in
@@ -707,8 +864,8 @@ index 0000000..4ab56d7
 +  target_compile_definitions(
 +    ${A_NAME}
 +    PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
-+            QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}"
-+            HOST_SYSTEM_NAME="${HOST_SYSTEM_NAME}" CONFIG_BIGNUM)
++            QUICKJS_PREFIX="${QUICKJS_PREFIX}"
++            HOST_SYSTEM_NAME="${HOST_SYSTEM_NAME}")
 +  target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
 +  set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 +  if(NOT BUILD_SHARED_LIBS)
@@ -721,47 +878,42 @@ index 0000000..4ab56d7
 +# message("target_link_libraries ${A_NAME} PRIVATE ${LIBM} ${LIBPTHREAD}")
 +
 +if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
-+  message("Building shared library: YES")
 +  add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_INCLUDES}
 +                                ${QUICKJS_SOURCES_DEBUGGER})
 +  set(LIB_TARGETS ${LIB_TARGETS} ${SO_NAME})
 +  target_compile_definitions(
 +    ${SO_NAME}
 +    PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
-+            QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}"
-+            SYSTEM_NAME="${SYSTEM_NAME}" CONFIG_BIGNUM)
++            QUICKJS_PREFIX="${QUICKJS_PREFIX}" SYSTEM_NAME="${SYSTEM_NAME}")
 +  target_include_directories(${SO_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
 +  if(MSYS)
 +    set(SO_PREFIX "msys-")
 +  else()
 +    set(SO_PREFIX "lib")
 +  endif()
++
 +  set_target_properties(
 +    ${SO_NAME}
 +    PROPERTIES SOVERSION "${QUICKJS_SOVERSION}"
 +               PREFIX "${SO_PREFIX}"
 +               OUTPUT_NAME ${PROJECT_NAME}
-+               RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}"
-+               INSTALL_RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}")
++               RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}"
++               INSTALL_RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}")
 +
 +  if("${CMAKE_SHARED_LIBRARY_SUFFIX}" MATCHES ".so")
 +    set(SOSUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}.${QUICKJS_SOVERSION}")
 +  else("${CMAKE_SHARED_LIBRARY_SUFFIX}" MATCHES ".so")
 +    set(SOSUFFIX "-${QUICKJS_SOVERSION}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 +  endif("${CMAKE_SHARED_LIBRARY_SUFFIX}" MATCHES ".so")
-+  #set_target_properties(${SO_NAME} PROPERTIES SUFFIX "${SOSUFFIX}")
++  # set_target_properties(${SO_NAME} PROPERTIES SUFFIX "${SOSUFFIX}")
 +
 +  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD}
 +                                          ${SOCKET_LIBRARIES})
 +
 +else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
-+  message("Building shared library: NO")
 +endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 +
-+#dump(LIB_TARGETS)
-+#dump(SYSTEM_NAME)
-+#dump(HOST_SYSTEM_NAME)
-+#dump(DIET)
++# dump(LIB_TARGETS) dump(SYSTEM_NAME) dump(HOST_SYSTEM_NAME) dump(DIET)
 +
 +if(NOT "${CONFIG_SHEXT}" STREQUAL ".dll")
 +  unset(DLL_TARGETS)
@@ -773,30 +925,38 @@ index 0000000..4ab56d7
 +  get_target_property(SO_PREFIX ${SO_NAME} PREFIX)
 +
 +  set(SHARED_LIBRARY_NAME "${SO_PREFIX}${SO_OUTPUT}${CONFIG_SHEXT}")
++  set(STATIC_LIBRARY_NAME "lib${SO_OUTPUT}.a")
 +
 +  if("${CONFIG_SHEXT}" STREQUAL ".dll")
 +    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SHARED_LIBRARY_NAME}
-+            DESTINATION ${QUICKJS_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
++            DESTINATION bin)
++    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${STATIC_LIBRARY_NAME}
++            DESTINATION lib)
 +
 +    if(NOT "${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL "")
 +      set(IMPORT_LIBRARY_NAME "lib${SO_OUTPUT}${CMAKE_IMPORT_LIBRARY_SUFFIX}")
 +
 +      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${IMPORT_LIBRARY_NAME}
-+              DESTINATION ${QUICKJS_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
++              DESTINATION lib)
 +    endif(NOT "${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL "")
 +
 +  elseif("${CONFIG_SHEXT}" STREQUAL ".dll")
 +
 +    install(
 +      TARGETS ${LIB_TARGETS}
-+      LIBRARY DESTINATION ${QUICKJS_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-+      RUNTIME DESTINATION ${QUICKJS_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
++      ARCHIVE DESTINATION ${QUICKJS_LIBRARY_DIR}
++      LIBRARY DESTINATION ${QUICKJS_LIBRARY_DIR}
++      RUNTIME DESTINATION ${QUICKJS_LIBRARY_DIR})
 +
 +  endif("${CONFIG_SHEXT}" STREQUAL ".dll")
 +
 +else(DLL_TARGETS)
 +  if(LIB_TARGETS)
-+    install(TARGETS ${LIB_TARGETS} DESTINATION ${QUICKJS_LIBRARY_DIR})
++    install(
++      TARGETS ${LIB_TARGETS}
++      ARCHIVE DESTINATION ${QUICKJS_LIBRARY_DIR}
++      LIBRARY DESTINATION ${QUICKJS_LIBRARY_DIR}
++      RUNTIME DESTINATION ${QUICKJS_LIBRARY_DIR})
 +  endif(LIB_TARGETS)
 +endif(DLL_TARGETS)
 +
@@ -810,115 +970,141 @@ index 0000000..4ab56d7
 +file(GLOB CMAKE_SCRIPTS cmake/*QuickJS*)
 +install(FILES ${CMAKE_SCRIPTS} DESTINATION ${QUICKJS_PREFIX}/lib/cmake)
 +
-+add_executable(
-+  qjs qjs.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
-+      ${CMAKE_CURRENT_BINARY_DIR}/repl.c ${QJSCALC_SOURCES})
++if(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
++  add_executable(qjs cmake/emscripten/qjs-repl-wasm.c)
++else(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
++  set(QJS_SOURCES qjs.c)
++  if(EXISTS qjscalc.js)
++    set(QJS_SOURCES ${QJS_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/qjscalc.c)
++  endif(EXISTS qjscalc.js)
++  set(QJS_SOURCES ${QJS_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/repl.c)
++  add_executable(qjs ${QJS_SOURCES})
++endif(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
 +
 +target_link_libraries(qjs ${QUICKJS_LIBRARY} ${LIBPTHREAD} ${LIBM}
 +                      ${SOCKET_LIBRARIES})
 +set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 +if(BUILD_SHARED_LIBS)
 +  set_target_properties(
-+    qjs
-+    PROPERTIES RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}"
-+               INSTALL_RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}")
++    qjs PROPERTIES RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}"
++                   INSTALL_RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}")
 +endif(BUILD_SHARED_LIBS)
 +
 +target_compile_definitions(
 +  qjs PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
-+              QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}" CONFIG_BIGNUM=1)
++              QUICKJS_PREFIX="${QUICKJS_PREFIX}")
 +
-+if(WASI)
-+  set(BUILD_QJSC FALSE CACHE BOOL "Build qjsc")
-+endif(WASI)
++if(WASI OR EMSCRIPTEN)
++  set(BUILD_QJSC
++      FALSE
++      CACHE BOOL "Build qjsc")
++endif(WASI OR EMSCRIPTEN)
 +
-+#dump(LIBPTHREAD)
++# dump(LIBPTHREAD)
 +
 +if(BUILD_QJSC)
-+  add_executable(qjsc qjsc.c #${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
++  add_executable(qjsc qjsc.c # ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
 +  )
 +  target_link_libraries(qjsc ${QUICKJS_LIBRARY} ${LIBM} ${LIBPTHREAD}
 +                        ${SOCKET_LIBRARIES})
 +  if(BUILD_SHARED_LIBS)
 +    set_target_properties(
-+      qjsc
-+      PROPERTIES RPATH "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}"
-+                 INSTALL_RPATH
-+                 "${QUICKJS_INSTALL_PREFIX}/${QUICKJS_LIBRARY_DIR}")
++      qjsc PROPERTIES RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}"
++                      INSTALL_RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}")
 +  endif(BUILD_SHARED_LIBS)
 +
 +  target_compile_definitions(
 +    qjsc
-+    PRIVATE QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}"
-+            CONFIG_CC="${CMAKE_C_COMPILER}" _GNU_SOURCE=1 BUILD_QUICKJS=1
-+            HAVE_QUICKJS_CONFIG_H=1 CONFIG_BIGNUM=1)
++    PRIVATE QUICKJS_PREFIX="${QUICKJS_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}"
++            _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1)
 +  install(TARGETS qjsc DESTINATION ${QUICKJS_PREFIX}/bin)
 +endif(BUILD_QJSC)
 +
 +install(TARGETS qjs DESTINATION ${QUICKJS_BINARY_DIR})
-+if(QJSCALC_SOURCES)
++
++if(EXISTS qjscalc.js)
 +  install(
 +    CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)"
 +  )
-+endif(QJSCALC_SOURCES)
++endif(EXISTS qjscalc.js)
 +
 +add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
 +
 +set(QUICKJS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 +
++include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake)
++
 +set(MODULE_SUBDIRS "")
++add_quickjs_modules_subdirs(
++  GLFW
++  NanoVG
++  ImGui:OFF
++  FFI
++  Net:OFF
++  LWS
++  Modules
++  OpenCV:OFF
++  Sound:OFF
++  Debugger:${QUICKJS_DEBUGGER}
++)
 +
-+option(MODULE_GLFW "Enable GLFW module" OFF)
-+option(MODULE_NANOVG "Enable NanoVG module" OFF)
-+option(MODULE_IMGUI "Enable ImGui module" OFF)
-+option(MODULE_FFI "Enable FFI module" ON)
-+option(MODULE_MODULES "Enable MODULES module" ON)
-+option(MODULE_NET "Enable qjs-net module" OFF)
-+option(MODULE_LWS "Enable qjs-lws module" OFF)
-+option(MODULE_SOUND "Enable qjs-sound module" OFF)
-+option(MODULE_DEBUGGER "Enable qjs-debugger" ON)
-+#option(MODULE_HTTP "Enable HTTP module" ON)
++get_property(FLAGS_OK GLOBAL PROPERTY QJS_FLAGS_OK)
++get_property(FLAGS_FAIL GLOBAL PROPERTY QJS_FLAGS_FAIL)
++list(REMOVE_DUPLICATES FLAGS_OK)
++list(REMOVE_DUPLICATES CMAKE_EXTRA_INCLUDE_FILES)
++string(REPLACE ";" " " EXTRA_INCLUDE_FILES "${CMAKE_EXTRA_INCLUDE_FILES}")
++separate_arguments(SUMMARY_C_FLAGS UNIX_COMMAND "${CMAKE_C_FLAGS}")
++list(REMOVE_DUPLICATES SUMMARY_C_FLAGS)
++string(REPLACE ";" " " SUMMARY_C_FLAGS "${SUMMARY_C_FLAGS}")
++if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
++  set(LIBRARY_KIND "shared (rpath ${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR})")
++else()
++  set(LIBRARY_KIND "static")
++endif()
++if(QUICKJS_DEBUGGER)
++  set(DEBUGGER_STATE "enabled")
++endif()
++if(CONFIG_FIND_MODULE)
++  set(FIND_MODULE_STATE "enabled")
++endif()
++if(ENABLE_LTO)
++  set(LTO_STATE "enabled")
++elseif(HAVE_LTO_FLAG)
++  set(LTO_STATE "supported, off (-DENABLE_LTO=ON)")
++endif()
 +
-+if(MODULE_GLFW)
-+  list(APPEND MODULE_SUBDIRS qjs-glfw)
-+endif(MODULE_GLFW)
-+if(MODULE_NANOVG)
-+  list(APPEND MODULE_SUBDIRS qjs-nanovg)
-+endif(MODULE_NANOVG)
-+if(MODULE_IMGUI)
-+  list(APPEND MODULE_SUBDIRS qjs-imgui)
-+endif(MODULE_IMGUI)
-+if(MODULE_FFI)
-+  list(APPEND MODULE_SUBDIRS qjs-ffi)
-+endif(MODULE_FFI)
-+if(MODULE_NET)
-+  list(APPEND MODULE_SUBDIRS qjs-net)
-+endif(MODULE_NET)
-+if(MODULE_LWS)
-+  list(APPEND MODULE_SUBDIRS qjs-lws)
-+endif(MODULE_LWS)
-+#if(MODULE_HTTP)
-+#  list(APPEND MODULE_SUBDIRS qjs-http)
-+#endif(MODULE_HTTP)
-+if(MODULE_MODULES)
-+  list(APPEND MODULE_SUBDIRS qjs-modules)
-+endif(MODULE_MODULES)
-+if(MODULE_SOUND)
-+  list(APPEND MODULE_SUBDIRS qjs-sound)
-+endif(MODULE_SOUND)
-+if(MODULE_DEBUGGER)
-+  list(APPEND MODULE_SUBDIRS qjs-debugger)
-+endif(MODULE_DEBUGGER)
-+message(STATUS "Module subdirectories: ${MODULE_SUBDIRS}")
++message_table(
++  "Build"
++  "library" "${LIBRARY_KIND}"
++  "debugger" "${DEBUGGER_STATE}"
++  "find-module" "${FIND_MODULE_STATE}"
++  "LTO" "${LTO_STATE}"
++  "libdl" "${LIBDL}"
++  "headers" "${EXTRA_INCLUDE_FILES}"
++  "C flags" "${SUMMARY_C_FLAGS}"
++  "unsupported" "${FLAGS_FAIL}")
 +
-+set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH
-+                                                   "QuickJS install directory")
-+set(QUICKJS_SOURCES_ROOT "${CMAKE_CURRENT_SOURCE_DIR}"
++set(QUICKJS_PREFIX
++    "${CMAKE_INSTALL_PREFIX}"
++    CACHE PATH "QuickJS install directory")
++set(QUICKJS_SOURCES_ROOT
++    "${CMAKE_CURRENT_SOURCE_DIR}"
 +    CACHE PATH "QuickJS source directory")
++
++option(QUICKJS_VERBOSE_MODULES "Show the configure output of each module" OFF)
 +
 +foreach(MODULE_SUBDIR ${MODULE_SUBDIRS})
 +  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
-+    add_subdirectory(${MODULE_SUBDIR})
++    if(QUICKJS_VERBOSE_MODULES)
++      add_subdirectory(${MODULE_SUBDIR})
++    else(QUICKJS_VERBOSE_MODULES)
++      # Only warnings and errors from the modules; progress is one line each.
++      message(STATUS "Module ${MODULE_SUBDIR}")
++      set(MODULE_LOG_LEVEL_SAVED "${CMAKE_MESSAGE_LOG_LEVEL}")
++      set(CMAKE_MESSAGE_LOG_LEVEL WARNING)
++      add_subdirectory(${MODULE_SUBDIR})
++      set(CMAKE_MESSAGE_LOG_LEVEL "${MODULE_LOG_LEVEL_SAVED}")
++    endif(QUICKJS_VERBOSE_MODULES)
 +  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_SUBDIR}/CMakeLists.txt)
 +endforeach(MODULE_SUBDIR ${MODULE_SUBDIRS})
 +
@@ -931,10 +1117,10 @@ index 0000000..4ab56d7
 +        DESTINATION "${QUICKJS_PREFIX}/lib/pkgconfig")
 diff --git a/cmake/CheckFlags.cmake b/cmake/CheckFlags.cmake
 new file mode 100644
-index 0000000..e310831
+index 0000000..35eda6b
 --- /dev/null
 +++ b/cmake/CheckFlags.cmake
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,203 @@
 +include(CheckCCompilerFlag)
 +include(CheckCXXCompilerFlag)
 +
@@ -951,11 +1137,13 @@ index 0000000..e310831
 +    endif(NOT LIST MATCHES ".*${STR}.*")
 +    string(REPLACE ";" " " LIST "${LIST}")
 +    # message("New value for ${L}: ${LIST}")
-+    set("${L}" "${LIST}" PARENT_SCOPE)
++    set("${L}"
++        "${LIST}"
++        PARENT_SCOPE)
 +  endforeach(L ${ARGN})
 +endmacro(append_vars STR)
 +
-+function(check_flag FLAG VAR)
++function(probe_flag FLAG VAR)
 +  if(NOT VAR OR VAR STREQUAL "")
 +    string(TOUPPER "${FLAG}" TMP)
 +    string(REGEX REPLACE "[^0-9A-Za-z]" _ VAR "${TMP}")
@@ -969,21 +1157,25 @@ index 0000000..e310831
 +    if(ARGN)
 +      append_vars(${FLAG} ${ARGN})
 +    endif(ARGN)
-+    message(STATUS "Compiler flag ${FLAG} ... supported")
++    set_property(GLOBAL APPEND PROPERTY QJS_FLAGS_OK "${FLAG}")
++  else(RESULT)
++    set_property(GLOBAL APPEND PROPERTY QJS_FLAGS_FAIL "${FLAG}")
 +  endif(RESULT)
-+endfunction(check_flag FLAG VAR)
++endfunction(
++  probe_flag
++  FLAG
++  VAR)
 +
-+macro(check_flags FLAGS)
-+  message(STATUS "Checking flags ${FLAGS} ${ARGN}")
++macro(probe_flags FLAGS)
 +  foreach(FLAG ${FLAGS})
-+    check_flag(${FLAG} "" ${ARGN})
++    probe_flag(${FLAG} "" ${ARGN})
 +  endforeach(FLAG ${FLAGS})
-+endmacro(check_flags FLAGS)
++endmacro(probe_flags FLAGS)
 +
 +macro(check_nowarn_flag FLAG)
 +  canonicalize(VARNAME "${FLAG}")
 +  check_c_compiler_flag("${FLAG}" "${VARNAME}")
-+  #dump(${VARNAME})
++  # dump(${VARNAME})
 +
 +  if(${VARNAME})
 +    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
@@ -1006,7 +1198,7 @@ index 0000000..e310831
 +    nowarn_flag(-Wno-deprecated-enum-enum-conversion)
 +  endif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang.*")
 +
-+  #dump(CMAKE_C_FLAGS CMAKE_CXX_FLAGS) dump(CMAKE_CXX_FLAGS_DEBUG)
++  # dump(CMAKE_C_FLAGS CMAKE_CXX_FLAGS) dump(CMAKE_CXX_FLAGS_DEBUG)
 +endmacro(ADD_NOWARN_FLAGS)
 +
 +macro(check_pic_flag)
@@ -1027,13 +1219,15 @@ index 0000000..e310831
 +  check_c_compiler_flag("-O0" OPT_CXX_OPT_NONE)
 +  if(OPT_C_OPT_NONE)
 +    if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O0")
-+      set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0"
++      set(CMAKE_C_FLAGS_DEBUG
++          "${CMAKE_C_FLAGS_DEBUG} -O0"
 +          CACHE STRING "C compiler options")
 +    endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O0")
 +  endif(OPT_C_OPT_NONE)
 +  if(OPT_CXX_OPT_NONE)
 +    if(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-O0")
-+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0"
++      set(CMAKE_CXX_FLAGS_DEBUG
++          "${CMAKE_CXX_FLAGS_DEBUG} -O0"
 +          CACHE STRING "C++ compiler options")
 +    endif(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-O0")
 +  endif(OPT_CXX_OPT_NONE)
@@ -1044,13 +1238,15 @@ index 0000000..e310831
 +  check_c_compiler_flag("-O1" OPT_CXX_OPT_1)
 +  if(OPT_C_OPT_1)
 +    if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O1")
-+      set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O1"
++      set(CMAKE_C_FLAGS_DEBUG
++          "${CMAKE_C_FLAGS_DEBUG} -O1"
 +          CACHE STRING "C compiler options")
 +    endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-O1")
 +  endif(OPT_C_OPT_1)
 +  if(OPT_CXX_OPT_1)
 +    if(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-O1")
-+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O1"
++      set(CMAKE_CXX_FLAGS_DEBUG
++          "${CMAKE_CXX_FLAGS_DEBUG} -O1"
 +          CACHE STRING "C++ compiler options")
 +    endif(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-O1")
 +  endif(OPT_CXX_OPT_1)
@@ -1061,13 +1257,15 @@ index 0000000..e310831
 +  check_c_compiler_flag("-ggdb" OPT_CXX_G_GDB)
 +  if(OPT_C_G_GDB)
 +    if(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-ggdb")
-+      set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb"
++      set(CMAKE_C_FLAGS_DEBUG
++          "${CMAKE_C_FLAGS_DEBUG} -ggdb"
 +          CACHE STRING "C compiler options")
 +    endif(NOT "${CMAKE_C_FLAGS_DEBUG}" MATCHES "-ggdb")
 +  endif(OPT_C_G_GDB)
 +  if(OPT_CXX_G_GDB)
 +    if(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-ggdb")
-+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb"
++      set(CMAKE_CXX_FLAGS_DEBUG
++          "${CMAKE_CXX_FLAGS_DEBUG} -ggdb"
 +          CACHE STRING "C++ compiler options")
 +    endif(NOT "${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-ggdb")
 +  endif(OPT_CXX_G_GDB)
@@ -1082,21 +1280,24 @@ index 0000000..e310831
 +      string(REPLACE "c" "C" C_STANDARD_NUM "${C_STANDARD}")
 +      set(CMAKE_REQUIRED_QUIET TRUE)
 +      check_c_compiler_flag("-std=${C_STANDARD}" C_STANDARD_${C_STANDARD_NUM})
-+      set(CMAKE_REQUIRED_QUIET FALSE)
++      set(CMAKE_REQUIRED_QUIET TRUE)
 +      if(C_STANDARD_${C_STANDARD_NUM})
 +        string(REGEX REPLACE "\\+" "x" C_STANDARD_NAME "${C_STANDARD_VALUE}")
 +        string(TOUPPER "${C_STANDARD_NAME}" C_STANDARD_NAME)
 +        string(REGEX REPLACE "CXX" "" C_STANDARD_VERSION "${C_STANDARD_NAME}")
-+        #message("C_STANDARD_NAME = ${C_STANDARD_NAME}")
-+        #message("C_STANDARD_VERSION = ${C_STANDARD_VERSION}")
++        # message("C_STANDARD_NAME = ${C_STANDARD_NAME}")
++        # message("C_STANDARD_VERSION = ${C_STANDARD_VERSION}")
 +
 +        if(NOT C_STANDARD_NAME STREQUAL "")
 +          add_definitions(-D"${C_STANDARD_NAME}")
 +        endif(NOT C_STANDARD_NAME STREQUAL "")
 +
-+        set(C_STANDARD_VALUE "${C_STANDARD}" CACHE STRING "C standard")
-+        set(C_STANDARD_FLAG "-std=${C_STANDARD}" CACHE STRING
-+                                                       "C standard argument")
++        set(C_STANDARD_VALUE
++            "${C_STANDARD}"
++            CACHE STRING "C standard")
++        set(C_STANDARD_FLAG
++            "-std=${C_STANDARD}"
++            CACHE STRING "C standard argument")
 +        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_STANDARD_FLAG}")
 +        break()
 +      endif(C_STANDARD_${C_STANDARD_NUM})
@@ -1110,14 +1311,12 @@ index 0000000..e310831
 +    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DC_STANDARD=${C_STANDARD_VERSION}")
 +  endif(NOT "${CMAKE_C_FLAGS}" MATCHES ".*C_STAND.*")
 +
-+  message("C standard: ${C_STANDARD_VALUE}")
-+  message("C flags: ${CMAKE_C_FLAGS}")
 +endmacro(check_c_standard_flag)
 +
 +macro(check_nowarn_flag FLAG)
 +  canonicalize(VARNAME "${FLAG}")
 +  check_c_compiler_flag("${FLAG}" "${VARNAME}")
-+  #dump(${VARNAME})
++  # dump(${VARNAME})
 +
 +  if(${VARNAME})
 +    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAG}")
@@ -1127,10 +1326,10 @@ index 0000000..e310831
 +endmacro(check_nowarn_flag FLAG)
 diff --git a/cmake/CompileQuickJSModule.cmake b/cmake/CompileQuickJSModule.cmake
 new file mode 100644
-index 0000000..420da5d
+index 0000000..fe0d4e1
 --- /dev/null
 +++ b/cmake/CompileQuickJSModule.cmake
-@@ -0,0 +1,303 @@
+@@ -0,0 +1,357 @@
 +function(config_module TARGET_NAME)
 +  if(QUICKJS_LIBRARY_DIR)
 +    set_target_properties(${TARGET_NAME} PROPERTIES LINK_DIRECTORIES
@@ -1149,7 +1348,9 @@ index 0000000..420da5d
 +  message(STATUS "Compile QuickJS module '${BASE}.c' from '${SOURCE}'")
 +
 +  set(MODULES_DIR "${CMAKE_BINARY_DIR}/modules")
-+  set(MODULES_DIR "${MODULES_DIR}" PARENT_SCOPE)
++  set(MODULES_DIR
++      "${MODULES_DIR}"
++      PARENT_SCOPE)
 +  file(MAKE_DIRECTORY "${MODULES_DIR}")
 +
 +  if(ARGN)
@@ -1160,10 +1361,18 @@ index 0000000..420da5d
 +
 +  list(APPEND COMPILED_MODULES "${OUTPUT_FILE}")
 +  list(APPEND COMPILED_TARGETS "${BASE}.c")
-+  set(COMPILED_MODULES "${COMPILED_MODULES}" PARENT_SCOPE)
-+  set(COMPILED_TARGETS "${COMPILED_TARGETS}" PARENT_SCOPE)
++  set(COMPILED_MODULES
++      "${COMPILED_MODULES}"
++      PARENT_SCOPE)
++  set(COMPILED_TARGETS
++      "${COMPILED_TARGETS}"
++      PARENT_SCOPE)
 +
-+  #add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc -v -c -o "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
++  # add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc -v -c -o
++  # "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS
++  # ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT
++  # "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES
++  # ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
 +  add_custom_target(
 +    "${BASE}.c" ALL
 +    BYPRODUCTS "${OUTPUT_FILE}"
@@ -1172,8 +1381,8 @@ index 0000000..420da5d
 +    DEPENDS ${QJSC_DEPS}
 +    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 +    COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler"
-+    SOURCES
-+      "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" #DEPENDS qjs-inspect qjs-misc
++    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" # DEPENDS qjs-inspect
++                                                    # qjs-misc
 +  )
 +endfunction(compile_module SOURCE)
 +
@@ -1181,7 +1390,7 @@ index 0000000..420da5d
 +  basename(BASE "${SOURCE}" .c)
 +  string(REGEX REPLACE "\\.c$" ".h" HEADER "${SOURCE}")
 +  string(REGEX REPLACE "-" "_" NAME "${BASE}")
-+  #message("generate_module_header SOURCE=${SOURCE}")
++  # message("generate_module_header SOURCE=${SOURCE}")
 +  file(READ "${SOURCE}" CSRC)
 +  string(REGEX MATCHALL "qjsc_[0-9A-Za-z_]+" SYMBOLS "${CSRC}")
 +  list(FILTER SYMBOLS EXCLUDE REGEX "_size$")
@@ -1197,11 +1406,11 @@ index 0000000..420da5d
 +    endif(NOT FNAME MATCHES "\\.h$")
 +    set(S "${S}#include \"${FNAME}\"\n")
 +  endforeach(INCLUDE ${INCLUDES})
-+  #message("INCLUDES: ${INCLUDES}")
++  # message("INCLUDES: ${INCLUDES}")
 +
 +  foreach(NAME ${SYMBOLS})
 +    contains(INCLUDES "${NAME}" DOES_CONTAIN)
-+    #message(" contains(INCLUDES \"${NAME}\" DOES_CONTAIN) = ${DOES_CONTAIN}")
++    # message(" contains(INCLUDES \"${NAME}\" DOES_CONTAIN) = ${DOES_CONTAIN}")
 +    if(NOT DOES_CONTAIN)
 +      set(S
 +          "${S}\nextern const uint32_t qjsc_${NAME}_size;\nextern const uint8_t qjsc_${NAME}[];\n"
@@ -1209,8 +1418,8 @@ index 0000000..420da5d
 +    endif(NOT DOES_CONTAIN)
 +  endforeach(NAME ${SYMBOLS})
 +  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/modules/${BASE}.h" "${S}")
-+  #string(REGEX REPLACE "[\\n;]" "\\\\n" SYMBOLS "${SYMBOLS}")
-+  #message("Symbols: ${SYMBOLS}")
++  # string(REGEX REPLACE "[\\n;]" "\\\\n" SYMBOLS "${SYMBOLS}")
++  # message("Symbols: ${SYMBOLS}")
 +endfunction(generate_module_header SOURCE)
 +
 +function(make_module_header SOURCE)
@@ -1222,10 +1431,14 @@ index 0000000..420da5d
 +  make_script(
 +    "${SCRIPT}"
 +    "message(\"Generating module '${NAME}'\")\nremake_module(${SOURCE})\n"
-+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake"
++    "${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Functions.cmake;${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Compat.cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake"
 +  )
-+  add_custom_target(${BASE}.h ALL ${CMAKE_COMMAND} -P ${SCRIPT}
-+                    DEPENDS ${SOURCE} BYPRODUCTS ${HEADER} SOURCES ${SOURCE})
++  add_custom_target(
++    ${BASE}.h ALL
++    ${CMAKE_COMMAND} -P ${SCRIPT}
++    DEPENDS ${SOURCE}
++    BYPRODUCTS ${HEADER}
++    SOURCES ${SOURCE})
 +endfunction(make_module_header SOURCE)
 +
 +function(list_definitions SOURCE OUTVAR)
@@ -1241,11 +1454,16 @@ index 0000000..420da5d
 +    endif(ARGN AND NOT "${DEF}" STREQUAL "${ARGN}")
 +  endforeach(DEF ${SYMBOLS})
 +
-+  set("${OUTVAR}" "${OUT}" PARENT_SCOPE)
-+endfunction(list_definitions SOURCE OUTVAR)
++  set("${OUTVAR}"
++      "${OUT}"
++      PARENT_SCOPE)
++endfunction(
++  list_definitions
++  SOURCE
++  OUTVAR)
 +
 +function(include_definitions OUTVAR)
-+  #print_str("include_definitions(${OUTVAR} ${ARGN})")
++  # print_str("include_definitions(${OUTVAR} ${ARGN})")
 +  set(S "")
 +  foreach(DEF ${ARGN})
 +    string(STRIP "${DEF}" DEF)
@@ -1253,8 +1471,10 @@ index 0000000..420da5d
 +    set(S "${S}#include \"${NAME}.h\"\n")
 +  endforeach(DEF ${ARGN})
 +
-+  #print_str("include_definitions S=${S}")
-+  set("${OUTVAR}" "${S}" PARENT_SCOPE)
++  # print_str("include_definitions S=${S}")
++  set("${OUTVAR}"
++      "${S}"
++      PARENT_SCOPE)
 +endfunction(include_definitions OUTVAR)
 +
 +function(extract_definition SOURCE OUTVAR DEF)
@@ -1278,8 +1498,14 @@ index 0000000..420da5d
 +  endforeach(LINE ${DEFINITIONS})
 +
 +  string(REGEX REPLACE "\\\\n" "\\n" S "${S}")
-+  set("${OUTVAR}" "${S}\n" PARENT_SCOPE)
-+endfunction(extract_definition SOURCE OUTVAR DEF)
++  set("${OUTVAR}"
++      "${S}\n"
++      PARENT_SCOPE)
++endfunction(
++  extract_definition
++  SOURCE
++  OUTVAR
++  DEF)
 +
 +function(remake_module SOURCE)
 +  basename(BASE "${SOURCE}" .c)
@@ -1291,7 +1517,7 @@ index 0000000..420da5d
 +  list(FILTER DEFLIST EXCLUDE REGEX "^${NAME}$")
 +  list(FILTER DEFLIST EXCLUDE REGEX "^${BASE}$")
 +
-+  #print_str("Included definitions in ${NAME}: ${DEFLIST}")
++  # print_str("Included definitions in ${NAME}: ${DEFLIST}")
 +
 +  include_definitions(INC "${DEFLIST}")
 +
@@ -1315,7 +1541,11 @@ index 0000000..420da5d
 +  endforeach(INC ${INCLUDES})
 +  set(S "${S}\n\n${TEXT}\n")
 +  file(WRITE "${OUTPUT_FILE}" "${S}")
-+endfunction(make_script OUTPUT_FILE TEXT INCLUDES)
++endfunction(
++  make_script
++  OUTPUT_FILE
++  TEXT
++  INCLUDES)
 +
 +function(make_module FNAME)
 +  string(REGEX REPLACE "_" "-" NAME "${FNAME}")
@@ -1328,11 +1558,11 @@ index 0000000..420da5d
 +  set(LIBS ${${VNAME}_LIBRARIES})
 +
 +  if(ARGN)
-+    set(SOURCES ${ARGN} #${${VNAME}_SOURCES}
++    set(SOURCES ${ARGN} # ${${VNAME}_SOURCES}
 +                ${COMMON_SOURCES})
 +    add_unique(DEPS ${${VNAME}_DEPS})
 +  else(ARGN)
-+    set(SOURCES quickjs-${NAME}.c #${${VNAME}_SOURCES}
++    set(SOURCES quickjs-${NAME}.c # ${${VNAME}_SOURCES}
 +                ${COMMON_SOURCES})
 +    add_unique(LIBS ${${VNAME}_LIBRARIES})
 +  endif(ARGN)
@@ -1343,9 +1573,14 @@ index 0000000..420da5d
 +      "Building QuickJS module: ${FNAME} (deps: ${DEPS}, libs: ${LIBS}) JS_${UNAME}_MODULE=1"
 +  )
 +
-+  if(WASI OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++  if(WASI
++     OR EMSCRIPTEN
++     OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +    set(BUILD_SHARED_MODULES OFF)
-+  endif(WASI OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++  endif(
++    WASI
++    OR EMSCRIPTEN
++    OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
 +  if(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +    set(PREFIX "lib")
@@ -1353,31 +1588,40 @@ index 0000000..420da5d
 +    set(PREFIX "")
 +  endif(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
-+  #dump(VNAME ${VNAME}_SOURCES SOURCES)
++  # dump(VNAME ${VNAME}_SOURCES SOURCES)
 +
 +  if(BUILD_SHARED_MODULES)
-+    #add_library(${TARGET_NAME} MODULE ${SOURCES})
++    # add_library(${TARGET_NAME} MODULE ${SOURCES})
 +    add_library(${TARGET_NAME} SHARED ${SOURCES})
 +
 +    set_target_properties(
 +      ${TARGET_NAME}
 +      PROPERTIES RPATH "${MBEDTLS_LIBRARY_DIR}:${QUICKJS_C_MODULE_DIR}"
-+                 INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}" PREFIX "${PREFIX}"
-+                 OUTPUT_NAME "${VNAME}" COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
++                 INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}"
++                 PREFIX "${PREFIX}"
++                 OUTPUT_NAME "${VNAME}"
++                 COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
 +
 +    target_compile_definitions(
 +      ${TARGET_NAME}
 +      PRIVATE _GNU_SOURCE=1 JS_SHARED_LIBRARY=1 JS_${UNAME}_MODULE=1
-+              QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}")
++              QUICKJS_PREFIX="${QUICKJS_PREFIX}")
 +
 +    target_link_directories(${TARGET_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 +    target_link_libraries(${TARGET_NAME} PUBLIC ${LIBS} ${QUICKJS_LIBRARY})
 +
 +    install(
 +      TARGETS ${TARGET_NAME}
-+      RUNTIME DESTINATION "${QUICKJS_C_MODULE_DIR}"
-+              PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-+                          GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
++      RUNTIME
++        DESTINATION "${QUICKJS_C_MODULE_DIR}"
++        PERMISSIONS
++          OWNER_READ
++          OWNER_WRITE
++          OWNER_EXECUTE
++          GROUP_READ
++          GROUP_EXECUTE
++          WORLD_READ
++          WORLD_EXECUTE)
 +
 +    config_module(${TARGET_NAME})
 +
@@ -1395,16 +1639,19 @@ index 0000000..420da5d
 +
 +  set(MODULES_STATIC "${QJS_MODULES_STATIC}")
 +  list(APPEND MODULES_STATIC "${TARGET_NAME}-static")
-+  set(QJS_MODULES_STATIC "${MODULES_STATIC}" PARENT_SCOPE)
++  set(QJS_MODULES_STATIC
++      "${MODULES_STATIC}"
++      PARENT_SCOPE)
 +
 +  set_target_properties(
 +    ${TARGET_NAME}-static
-+    PROPERTIES OUTPUT_NAME "${VNAME}" PREFIX "quickjs-" SUFFIX
-+                                                        "${LIBRARY_SUFFIX}"
++    PROPERTIES OUTPUT_NAME "${VNAME}"
++               PREFIX "quickjs-"
++               SUFFIX "${LIBRARY_SUFFIX}"
 +               COMPILE_FLAGS "")
 +  target_compile_definitions(
 +    ${TARGET_NAME}-static PRIVATE _GNU_SOURCE=1 JS_${UNAME}_MODULE=1
-+                                  QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}")
++                                  QUICKJS_PREFIX="${QUICKJS_PREFIX}")
 +  target_link_directories(${TARGET_NAME}-static PUBLIC
 +                          "${CMAKE_CURRENT_BINARY_DIR}")
 +  target_link_libraries(${TARGET_NAME}-static INTERFACE ${QUICKJS_LIBRARY})
@@ -1422,11 +1669,17 @@ index 0000000..420da5d
 +  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 +endif(WIN32 OR MINGW)
 +
-+if(WASI OR WASM OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++if(WASI
++   OR WASM
++   OR EMSCRIPTEN
++   OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +  set(LIBRARY_PREFIX "lib")
 +  set(LIBRARY_SUFFIX ".a")
-+endif(WASI OR WASM OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL
-+                                    "Emscripten")
++endif(
++  WASI
++  OR WASM
++  OR EMSCRIPTEN
++  OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
 +if(NOT LIBRARY_PREFIX)
 +  set(LIBRARY_PREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}")
@@ -1436,10 +1689,10 @@ index 0000000..420da5d
 +endif(NOT LIBRARY_SUFFIX)
 diff --git a/cmake/ConfigQuickJSModule.cmake b/cmake/ConfigQuickJSModule.cmake
 new file mode 100644
-index 0000000..bc5ee7c
+index 0000000..9e905c9
 --- /dev/null
 +++ b/cmake/ConfigQuickJSModule.cmake
-@@ -0,0 +1,306 @@
+@@ -0,0 +1,361 @@
 +function(config_module TARGET_NAME)
 +  if(QUICKJS_LIBRARY_DIR)
 +    set_target_properties(${TARGET_NAME} PROPERTIES LINK_DIRECTORIES
@@ -1458,7 +1711,9 @@ index 0000000..bc5ee7c
 +  message(STATUS "Compile QuickJS module '${BASE}.c' from '${SOURCE}'")
 +
 +  set(MODULES_DIR "${CMAKE_BINARY_DIR}/modules")
-+  set(MODULES_DIR "${MODULES_DIR}" PARENT_SCOPE)
++  set(MODULES_DIR
++      "${MODULES_DIR}"
++      PARENT_SCOPE)
 +  file(MAKE_DIRECTORY "${MODULES_DIR}")
 +
 +  if(ARGN)
@@ -1469,10 +1724,18 @@ index 0000000..bc5ee7c
 +
 +  list(APPEND COMPILED_MODULES "${OUTPUT_FILE}")
 +  list(APPEND COMPILED_TARGETS "${BASE}.c")
-+  set(COMPILED_MODULES "${COMPILED_MODULES}" PARENT_SCOPE)
-+  set(COMPILED_TARGETS "${COMPILED_TARGETS}" PARENT_SCOPE)
++  set(COMPILED_MODULES
++      "${COMPILED_MODULES}"
++      PARENT_SCOPE)
++  set(COMPILED_TARGETS
++      "${COMPILED_TARGETS}"
++      PARENT_SCOPE)
 +
-+  #add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc -v -c -o "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
++  # add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc -v -c -o
++  # "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS
++  # ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT
++  # "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES
++  # ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
 +  add_custom_target(
 +    "${BASE}.c" ALL
 +    BYPRODUCTS "${OUTPUT_FILE}"
@@ -1481,8 +1744,8 @@ index 0000000..bc5ee7c
 +    DEPENDS ${QJSC_DEPS}
 +    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 +    COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler"
-+    SOURCES
-+      "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" #DEPENDS qjs-inspect qjs-misc
++    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" # DEPENDS qjs-inspect
++                                                    # qjs-misc
 +  )
 +endfunction(compile_module SOURCE)
 +
@@ -1490,7 +1753,7 @@ index 0000000..bc5ee7c
 +  basename(BASE "${SOURCE}" .c)
 +  string(REGEX REPLACE "\\.c$" ".h" HEADER "${SOURCE}")
 +  string(REGEX REPLACE "-" "_" NAME "${BASE}")
-+  #message("generate_module_header SOURCE=${SOURCE}")
++  # message("generate_module_header SOURCE=${SOURCE}")
 +  file(READ "${SOURCE}" CSRC)
 +  string(REGEX MATCHALL "qjsc_[0-9A-Za-z_]+" SYMBOLS "${CSRC}")
 +  list(FILTER SYMBOLS EXCLUDE REGEX "_size$")
@@ -1506,11 +1769,11 @@ index 0000000..bc5ee7c
 +    endif(NOT FNAME MATCHES "\\.h$")
 +    set(S "${S}#include \"${FNAME}\"\n")
 +  endforeach(INCLUDE ${INCLUDES})
-+  #message("INCLUDES: ${INCLUDES}")
++  # message("INCLUDES: ${INCLUDES}")
 +
 +  foreach(NAME ${SYMBOLS})
 +    contains(INCLUDES "${NAME}" DOES_CONTAIN)
-+    #message(" contains(INCLUDES \"${NAME}\" DOES_CONTAIN) = ${DOES_CONTAIN}")
++    # message(" contains(INCLUDES \"${NAME}\" DOES_CONTAIN) = ${DOES_CONTAIN}")
 +    if(NOT DOES_CONTAIN)
 +      set(S
 +          "${S}\nextern const uint32_t qjsc_${NAME}_size;\nextern const uint8_t qjsc_${NAME}[];\n"
@@ -1518,8 +1781,8 @@ index 0000000..bc5ee7c
 +    endif(NOT DOES_CONTAIN)
 +  endforeach(NAME ${SYMBOLS})
 +  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/modules/${BASE}.h" "${S}")
-+  #string(REGEX REPLACE "[\\n;]" "\\\\n" SYMBOLS "${SYMBOLS}")
-+  #message("Symbols: ${SYMBOLS}")
++  # string(REGEX REPLACE "[\\n;]" "\\\\n" SYMBOLS "${SYMBOLS}")
++  # message("Symbols: ${SYMBOLS}")
 +endfunction(generate_module_header SOURCE)
 +
 +function(make_module_header SOURCE)
@@ -1531,10 +1794,14 @@ index 0000000..bc5ee7c
 +  make_script(
 +    "${SCRIPT}"
 +    "message(\"Generating module '${NAME}'\")\nremake_module(${SOURCE})\n"
-+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake"
++    "${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Functions.cmake;${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Compat.cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake"
 +  )
-+  add_custom_target(${BASE}.h ALL ${CMAKE_COMMAND} -P ${SCRIPT}
-+                    DEPENDS ${SOURCE} BYPRODUCTS ${HEADER} SOURCES ${SOURCE})
++  add_custom_target(
++    ${BASE}.h ALL
++    ${CMAKE_COMMAND} -P ${SCRIPT}
++    DEPENDS ${SOURCE}
++    BYPRODUCTS ${HEADER}
++    SOURCES ${SOURCE})
 +endfunction(make_module_header SOURCE)
 +
 +function(list_definitions SOURCE OUTVAR)
@@ -1550,11 +1817,16 @@ index 0000000..bc5ee7c
 +    endif(ARGN AND NOT "${DEF}" STREQUAL "${ARGN}")
 +  endforeach(DEF ${SYMBOLS})
 +
-+  set("${OUTVAR}" "${OUT}" PARENT_SCOPE)
-+endfunction(list_definitions SOURCE OUTVAR)
++  set("${OUTVAR}"
++      "${OUT}"
++      PARENT_SCOPE)
++endfunction(
++  list_definitions
++  SOURCE
++  OUTVAR)
 +
 +function(include_definitions OUTVAR)
-+  #print_str("include_definitions(${OUTVAR} ${ARGN})")
++  # print_str("include_definitions(${OUTVAR} ${ARGN})")
 +  set(S "")
 +  foreach(DEF ${ARGN})
 +    string(STRIP "${DEF}" DEF)
@@ -1562,8 +1834,10 @@ index 0000000..bc5ee7c
 +    set(S "${S}#include \"${NAME}.h\"\n")
 +  endforeach(DEF ${ARGN})
 +
-+  #print_str("include_definitions S=${S}")
-+  set("${OUTVAR}" "${S}" PARENT_SCOPE)
++  # print_str("include_definitions S=${S}")
++  set("${OUTVAR}"
++      "${S}"
++      PARENT_SCOPE)
 +endfunction(include_definitions OUTVAR)
 +
 +function(extract_definition SOURCE OUTVAR DEF)
@@ -1587,8 +1861,14 @@ index 0000000..bc5ee7c
 +  endforeach(LINE ${DEFINITIONS})
 +
 +  string(REGEX REPLACE "\\\\n" "\\n" S "${S}")
-+  set("${OUTVAR}" "${S}\n" PARENT_SCOPE)
-+endfunction(extract_definition SOURCE OUTVAR DEF)
++  set("${OUTVAR}"
++      "${S}\n"
++      PARENT_SCOPE)
++endfunction(
++  extract_definition
++  SOURCE
++  OUTVAR
++  DEF)
 +
 +function(remake_module SOURCE)
 +  basename(BASE "${SOURCE}" .c)
@@ -1600,7 +1880,7 @@ index 0000000..bc5ee7c
 +  list(FILTER DEFLIST EXCLUDE REGEX "^${NAME}$")
 +  list(FILTER DEFLIST EXCLUDE REGEX "^${BASE}$")
 +
-+  #print_str("Included definitions in ${NAME}: ${DEFLIST}")
++  # print_str("Included definitions in ${NAME}: ${DEFLIST}")
 +
 +  include_definitions(INC "${DEFLIST}")
 +
@@ -1624,7 +1904,11 @@ index 0000000..bc5ee7c
 +  endforeach(INC ${INCLUDES})
 +  set(S "${S}\n\n${TEXT}\n")
 +  file(WRITE "${OUTPUT_FILE}" "${S}")
-+endfunction(make_script OUTPUT_FILE TEXT INCLUDES)
++endfunction(
++  make_script
++  OUTPUT_FILE
++  TEXT
++  INCLUDES)
 +
 +function(make_module FNAME)
 +  string(REGEX REPLACE "_" "-" NAME "${FNAME}")
@@ -1637,11 +1921,11 @@ index 0000000..bc5ee7c
 +  set(LIBS ${${VNAME}_LIBRARIES})
 +
 +  if(ARGN)
-+    set(SOURCES ${ARGN} #${${VNAME}_SOURCES}
++    set(SOURCES ${ARGN} # ${${VNAME}_SOURCES}
 +                ${COMMON_SOURCES})
 +    add_unique(DEPS ${${VNAME}_DEPS})
 +  else(ARGN)
-+    set(SOURCES quickjs-${NAME}.c #${${VNAME}_SOURCES}
++    set(SOURCES quickjs-${NAME}.c # ${${VNAME}_SOURCES}
 +                ${COMMON_SOURCES})
 +    add_unique(LIBS ${${VNAME}_LIBRARIES})
 +  endif(ARGN)
@@ -1652,9 +1936,14 @@ index 0000000..bc5ee7c
 +      "Building QuickJS module: ${FNAME} (deps: ${DEPS}, libs: ${LIBS}) JS_${UNAME}_MODULE=1"
 +  )
 +
-+  if(WASI OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++  if(WASI
++     OR EMSCRIPTEN
++     OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +    set(BUILD_SHARED_MODULES OFF)
-+  endif(WASI OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++  endif(
++    WASI
++    OR EMSCRIPTEN
++    OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
 +  if(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +    set(PREFIX "lib")
@@ -1662,32 +1951,41 @@ index 0000000..bc5ee7c
 +    set(PREFIX "")
 +  endif(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
-+  #dump(VNAME ${VNAME}_SOURCES SOURCES)
++  # dump(VNAME ${VNAME}_SOURCES SOURCES)
 +
 +  if(BUILD_SHARED_MODULES)
-+    #add_library(${TARGET_NAME} MODULE ${SOURCES})
++    # add_library(${TARGET_NAME} MODULE ${SOURCES})
 +    add_library(${TARGET_NAME} SHARED ${SOURCES})
 +
 +    set_target_properties(
 +      ${TARGET_NAME}
 +      PROPERTIES RPATH "${MBEDTLS_LIBRARY_DIR}:${QUICKJS_C_MODULE_DIR}"
-+                 INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}" PREFIX "${PREFIX}"
-+                 OUTPUT_NAME "${VNAME}" COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
++                 INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}"
++                 PREFIX "${PREFIX}"
++                 OUTPUT_NAME "${VNAME}"
++                 COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
 +
 +    target_compile_definitions(
 +      ${TARGET_NAME}
 +      PRIVATE _GNU_SOURCE=1 JS_SHARED_LIBRARY=1 JS_${UNAME}_MODULE=1
-+              QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}")
++              QUICKJS_PREFIX="${QUICKJS_PREFIX}")
 +
 +    target_link_directories(${TARGET_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 +    target_link_libraries(${TARGET_NAME} PUBLIC ${LIBS} ${QUICKJS_LIBRARY})
 +
-+    #message("C module dir: ${QUICKJS_C_MODULE_DIR}")
++    # message("C module dir: ${QUICKJS_C_MODULE_DIR}")
 +    install(
 +      TARGETS ${TARGET_NAME}
-+      RUNTIME DESTINATION "${QUICKJS_C_MODULE_DIR}"
-+              PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-+                          GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
++      RUNTIME
++        DESTINATION "${QUICKJS_C_MODULE_DIR}"
++        PERMISSIONS
++          OWNER_READ
++          OWNER_WRITE
++          OWNER_EXECUTE
++          GROUP_READ
++          GROUP_EXECUTE
++          WORLD_READ
++          WORLD_EXECUTE)
 +
 +    config_module(${TARGET_NAME})
 +
@@ -1705,16 +2003,19 @@ index 0000000..bc5ee7c
 +
 +  set(MODULES_STATIC "${QJS_MODULES_STATIC}")
 +  list(APPEND MODULES_STATIC "${TARGET_NAME}-static")
-+  set(QJS_MODULES_STATIC "${MODULES_STATIC}" PARENT_SCOPE)
++  set(QJS_MODULES_STATIC
++      "${MODULES_STATIC}"
++      PARENT_SCOPE)
 +
 +  set_target_properties(
 +    ${TARGET_NAME}-static
-+    PROPERTIES OUTPUT_NAME "${VNAME}" PREFIX "quickjs-" SUFFIX
-+                                                        "${LIBRARY_SUFFIX}"
++    PROPERTIES OUTPUT_NAME "${VNAME}"
++               PREFIX "quickjs-"
++               SUFFIX "${LIBRARY_SUFFIX}"
 +               COMPILE_FLAGS "")
 +  target_compile_definitions(
 +    ${TARGET_NAME}-static PRIVATE _GNU_SOURCE=1 JS_${UNAME}_MODULE=1
-+                                  QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}")
++                                  QUICKJS_PREFIX="${QUICKJS_PREFIX}")
 +  target_link_directories(${TARGET_NAME}-static PUBLIC
 +                          "${CMAKE_CURRENT_BINARY_DIR}")
 +  target_link_libraries(${TARGET_NAME}-static INTERFACE ${QUICKJS_LIBRARY})
@@ -1732,11 +2033,17 @@ index 0000000..bc5ee7c
 +  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 +endif(WIN32 OR MINGW)
 +
-+if(WASI OR WASM OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++if(WASI
++   OR WASM
++   OR EMSCRIPTEN
++   OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +  set(LIBRARY_PREFIX "lib")
 +  set(LIBRARY_SUFFIX ".a")
-+endif(WASI OR WASM OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL
-+                                    "Emscripten")
++endif(
++  WASI
++  OR WASM
++  OR EMSCRIPTEN
++  OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
 +if(NOT LIBRARY_PREFIX)
 +  set(LIBRARY_PREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}")
@@ -1745,13 +2052,14 @@ index 0000000..bc5ee7c
 +  set(LIBRARY_SUFFIX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
 +endif(NOT LIBRARY_SUFFIX)
 +
-+#set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath=${QUICKJS_C_MODULE_DIR})
++# set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS}
++# -Wl,-rpath=${QUICKJS_C_MODULE_DIR})
 diff --git a/cmake/FindQuickJS.cmake b/cmake/FindQuickJS.cmake
 new file mode 100644
-index 0000000..2e2f615
+index 0000000..e4099b6
 --- /dev/null
 +++ b/cmake/FindQuickJS.cmake
-@@ -0,0 +1,241 @@
+@@ -0,0 +1,255 @@
 +macro(find_quickjs)
 +  include(CheckIncludeFile)
 +
@@ -1764,18 +2072,18 @@ index 0000000..2e2f615
 +  if(NOT QUICKJS_PREFIX)
 +    find_file(
 +      QUICKJS_H quickjs.h
-+      PATHS "${CMAKE_INSTALL_PREFIX}/inclue/quickjs"
++      PATHS "${CMAKE_INSTALL_PREFIX}/include/quickjs"
 +            "/usr/local/include/quickjs" "/usr/include/quickjs"
 +            "${QUICKJS_ROOT}/include/quickjs" "${QuickJS_DIR}/include/quickjs")
 +
 +    if(QUICKJS_H)
-+      message("QuickJS header: ${QUICKJS_H}")
 +      string(REGEX REPLACE "/include.*" "" QUICKJS_PREFIX "${QUICKJS_H}")
 +    endif(QUICKJS_H)
 +  endif(NOT QUICKJS_PREFIX)
 +
 +  if(NOT QUICKJS_PREFIX)
-+    set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}"
++    set(QUICKJS_PREFIX
++        "${CMAKE_INSTALL_PREFIX}"
 +        CACHE PATH "QuickJS install directory")
 +  endif(NOT QUICKJS_PREFIX)
 +
@@ -1788,7 +2096,8 @@ index 0000000..2e2f615
 +    set(QUICKJS_INSTALL_DIR "${QUICKJS_PREFIX}")
 +  endif("${QUICKJS_INSTALL_DIR}" STREQUAL "")
 +
-+  set(QUICKJS_INSTALL_PREFIX "${QUICKJS_INSTALL_DIR}"
++  set(QUICKJS_INSTALL_PREFIX
++      "${QUICKJS_INSTALL_DIR}"
 +      CACHE PATH "QuickJS installation prefix")
 +
 +  if(CACHE{CMAKE_BUILD_TYPE})
@@ -1831,15 +2140,16 @@ index 0000000..2e2f615
 +  endif(NOT QUICKJS_INCLUDE_DIR)
 +
 +  if(QUICKJS_INCLUDE_DIR)
-+    message("QuickJS include dir: ${QUICKJS_INCLUDE_DIR}")
-+    set(QUICKJS_INCLUDE_DIR "${QUICKJS_INCLUDE_DIR}"
++    set(QUICKJS_INCLUDE_DIR
++        "${QUICKJS_INCLUDE_DIR}"
 +        CACHE PATH "QuickJS include directory")
 +    link_directories(${QUICKJS_INCLUDE_DIR})
 +  endif(QUICKJS_INCLUDE_DIR)
 +
 +  if(NOT QUICKJS_LIBRARY_DIR)
 +    if(EXISTS "${QUICKJS_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-+      set(QUICKJS_LIBRARY_DIR "${QUICKJS_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
++      set(QUICKJS_LIBRARY_DIR
++          "${QUICKJS_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
 +          CACHE PATH "QuickJS library directory")
 +    endif(EXISTS "${QUICKJS_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 +  endif(NOT QUICKJS_LIBRARY_DIR)
@@ -1852,8 +2162,8 @@ index 0000000..2e2f615
 +  endif(NOT QUICKJS_LIBRARY_DIR)
 +
 +  if(QUICKJS_LIBRARY_DIR)
-+    message("QuickJS library dir: ${QUICKJS_LIBRARY_DIR}")
-+    set(QUICKJS_LIBRARY_DIR "${QUICKJS_LIBRARY_DIR}"
++    set(QUICKJS_LIBRARY_DIR
++        "${QUICKJS_LIBRARY_DIR}"
 +        CACHE PATH "QuickJS library directory")
 +    link_directories(${QUICKJS_LIBRARY_DIR})
 +  endif(QUICKJS_LIBRARY_DIR)
@@ -1917,10 +2227,14 @@ index 0000000..2e2f615
 +    add_definitions(-DHAVE_QUICKJS_CONFIG_H=1)
 +  endif(HAVE_QUICKJS_CONFIG_H)
 +
-+  find_program(QJS qjs PATHS "${CMAKE_CURRENT_BINARY_DIR}/.."
-+                             "${QUICKJS_PREFIX}/bin" ENV PATH NO_DEFAULT_PATH)
-+  find_program(QJSC qjsc PATHS "${CMAKE_CURRENT_BINARY_DIR}/.."
-+                               "${QUICKJS_PREFIX}/bin" ENV PATH NO_DEFAULT_PATH)
++  find_program(
++    QJS qjs
++    PATHS "${CMAKE_CURRENT_BINARY_DIR}/.." "${QUICKJS_PREFIX}/bin" ENV PATH
++    NO_DEFAULT_PATH)
++  find_program(
++    QJSC qjsc
++    PATHS "${CMAKE_CURRENT_BINARY_DIR}/.." "${QUICKJS_PREFIX}/bin" ENV PATH
++    NO_DEFAULT_PATH)
 +
 +  set(CUTILS_H ${CMAKE_CURRENT_SOURCE_DIR}/../cutils.h)
 +  set(QUICKJS_H ${CMAKE_CURRENT_SOURCE_DIR}/../quickjs.h)
@@ -1928,7 +2242,8 @@ index 0000000..2e2f615
 +
 +macro(configure_quickjs)
 +  if(NOT QUICKJS_PREFIX)
-+    set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}"
++    set(QUICKJS_PREFIX
++        "${CMAKE_INSTALL_PREFIX}"
 +        CACHE PATH "QuickJS install directory")
 +  endif(NOT QUICKJS_PREFIX)
 +
@@ -1937,7 +2252,8 @@ index 0000000..2e2f615
 +  endif(NOT CMAKE_INSTALL_LIBDIR)
 +
 +  execute_process(
-+    COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
++    COMMAND ${CMAKE_C_COMPILER} -dumpmachine
++    OUTPUT_VARIABLE HOST_SYSTEM_NAME
 +    OUTPUT_STRIP_TRAILING_WHITESPACE)
 +
 +  if(NOT QUICKJS_C_MODULE_DIR)
@@ -1949,21 +2265,27 @@ index 0000000..2e2f615
 +    set(QUICKJS_JS_MODULE_DIR "${QUICKJS_PREFIX}/lib/quickjs")
 +  endif(NOT QUICKJS_JS_MODULE_DIR)
 +
-+  set(QUICKJS_C_MODULE_DIR "${QUICKJS_C_MODULE_DIR}"
++  set(QUICKJS_C_MODULE_DIR
++      "${QUICKJS_C_MODULE_DIR}"
 +      CACHE PATH "QuickJS native C modules directory")
-+  set(QUICKJS_JS_MODULE_DIR "${QUICKJS_JS_MODULE_DIR}"
++  set(QUICKJS_JS_MODULE_DIR
++      "${QUICKJS_JS_MODULE_DIR}"
 +      CACHE PATH "QuickJS JavaScript modules directory")
 +
++  configure_quickjs_module_path()
++
 +  if(NOT QUICKJS_CONFIGURATION_SHOWN)
-+    message(STATUS "QuickJS configuration")
-+    message(STATUS "\tinterpreter: ${QJS}")
-+    message(STATUS "\tcompiler: ${QJSC}")
-+    message(STATUS "\tlibrary: ${QUICKJS_LIBRARY}")
-+    message(STATUS "\tinstall directory: ${QUICKJS_PREFIX}")
-+    message(STATUS "\tlibrary directory: ${QUICKJS_LIBRARY_DIR}")
-+    message(STATUS "\tinclude directory: ${QUICKJS_INCLUDE_DIR}")
-+    message(STATUS "\tC module directory: ${QUICKJS_C_MODULE_DIR}")
-+    message(STATUS "\tJS module directory: ${QUICKJS_JS_MODULE_DIR}")
++    message_table(
++      "QuickJS"
++      "interpreter" "${QJS}"
++      "compiler" "${QJSC}"
++      "library" "${QUICKJS_LIBRARY}"
++      "prefix" "${QUICKJS_PREFIX}"
++      "library dir" "${QUICKJS_LIBRARY_DIR}"
++      "include dir" "${QUICKJS_INCLUDE_DIR}"
++      "C modules" "${QUICKJS_C_MODULE_DIR}"
++      "JS modules" "${QUICKJS_JS_MODULE_DIR}"
++      "module path" "${QUICKJS_MODULE_PATH}")
 +    set(QUICKJS_CONFIGURATION_SHOWN TRUE)
 +  endif(NOT QUICKJS_CONFIGURATION_SHOWN)
 +
@@ -1973,12 +2295,10 @@ index 0000000..2e2f615
 +macro(configure_quickjs_module_path)
 +  set(MODULE_PATH "")
 +
-+  #if(NOT "${SYSTEM_NAME}" STREQUAL "")
-+  #  add_unique(MODULE_PATH "${QUICKJS_LIBRARY_DIR}/${SYSTEM_NAME}quickjs")
-+  #endif()
++  # if(NOT "${SYSTEM_NAME}" STREQUAL "") add_unique(MODULE_PATH
++  # "${QUICKJS_LIBRARY_DIR}/${SYSTEM_NAME}quickjs") endif()
 +
-+  #dump(QUICKJS_C_MODULE_DIR)
-+  #dump(QUICKJS_JS_MODULE_DIR)
++  # dump(QUICKJS_C_MODULE_DIR) dump(QUICKJS_JS_MODULE_DIR)
 +
 +  add_unique(MODULE_PATH "${QUICKJS_C_MODULE_DIR}" "${QUICKJS_JS_MODULE_DIR}")
 +
@@ -1986,19 +2306,21 @@ index 0000000..2e2f615
 +    string(REPLACE ":" ";" MODULE_PATH "${MODULE_PATH}")
 +  endif(NOT WIN32)
 +
-+  set(QUICKJS_MODULE_PATH "${MODULE_PATH}" CACHE PATH
-+                                                 "QuickJS modules search path")
++  set(QUICKJS_MODULE_PATH
++      "${MODULE_PATH}"
++      CACHE PATH "QuickJS modules search path")
 +
-+  message(STATUS "\tmodule search path: ${QUICKJS_MODULE_PATH}")
 +endmacro(configure_quickjs_module_path)
 +
-+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake)
++include(${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Functions.cmake)
++include(${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Checks.cmake)
++include(${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Compat.cmake)
 diff --git a/cmake/MakeQuickJSModule.cmake b/cmake/MakeQuickJSModule.cmake
 new file mode 100644
-index 0000000..420da5d
+index 0000000..fe0d4e1
 --- /dev/null
 +++ b/cmake/MakeQuickJSModule.cmake
-@@ -0,0 +1,303 @@
+@@ -0,0 +1,357 @@
 +function(config_module TARGET_NAME)
 +  if(QUICKJS_LIBRARY_DIR)
 +    set_target_properties(${TARGET_NAME} PROPERTIES LINK_DIRECTORIES
@@ -2017,7 +2339,9 @@ index 0000000..420da5d
 +  message(STATUS "Compile QuickJS module '${BASE}.c' from '${SOURCE}'")
 +
 +  set(MODULES_DIR "${CMAKE_BINARY_DIR}/modules")
-+  set(MODULES_DIR "${MODULES_DIR}" PARENT_SCOPE)
++  set(MODULES_DIR
++      "${MODULES_DIR}"
++      PARENT_SCOPE)
 +  file(MAKE_DIRECTORY "${MODULES_DIR}")
 +
 +  if(ARGN)
@@ -2028,10 +2352,18 @@ index 0000000..420da5d
 +
 +  list(APPEND COMPILED_MODULES "${OUTPUT_FILE}")
 +  list(APPEND COMPILED_TARGETS "${BASE}.c")
-+  set(COMPILED_MODULES "${COMPILED_MODULES}" PARENT_SCOPE)
-+  set(COMPILED_TARGETS "${COMPILED_TARGETS}" PARENT_SCOPE)
++  set(COMPILED_MODULES
++      "${COMPILED_MODULES}"
++      PARENT_SCOPE)
++  set(COMPILED_TARGETS
++      "${COMPILED_TARGETS}"
++      PARENT_SCOPE)
 +
-+  #add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc -v -c -o "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
++  # add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc -v -c -o
++  # "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS
++  # ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT
++  # "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES
++  # ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
 +  add_custom_target(
 +    "${BASE}.c" ALL
 +    BYPRODUCTS "${OUTPUT_FILE}"
@@ -2040,8 +2372,8 @@ index 0000000..420da5d
 +    DEPENDS ${QJSC_DEPS}
 +    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 +    COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler"
-+    SOURCES
-+      "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" #DEPENDS qjs-inspect qjs-misc
++    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" # DEPENDS qjs-inspect
++                                                    # qjs-misc
 +  )
 +endfunction(compile_module SOURCE)
 +
@@ -2049,7 +2381,7 @@ index 0000000..420da5d
 +  basename(BASE "${SOURCE}" .c)
 +  string(REGEX REPLACE "\\.c$" ".h" HEADER "${SOURCE}")
 +  string(REGEX REPLACE "-" "_" NAME "${BASE}")
-+  #message("generate_module_header SOURCE=${SOURCE}")
++  # message("generate_module_header SOURCE=${SOURCE}")
 +  file(READ "${SOURCE}" CSRC)
 +  string(REGEX MATCHALL "qjsc_[0-9A-Za-z_]+" SYMBOLS "${CSRC}")
 +  list(FILTER SYMBOLS EXCLUDE REGEX "_size$")
@@ -2065,11 +2397,11 @@ index 0000000..420da5d
 +    endif(NOT FNAME MATCHES "\\.h$")
 +    set(S "${S}#include \"${FNAME}\"\n")
 +  endforeach(INCLUDE ${INCLUDES})
-+  #message("INCLUDES: ${INCLUDES}")
++  # message("INCLUDES: ${INCLUDES}")
 +
 +  foreach(NAME ${SYMBOLS})
 +    contains(INCLUDES "${NAME}" DOES_CONTAIN)
-+    #message(" contains(INCLUDES \"${NAME}\" DOES_CONTAIN) = ${DOES_CONTAIN}")
++    # message(" contains(INCLUDES \"${NAME}\" DOES_CONTAIN) = ${DOES_CONTAIN}")
 +    if(NOT DOES_CONTAIN)
 +      set(S
 +          "${S}\nextern const uint32_t qjsc_${NAME}_size;\nextern const uint8_t qjsc_${NAME}[];\n"
@@ -2077,8 +2409,8 @@ index 0000000..420da5d
 +    endif(NOT DOES_CONTAIN)
 +  endforeach(NAME ${SYMBOLS})
 +  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/modules/${BASE}.h" "${S}")
-+  #string(REGEX REPLACE "[\\n;]" "\\\\n" SYMBOLS "${SYMBOLS}")
-+  #message("Symbols: ${SYMBOLS}")
++  # string(REGEX REPLACE "[\\n;]" "\\\\n" SYMBOLS "${SYMBOLS}")
++  # message("Symbols: ${SYMBOLS}")
 +endfunction(generate_module_header SOURCE)
 +
 +function(make_module_header SOURCE)
@@ -2090,10 +2422,14 @@ index 0000000..420da5d
 +  make_script(
 +    "${SCRIPT}"
 +    "message(\"Generating module '${NAME}'\")\nremake_module(${SOURCE})\n"
-+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake"
++    "${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Functions.cmake;${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Compat.cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake"
 +  )
-+  add_custom_target(${BASE}.h ALL ${CMAKE_COMMAND} -P ${SCRIPT}
-+                    DEPENDS ${SOURCE} BYPRODUCTS ${HEADER} SOURCES ${SOURCE})
++  add_custom_target(
++    ${BASE}.h ALL
++    ${CMAKE_COMMAND} -P ${SCRIPT}
++    DEPENDS ${SOURCE}
++    BYPRODUCTS ${HEADER}
++    SOURCES ${SOURCE})
 +endfunction(make_module_header SOURCE)
 +
 +function(list_definitions SOURCE OUTVAR)
@@ -2109,11 +2445,16 @@ index 0000000..420da5d
 +    endif(ARGN AND NOT "${DEF}" STREQUAL "${ARGN}")
 +  endforeach(DEF ${SYMBOLS})
 +
-+  set("${OUTVAR}" "${OUT}" PARENT_SCOPE)
-+endfunction(list_definitions SOURCE OUTVAR)
++  set("${OUTVAR}"
++      "${OUT}"
++      PARENT_SCOPE)
++endfunction(
++  list_definitions
++  SOURCE
++  OUTVAR)
 +
 +function(include_definitions OUTVAR)
-+  #print_str("include_definitions(${OUTVAR} ${ARGN})")
++  # print_str("include_definitions(${OUTVAR} ${ARGN})")
 +  set(S "")
 +  foreach(DEF ${ARGN})
 +    string(STRIP "${DEF}" DEF)
@@ -2121,8 +2462,10 @@ index 0000000..420da5d
 +    set(S "${S}#include \"${NAME}.h\"\n")
 +  endforeach(DEF ${ARGN})
 +
-+  #print_str("include_definitions S=${S}")
-+  set("${OUTVAR}" "${S}" PARENT_SCOPE)
++  # print_str("include_definitions S=${S}")
++  set("${OUTVAR}"
++      "${S}"
++      PARENT_SCOPE)
 +endfunction(include_definitions OUTVAR)
 +
 +function(extract_definition SOURCE OUTVAR DEF)
@@ -2146,8 +2489,14 @@ index 0000000..420da5d
 +  endforeach(LINE ${DEFINITIONS})
 +
 +  string(REGEX REPLACE "\\\\n" "\\n" S "${S}")
-+  set("${OUTVAR}" "${S}\n" PARENT_SCOPE)
-+endfunction(extract_definition SOURCE OUTVAR DEF)
++  set("${OUTVAR}"
++      "${S}\n"
++      PARENT_SCOPE)
++endfunction(
++  extract_definition
++  SOURCE
++  OUTVAR
++  DEF)
 +
 +function(remake_module SOURCE)
 +  basename(BASE "${SOURCE}" .c)
@@ -2159,7 +2508,7 @@ index 0000000..420da5d
 +  list(FILTER DEFLIST EXCLUDE REGEX "^${NAME}$")
 +  list(FILTER DEFLIST EXCLUDE REGEX "^${BASE}$")
 +
-+  #print_str("Included definitions in ${NAME}: ${DEFLIST}")
++  # print_str("Included definitions in ${NAME}: ${DEFLIST}")
 +
 +  include_definitions(INC "${DEFLIST}")
 +
@@ -2183,7 +2532,11 @@ index 0000000..420da5d
 +  endforeach(INC ${INCLUDES})
 +  set(S "${S}\n\n${TEXT}\n")
 +  file(WRITE "${OUTPUT_FILE}" "${S}")
-+endfunction(make_script OUTPUT_FILE TEXT INCLUDES)
++endfunction(
++  make_script
++  OUTPUT_FILE
++  TEXT
++  INCLUDES)
 +
 +function(make_module FNAME)
 +  string(REGEX REPLACE "_" "-" NAME "${FNAME}")
@@ -2196,11 +2549,11 @@ index 0000000..420da5d
 +  set(LIBS ${${VNAME}_LIBRARIES})
 +
 +  if(ARGN)
-+    set(SOURCES ${ARGN} #${${VNAME}_SOURCES}
++    set(SOURCES ${ARGN} # ${${VNAME}_SOURCES}
 +                ${COMMON_SOURCES})
 +    add_unique(DEPS ${${VNAME}_DEPS})
 +  else(ARGN)
-+    set(SOURCES quickjs-${NAME}.c #${${VNAME}_SOURCES}
++    set(SOURCES quickjs-${NAME}.c # ${${VNAME}_SOURCES}
 +                ${COMMON_SOURCES})
 +    add_unique(LIBS ${${VNAME}_LIBRARIES})
 +  endif(ARGN)
@@ -2211,9 +2564,14 @@ index 0000000..420da5d
 +      "Building QuickJS module: ${FNAME} (deps: ${DEPS}, libs: ${LIBS}) JS_${UNAME}_MODULE=1"
 +  )
 +
-+  if(WASI OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++  if(WASI
++     OR EMSCRIPTEN
++     OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +    set(BUILD_SHARED_MODULES OFF)
-+  endif(WASI OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++  endif(
++    WASI
++    OR EMSCRIPTEN
++    OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
 +  if(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +    set(PREFIX "lib")
@@ -2221,31 +2579,40 @@ index 0000000..420da5d
 +    set(PREFIX "")
 +  endif(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
-+  #dump(VNAME ${VNAME}_SOURCES SOURCES)
++  # dump(VNAME ${VNAME}_SOURCES SOURCES)
 +
 +  if(BUILD_SHARED_MODULES)
-+    #add_library(${TARGET_NAME} MODULE ${SOURCES})
++    # add_library(${TARGET_NAME} MODULE ${SOURCES})
 +    add_library(${TARGET_NAME} SHARED ${SOURCES})
 +
 +    set_target_properties(
 +      ${TARGET_NAME}
 +      PROPERTIES RPATH "${MBEDTLS_LIBRARY_DIR}:${QUICKJS_C_MODULE_DIR}"
-+                 INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}" PREFIX "${PREFIX}"
-+                 OUTPUT_NAME "${VNAME}" COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
++                 INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}"
++                 PREFIX "${PREFIX}"
++                 OUTPUT_NAME "${VNAME}"
++                 COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
 +
 +    target_compile_definitions(
 +      ${TARGET_NAME}
 +      PRIVATE _GNU_SOURCE=1 JS_SHARED_LIBRARY=1 JS_${UNAME}_MODULE=1
-+              QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}")
++              QUICKJS_PREFIX="${QUICKJS_PREFIX}")
 +
 +    target_link_directories(${TARGET_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 +    target_link_libraries(${TARGET_NAME} PUBLIC ${LIBS} ${QUICKJS_LIBRARY})
 +
 +    install(
 +      TARGETS ${TARGET_NAME}
-+      RUNTIME DESTINATION "${QUICKJS_C_MODULE_DIR}"
-+              PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-+                          GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
++      RUNTIME
++        DESTINATION "${QUICKJS_C_MODULE_DIR}"
++        PERMISSIONS
++          OWNER_READ
++          OWNER_WRITE
++          OWNER_EXECUTE
++          GROUP_READ
++          GROUP_EXECUTE
++          WORLD_READ
++          WORLD_EXECUTE)
 +
 +    config_module(${TARGET_NAME})
 +
@@ -2263,16 +2630,19 @@ index 0000000..420da5d
 +
 +  set(MODULES_STATIC "${QJS_MODULES_STATIC}")
 +  list(APPEND MODULES_STATIC "${TARGET_NAME}-static")
-+  set(QJS_MODULES_STATIC "${MODULES_STATIC}" PARENT_SCOPE)
++  set(QJS_MODULES_STATIC
++      "${MODULES_STATIC}"
++      PARENT_SCOPE)
 +
 +  set_target_properties(
 +    ${TARGET_NAME}-static
-+    PROPERTIES OUTPUT_NAME "${VNAME}" PREFIX "quickjs-" SUFFIX
-+                                                        "${LIBRARY_SUFFIX}"
++    PROPERTIES OUTPUT_NAME "${VNAME}"
++               PREFIX "quickjs-"
++               SUFFIX "${LIBRARY_SUFFIX}"
 +               COMPILE_FLAGS "")
 +  target_compile_definitions(
 +    ${TARGET_NAME}-static PRIVATE _GNU_SOURCE=1 JS_${UNAME}_MODULE=1
-+                                  QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}")
++                                  QUICKJS_PREFIX="${QUICKJS_PREFIX}")
 +  target_link_directories(${TARGET_NAME}-static PUBLIC
 +                          "${CMAKE_CURRENT_BINARY_DIR}")
 +  target_link_libraries(${TARGET_NAME}-static INTERFACE ${QUICKJS_LIBRARY})
@@ -2290,11 +2660,17 @@ index 0000000..420da5d
 +  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 +endif(WIN32 OR MINGW)
 +
-+if(WASI OR WASM OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++if(WASI
++   OR WASM
++   OR EMSCRIPTEN
++   OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +  set(LIBRARY_PREFIX "lib")
 +  set(LIBRARY_SUFFIX ".a")
-+endif(WASI OR WASM OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL
-+                                    "Emscripten")
++endif(
++  WASI
++  OR WASM
++  OR EMSCRIPTEN
++  OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
 +if(NOT LIBRARY_PREFIX)
 +  set(LIBRARY_PREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}")
@@ -2304,10 +2680,10 @@ index 0000000..420da5d
 +endif(NOT LIBRARY_SUFFIX)
 diff --git a/cmake/QuickJSModule.cmake b/cmake/QuickJSModule.cmake
 new file mode 100644
-index 0000000..420da5d
+index 0000000..0adb0d5
 --- /dev/null
 +++ b/cmake/QuickJSModule.cmake
-@@ -0,0 +1,303 @@
+@@ -0,0 +1,388 @@
 +function(config_module TARGET_NAME)
 +  if(QUICKJS_LIBRARY_DIR)
 +    set_target_properties(${TARGET_NAME} PROPERTIES LINK_DIRECTORIES
@@ -2326,7 +2702,9 @@ index 0000000..420da5d
 +  message(STATUS "Compile QuickJS module '${BASE}.c' from '${SOURCE}'")
 +
 +  set(MODULES_DIR "${CMAKE_BINARY_DIR}/modules")
-+  set(MODULES_DIR "${MODULES_DIR}" PARENT_SCOPE)
++  set(MODULES_DIR
++      "${MODULES_DIR}"
++      PARENT_SCOPE)
 +  file(MAKE_DIRECTORY "${MODULES_DIR}")
 +
 +  if(ARGN)
@@ -2337,10 +2715,18 @@ index 0000000..420da5d
 +
 +  list(APPEND COMPILED_MODULES "${OUTPUT_FILE}")
 +  list(APPEND COMPILED_TARGETS "${BASE}.c")
-+  set(COMPILED_MODULES "${COMPILED_MODULES}" PARENT_SCOPE)
-+  set(COMPILED_TARGETS "${COMPILED_TARGETS}" PARENT_SCOPE)
++  set(COMPILED_MODULES
++      "${COMPILED_MODULES}"
++      PARENT_SCOPE)
++  set(COMPILED_TARGETS
++      "${COMPILED_TARGETS}"
++      PARENT_SCOPE)
 +
-+  #add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc -v -c -o "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
++  # add_custom_command(OUTPUT "${OUTPUT_FILE}" COMMAND qjsc -v -c -o
++  # "${OUTPUT_FILE}" -m "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" DEPENDS
++  # ${QJSC_DEPS} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"COMMENT
++  # "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler" SOURCES
++  # ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE} DEPENDS qjs-inspect qjs-misc)
 +  add_custom_target(
 +    "${BASE}.c" ALL
 +    BYPRODUCTS "${OUTPUT_FILE}"
@@ -2349,8 +2735,8 @@ index 0000000..420da5d
 +    DEPENDS ${QJSC_DEPS}
 +    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 +    COMMENT "Generate ${OUTPUT_FILE} from ${SOURCE} using qjs compiler"
-+    SOURCES
-+      "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" #DEPENDS qjs-inspect qjs-misc
++    SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}" # DEPENDS qjs-inspect
++                                                    # qjs-misc
 +  )
 +endfunction(compile_module SOURCE)
 +
@@ -2358,7 +2744,7 @@ index 0000000..420da5d
 +  basename(BASE "${SOURCE}" .c)
 +  string(REGEX REPLACE "\\.c$" ".h" HEADER "${SOURCE}")
 +  string(REGEX REPLACE "-" "_" NAME "${BASE}")
-+  #message("generate_module_header SOURCE=${SOURCE}")
++  # message("generate_module_header SOURCE=${SOURCE}")
 +  file(READ "${SOURCE}" CSRC)
 +  string(REGEX MATCHALL "qjsc_[0-9A-Za-z_]+" SYMBOLS "${CSRC}")
 +  list(FILTER SYMBOLS EXCLUDE REGEX "_size$")
@@ -2374,11 +2760,11 @@ index 0000000..420da5d
 +    endif(NOT FNAME MATCHES "\\.h$")
 +    set(S "${S}#include \"${FNAME}\"\n")
 +  endforeach(INCLUDE ${INCLUDES})
-+  #message("INCLUDES: ${INCLUDES}")
++  # message("INCLUDES: ${INCLUDES}")
 +
 +  foreach(NAME ${SYMBOLS})
 +    contains(INCLUDES "${NAME}" DOES_CONTAIN)
-+    #message(" contains(INCLUDES \"${NAME}\" DOES_CONTAIN) = ${DOES_CONTAIN}")
++    # message(" contains(INCLUDES \"${NAME}\" DOES_CONTAIN) = ${DOES_CONTAIN}")
 +    if(NOT DOES_CONTAIN)
 +      set(S
 +          "${S}\nextern const uint32_t qjsc_${NAME}_size;\nextern const uint8_t qjsc_${NAME}[];\n"
@@ -2386,8 +2772,8 @@ index 0000000..420da5d
 +    endif(NOT DOES_CONTAIN)
 +  endforeach(NAME ${SYMBOLS})
 +  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/modules/${BASE}.h" "${S}")
-+  #string(REGEX REPLACE "[\\n;]" "\\\\n" SYMBOLS "${SYMBOLS}")
-+  #message("Symbols: ${SYMBOLS}")
++  # string(REGEX REPLACE "[\\n;]" "\\\\n" SYMBOLS "${SYMBOLS}")
++  # message("Symbols: ${SYMBOLS}")
 +endfunction(generate_module_header SOURCE)
 +
 +function(make_module_header SOURCE)
@@ -2399,10 +2785,14 @@ index 0000000..420da5d
 +  make_script(
 +    "${SCRIPT}"
 +    "message(\"Generating module '${NAME}'\")\nremake_module(${SOURCE})\n"
-+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/functions.cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake"
++    "${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Functions.cmake;${CMAKE_CURRENT_SOURCE_DIR}/qjs-modules/cmake/Compat.cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/QuickJSModule.cmake"
 +  )
-+  add_custom_target(${BASE}.h ALL ${CMAKE_COMMAND} -P ${SCRIPT}
-+                    DEPENDS ${SOURCE} BYPRODUCTS ${HEADER} SOURCES ${SOURCE})
++  add_custom_target(
++    ${BASE}.h ALL
++    ${CMAKE_COMMAND} -P ${SCRIPT}
++    DEPENDS ${SOURCE}
++    BYPRODUCTS ${HEADER}
++    SOURCES ${SOURCE})
 +endfunction(make_module_header SOURCE)
 +
 +function(list_definitions SOURCE OUTVAR)
@@ -2418,11 +2808,16 @@ index 0000000..420da5d
 +    endif(ARGN AND NOT "${DEF}" STREQUAL "${ARGN}")
 +  endforeach(DEF ${SYMBOLS})
 +
-+  set("${OUTVAR}" "${OUT}" PARENT_SCOPE)
-+endfunction(list_definitions SOURCE OUTVAR)
++  set("${OUTVAR}"
++      "${OUT}"
++      PARENT_SCOPE)
++endfunction(
++  list_definitions
++  SOURCE
++  OUTVAR)
 +
 +function(include_definitions OUTVAR)
-+  #print_str("include_definitions(${OUTVAR} ${ARGN})")
++  # print_str("include_definitions(${OUTVAR} ${ARGN})")
 +  set(S "")
 +  foreach(DEF ${ARGN})
 +    string(STRIP "${DEF}" DEF)
@@ -2430,8 +2825,10 @@ index 0000000..420da5d
 +    set(S "${S}#include \"${NAME}.h\"\n")
 +  endforeach(DEF ${ARGN})
 +
-+  #print_str("include_definitions S=${S}")
-+  set("${OUTVAR}" "${S}" PARENT_SCOPE)
++  # print_str("include_definitions S=${S}")
++  set("${OUTVAR}"
++      "${S}"
++      PARENT_SCOPE)
 +endfunction(include_definitions OUTVAR)
 +
 +function(extract_definition SOURCE OUTVAR DEF)
@@ -2455,8 +2852,14 @@ index 0000000..420da5d
 +  endforeach(LINE ${DEFINITIONS})
 +
 +  string(REGEX REPLACE "\\\\n" "\\n" S "${S}")
-+  set("${OUTVAR}" "${S}\n" PARENT_SCOPE)
-+endfunction(extract_definition SOURCE OUTVAR DEF)
++  set("${OUTVAR}"
++      "${S}\n"
++      PARENT_SCOPE)
++endfunction(
++  extract_definition
++  SOURCE
++  OUTVAR
++  DEF)
 +
 +function(remake_module SOURCE)
 +  basename(BASE "${SOURCE}" .c)
@@ -2468,7 +2871,7 @@ index 0000000..420da5d
 +  list(FILTER DEFLIST EXCLUDE REGEX "^${NAME}$")
 +  list(FILTER DEFLIST EXCLUDE REGEX "^${BASE}$")
 +
-+  #print_str("Included definitions in ${NAME}: ${DEFLIST}")
++  # print_str("Included definitions in ${NAME}: ${DEFLIST}")
 +
 +  include_definitions(INC "${DEFLIST}")
 +
@@ -2492,7 +2895,11 @@ index 0000000..420da5d
 +  endforeach(INC ${INCLUDES})
 +  set(S "${S}\n\n${TEXT}\n")
 +  file(WRITE "${OUTPUT_FILE}" "${S}")
-+endfunction(make_script OUTPUT_FILE TEXT INCLUDES)
++endfunction(
++  make_script
++  OUTPUT_FILE
++  TEXT
++  INCLUDES)
 +
 +function(make_module FNAME)
 +  string(REGEX REPLACE "_" "-" NAME "${FNAME}")
@@ -2505,11 +2912,11 @@ index 0000000..420da5d
 +  set(LIBS ${${VNAME}_LIBRARIES})
 +
 +  if(ARGN)
-+    set(SOURCES ${ARGN} #${${VNAME}_SOURCES}
++    set(SOURCES ${ARGN} # ${${VNAME}_SOURCES}
 +                ${COMMON_SOURCES})
 +    add_unique(DEPS ${${VNAME}_DEPS})
 +  else(ARGN)
-+    set(SOURCES quickjs-${NAME}.c #${${VNAME}_SOURCES}
++    set(SOURCES quickjs-${NAME}.c # ${${VNAME}_SOURCES}
 +                ${COMMON_SOURCES})
 +    add_unique(LIBS ${${VNAME}_LIBRARIES})
 +  endif(ARGN)
@@ -2520,9 +2927,14 @@ index 0000000..420da5d
 +      "Building QuickJS module: ${FNAME} (deps: ${DEPS}, libs: ${LIBS}) JS_${UNAME}_MODULE=1"
 +  )
 +
-+  if(WASI OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++  if(WASI
++     OR EMSCRIPTEN
++     OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +    set(BUILD_SHARED_MODULES OFF)
-+  endif(WASI OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++  endif(
++    WASI
++    OR EMSCRIPTEN
++    OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
 +  if(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +    set(PREFIX "lib")
@@ -2530,31 +2942,40 @@ index 0000000..420da5d
 +    set(PREFIX "")
 +  endif(NOT WASI AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
-+  #dump(VNAME ${VNAME}_SOURCES SOURCES)
++  # dump(VNAME ${VNAME}_SOURCES SOURCES)
 +
 +  if(BUILD_SHARED_MODULES)
-+    #add_library(${TARGET_NAME} MODULE ${SOURCES})
++    # add_library(${TARGET_NAME} MODULE ${SOURCES})
 +    add_library(${TARGET_NAME} SHARED ${SOURCES})
 +
 +    set_target_properties(
 +      ${TARGET_NAME}
 +      PROPERTIES RPATH "${MBEDTLS_LIBRARY_DIR}:${QUICKJS_C_MODULE_DIR}"
-+                 INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}" PREFIX "${PREFIX}"
-+                 OUTPUT_NAME "${VNAME}" COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
++                 INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}"
++                 PREFIX "${PREFIX}"
++                 OUTPUT_NAME "${VNAME}"
++                 COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
 +
 +    target_compile_definitions(
 +      ${TARGET_NAME}
 +      PRIVATE _GNU_SOURCE=1 JS_SHARED_LIBRARY=1 JS_${UNAME}_MODULE=1
-+              QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}")
++              QUICKJS_PREFIX="${QUICKJS_PREFIX}")
 +
 +    target_link_directories(${TARGET_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 +    target_link_libraries(${TARGET_NAME} PUBLIC ${LIBS} ${QUICKJS_LIBRARY})
 +
 +    install(
 +      TARGETS ${TARGET_NAME}
-+      RUNTIME DESTINATION "${QUICKJS_C_MODULE_DIR}"
-+              PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-+                          GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
++      RUNTIME
++        DESTINATION "${QUICKJS_C_MODULE_DIR}"
++        PERMISSIONS
++          OWNER_READ
++          OWNER_WRITE
++          OWNER_EXECUTE
++          GROUP_READ
++          GROUP_EXECUTE
++          WORLD_READ
++          WORLD_EXECUTE)
 +
 +    config_module(${TARGET_NAME})
 +
@@ -2572,20 +2993,54 @@ index 0000000..420da5d
 +
 +  set(MODULES_STATIC "${QJS_MODULES_STATIC}")
 +  list(APPEND MODULES_STATIC "${TARGET_NAME}-static")
-+  set(QJS_MODULES_STATIC "${MODULES_STATIC}" PARENT_SCOPE)
++  set(QJS_MODULES_STATIC
++      "${MODULES_STATIC}"
++      PARENT_SCOPE)
 +
 +  set_target_properties(
 +    ${TARGET_NAME}-static
-+    PROPERTIES OUTPUT_NAME "${VNAME}" PREFIX "quickjs-" SUFFIX
-+                                                        "${LIBRARY_SUFFIX}"
++    PROPERTIES OUTPUT_NAME "${VNAME}"
++               PREFIX "quickjs-"
++               SUFFIX "${LIBRARY_SUFFIX}"
 +               COMPILE_FLAGS "")
 +  target_compile_definitions(
 +    ${TARGET_NAME}-static PRIVATE _GNU_SOURCE=1 JS_${UNAME}_MODULE=1
-+                                  QUICKJS_PREFIX="${QUICKJS_INSTALL_PREFIX}")
++                                  QUICKJS_PREFIX="${QUICKJS_PREFIX}")
 +  target_link_directories(${TARGET_NAME}-static PUBLIC
 +                          "${CMAKE_CURRENT_BINARY_DIR}")
 +  target_link_libraries(${TARGET_NAME}-static INTERFACE ${QUICKJS_LIBRARY})
 +
++endfunction()
++
++function(add_quickjs_modules_subdirs)
++  set(subdirs "")
++  
++  foreach(arg ${ARGN})
++    # Check if the argument specifies a custom default (e.g., ImGui:OFF)
++    if(arg MATCHES "^([^:]+):(.+)$")
++      set(mod "${CMAKE_MATCH_1}")
++      set(default_val "${CMAKE_MATCH_2}")
++    else()
++      set(mod "${arg}")
++      set(default_val "ON")
++    endif()
++
++    string(TOLOWER "${mod}" mod_lower)
++    set(subdir "qjs-${mod_lower}")
++
++    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}")
++      string(TOUPPER "${mod}" mod_upper)
++      set(option_name "MODULE_${mod_upper}")
++
++      option(${option_name} "Enable ${mod} module" ${default_val})
++      if(${option_name})
++        list(APPEND subdirs "${subdir}")
++      endif()
++    endif()
++  endforeach()
++
++  # Set MODULE_SUBDIRS in the parent scope
++  set(MODULE_SUBDIRS "${subdirs}" PARENT_SCOPE)
 +endfunction()
 +
 +if(WASI OR EMSCRIPTEN)
@@ -2599,11 +3054,17 @@ index 0000000..420da5d
 +  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 +endif(WIN32 OR MINGW)
 +
-+if(WASI OR WASM OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
++if(WASI
++   OR WASM
++   OR EMSCRIPTEN
++   OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +  set(LIBRARY_PREFIX "lib")
 +  set(LIBRARY_SUFFIX ".a")
-+endif(WASI OR WASM OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL
-+                                    "Emscripten")
++endif(
++  WASI
++  OR WASM
++  OR EMSCRIPTEN
++  OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
 +
 +if(NOT LIBRARY_PREFIX)
 +  set(LIBRARY_PREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}")
@@ -2613,16 +3074,17 @@ index 0000000..420da5d
 +endif(NOT LIBRARY_SUFFIX)
 diff --git a/cmake/UseMultiArch.cmake b/cmake/UseMultiArch.cmake
 new file mode 100644
-index 0000000..a9a97f7
+index 0000000..380506c
 --- /dev/null
 +++ b/cmake/UseMultiArch.cmake
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,78 @@
 +if(UNIX AND NOT APPLE)
 +  include(GNUInstallDirs)
 +endif()
 +
 +if(NOT DEFINED CMAKE_INSTALL_LIBDIR)
-+  set(CMAKE_INSTALL_LIBDIR lib
++  set(CMAKE_INSTALL_LIBDIR
++      lib
 +      CACHE STRING
 +            "Specify the output directory for libraries (default is lib)")
 +endif()
@@ -2632,16 +3094,26 @@ index 0000000..a9a97f7
 +    set(HOST_SYSTEM $ENV{VSCMD_ARG_HOST_ARCH})
 +    set(TARGET_SYSTEM $ENV{VSCMD_ARG_TGT_ARCH})
 +  else(MSVC OR DEFINED ENV{VSCMD_ARG_TGT_ARCH})
-+    execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM
-+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
 +    execute_process(
-+      COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE TARGET_SYSTEM
++      COMMAND cc -dumpmachine
++      OUTPUT_VARIABLE HOST_SYSTEM
++      OUTPUT_STRIP_TRAILING_WHITESPACE)
++    execute_process(
++      COMMAND ${CMAKE_C_COMPILER} -dumpmachine
++      OUTPUT_VARIABLE TARGET_SYSTEM
 +      OUTPUT_STRIP_TRAILING_WHITESPACE)
 +  endif(MSVC OR DEFINED ENV{VSCMD_ARG_TGT_ARCH})
 +
-+  set("${HOST_SYSTEM_VAR}" "${HOST_SYSTEM}" PARENT_SCOPE)
-+  set("${TARGET_SYSTEM_VAR}" "${TARGET_SYSTEM}" PARENT_SCOPE)
-+endfunction(GET_SYSTEM_NAME HOST_SYSTEM_VAR TARGET_SYSTEM_VAR)
++  set("${HOST_SYSTEM_VAR}"
++      "${HOST_SYSTEM}"
++      PARENT_SCOPE)
++  set("${TARGET_SYSTEM_VAR}"
++      "${TARGET_SYSTEM}"
++      PARENT_SCOPE)
++endfunction(
++  GET_SYSTEM_NAME
++  HOST_SYSTEM_VAR
++  TARGET_SYSTEM_VAR)
 +
 +get_system_name(HOST_SYSTEM_NAME SYSTEM_NAME)
 +
@@ -2651,10 +3123,13 @@ index 0000000..a9a97f7
 +      set(HOST_SYSTEM_NAME $ENV{VSCMD_ARG_HOST_ARCH})
 +      set(SYSTEM_NAME $ENV{VSCMD_ARG_TGT_ARCH})
 +    else(MSVC OR DEFINED ENV{VSCMD_ARG_TGT_ARCH})
-+      execute_process(COMMAND cc -dumpmachine OUTPUT_VARIABLE HOST_SYSTEM_NAME
-+                      OUTPUT_STRIP_TRAILING_WHITESPACE)
 +      execute_process(
-+        COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE SYSTEM_NAME
++        COMMAND cc -dumpmachine
++        OUTPUT_VARIABLE HOST_SYSTEM_NAME
++        OUTPUT_STRIP_TRAILING_WHITESPACE)
++      execute_process(
++        COMMAND ${CMAKE_C_COMPILER} -dumpmachine
++        OUTPUT_VARIABLE SYSTEM_NAME
 +        OUTPUT_STRIP_TRAILING_WHITESPACE)
 +    endif(MSVC OR DEFINED ENV{VSCMD_ARG_TGT_ARCH})
 +  endif(NOT SYSTEM_NAME)
@@ -2664,8 +3139,9 @@ index 0000000..a9a97f7
 +      string(REGEX REPLACE i686 i386 CMAKE_CROSS_ARCH "${SYSTEM_NAME}")
 +    endif()
 +
-+    set(CMAKE_CROSS_ARCH "${CMAKE_CROSS_ARCH}" CACHE STRING
-+                                                     "Cross compiling target")
++    set(CMAKE_CROSS_ARCH
++        "${CMAKE_CROSS_ARCH}"
++        CACHE STRING "Cross compiling target")
 +  endif()
 +  set(THIS_SYSTEM "${SYSTEM_NAME}")
 +  string(REGEX REPLACE "-unknown-" "-" THIS_SYSTEM "${THIS_SYSTEM}")
@@ -2673,16 +3149,16 @@ index 0000000..a9a97f7
 +
 +  if(THIS_SYSTEM AND NOT "${THIS_SYSTEM}" STREQUAL "")
 +    set(CMAKE_INSTALL_LIBDIR lib/${THIS_SYSTEM})
-+    set(CMAKE_ARCH_LIBDIR lib/${THIS_SYSTEM}
++    set(CMAKE_ARCH_LIBDIR
++        lib/${THIS_SYSTEM}
 +        CACHE STRING "Architecture specific libraries")
 +  endif(THIS_SYSTEM AND NOT "${THIS_SYSTEM}" STREQUAL "")
 +endif(NOT CMAKE_ARCH_LIBDIR)
 +
-+#message("${CMAKE_C_COMPILER}: ${CMAKE_C_COMPILER}")
-+message(STATUS "Architecture-specific library directory: ${CMAKE_ARCH_LIBDIR}")
++# message("${CMAKE_C_COMPILER}: ${CMAKE_C_COMPILER}")
 diff --git a/cmake/check-libraries.cmake b/cmake/check-libraries.cmake
 new file mode 100644
-index 0000000..7b207e1
+index 0000000..cbe98c6
 --- /dev/null
 +++ b/cmake/check-libraries.cmake
 @@ -0,0 +1,23 @@
@@ -2700,7 +3176,7 @@ index 0000000..7b207e1
 +  set(LIBM m)
 +  link_libraries(${LIBM})
 +  list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIBM})
-+  #message("Math library: ${LIBM}")
++  # message("Math library: ${LIBM}")
 +endif(HAVE_LIBM)
 +
 +if(NOT LIBDL)
@@ -2711,481 +3187,234 @@ index 0000000..7b207e1
 +endif()
 diff --git a/cmake/check-shared.cmake b/cmake/check-shared.cmake
 new file mode 100644
-index 0000000..533fa12
+index 0000000..6b39aa4
 --- /dev/null
 +++ b/cmake/check-shared.cmake
-@@ -0,0 +1,5 @@
+@@ -0,0 +1,7 @@
 +file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/test-shared.c" "int init(void) {}")
 +try_compile(
 +  SUPPORT_SHARED_LIBS "${CMAKE_CURRENT_BINARY_DIR}"
-+  "${CMAKE_CURRENT_BINARY_DIR}/test-shared.c" CMAKE_FLAGS "-fPIC"
-+  LINK_OPTIONS "-shared" OUTPUT_VARIABLE CHECK_SHARED_LIBS)
-diff --git a/cmake/functions.cmake b/cmake/functions.cmake
++  "${CMAKE_CURRENT_BINARY_DIR}/test-shared.c"
++  CMAKE_FLAGS "-fPIC"
++  LINK_OPTIONS "-shared"
++  OUTPUT_VARIABLE CHECK_SHARED_LIBS)
+diff --git a/cmake/emscripten/qjs-repl-wasm.c b/cmake/emscripten/qjs-repl-wasm.c
 new file mode 100644
-index 0000000..97306d1
+index 0000000..b8a7611
 --- /dev/null
-+++ b/cmake/functions.cmake
-@@ -0,0 +1,452 @@
-+include(CheckFunctionExists)
++++ b/cmake/emscripten/qjs-repl-wasm.c
+@@ -0,0 +1,70 @@
++/*
++ * Minimal driver for the qjs.html browser demo (see shell-repl.html).
++ *
++ * qjs.c's normal interactive REPL drives its own line-editing terminal
++ * (repl.js's termInit()) through os.setReadHandler()/js_std_loop(), which
++ * blocks mid-interpreter waiting for the next byte of input. Emscripten can
++ * only suspend a blocking call like that via Asyncify, and Asyncify cannot
++ * unwind/rewind through quickjs.c's JS_CallInternal(), which allocates its
++ * argument buffer with alloca() - a construct Asyncify does not support.
++ * See BUGS.
++ *
++ * So instead of trying to make the blocking terminal work, this exposes a
++ * plain synchronous "eval one line, return its result" entry point that the
++ * page calls once per Enter key press: no blocking read, no Asyncify.
++ */
++#include <emscripten.h>
++#include <stdlib.h>
++#include <string.h>
 +
-+##
-+## var2define <VARIABLE NAMES...>
-+##
-+function(DUMP)
-+  foreach(VAR ${ARGN})
-+    if("${SEPARATOR}" STREQUAL "")
-+      set(SEPARATOR "\n    ")
-+    endif("${SEPARATOR}" STREQUAL "")
-+    set("${VAR}" ${${VAR}})
-+    string(REGEX REPLACE "[ \t\n]+" "\n" A "${${VAR}}")
-+    string(REGEX REPLACE "\n" ";" A "${A}")
-+    string(REGEX REPLACE ";" "${SEPARATOR}" A "${A}")
++#include "quickjs-libc.h"
++#include "quickjs.h"
 +
-+    message("  ${VAR} = ${A}")
++static JSRuntime* rt;
++static JSContext* ctx;
 +
-+  endforeach(VAR ${ARGN})
-+endfunction(DUMP)
++static void
++qjs_repl_init(void) {
++  rt = JS_NewRuntime();
++  js_std_init_handlers(rt);
++  ctx = JS_NewContext(rt);
++  js_std_add_helpers(ctx, -1, NULL);
++}
 +
-+##
-+## var2define <NAME> [DEFINED_VALUE] [VAR_NAME]
-+##
-+function(VAR2DEFINE NAME)
-+  if("${ARGC}" GREATER 2)
-+    list(GET ARGN 1 VAR_NAME)
-+  else("${ARGC}" GREATER 2)
-+    set(VAR_NAME "${NAME}")
-+  endif("${ARGC}" GREATER 2)
++EMSCRIPTEN_KEEPALIVE
++char*
++qjs_repl_eval(const char* line) {
++  JSValue val;
++  const char* cstr;
++  char* result;
++  JSContext* ctx1;
 +
-+  set(VALUE "${${VAR_NAME}}")
++  val = JS_Eval(ctx, line, strlen(line), "<repl>", JS_EVAL_TYPE_GLOBAL);
++  if(JS_IsException(val)) {
++    js_std_dump_error(ctx);
++    result = strdup("");
++  } else {
++    cstr = JS_ToCString(ctx, val);
++    result = strdup(cstr ? cstr : "");
++    JS_FreeCString(ctx, cstr);
++  }
++  JS_FreeValue(ctx, val);
 +
-+  if("${ARGC}" LESS_EQUAL 1)
-+    if("${VALUE}")
-+      add_definitions(-D${NAME}=1)
-+    else("${VALUE}")
-+      add_definitions(-D${NAME}=0)
-+    endif("${VALUE}")
-+  else("${ARGC}" LESS_EQUAL 1)
-+    if("${VALUE}")
-+      list(GET ARGN 0 DEFINED_VALUE)
-+      add_definitions(-D${NAME}=${DEFINED_VALUE})
-+    endif("${VALUE}")
-+  endif("${ARGC}" LESS_EQUAL 1)
++  /* run any promise reaction jobs the line queued up */
++  while(JS_ExecutePendingJob(rt, &ctx1) > 0) {
++  }
 +
-+endfunction(VAR2DEFINE NAME)
++  return result;
++}
 +
-+##
-+## canonicalize <OUTPUT VARIABLE> <STR>
-+##
-+function(CANONICALIZE OUTPUT_VAR STR)
-+  string(REGEX REPLACE "^-W" "WARN_" TMP_STR "${STR}")
++EMSCRIPTEN_KEEPALIVE
++void
++qjs_repl_free_result(char* ptr) {
++  free(ptr);
++}
 +
-+  string(REGEX REPLACE "-" "_" TMP_STR "${TMP_STR}")
-+  string(TOUPPER "${TMP_STR}" TMP_STR)
++int
++main(void) {
++  qjs_repl_init();
++  return 0;
++}
+diff --git a/cmake/emscripten/shell-repl.html b/cmake/emscripten/shell-repl.html
+new file mode 100644
+index 0000000..0774aed
+--- /dev/null
++++ b/cmake/emscripten/shell-repl.html
+@@ -0,0 +1,86 @@
++<!doctype html>
++<html lang="en-us">
++  <head>
++    <meta charset="utf-8">
++    <title>QuickJS REPL (WASM)</title>
++    <style>
++      body { font-family: monospace; margin: 1em; }
++      #output {
++        width: 100%;
++        height: 32em;
++        background: #111;
++        color: #ddd;
++        white-space: pre;
++        overflow-y: scroll;
++        padding: 0.5em;
++        box-sizing: border-box;
++      }
++      #input-row { display: flex; margin-top: 0.5em; }
++      #prompt { padding-right: 0.5em; }
++      #input { flex: 1; font-family: monospace; }
++      #input:disabled { color: #888; }
++    </style>
++  </head>
++  <body>
++    <h3>QuickJS REPL (WASM)</h3>
++    <div id="output"></div>
++    <div id="input-row">
++      <span id="prompt">&gt;</span>
++      <input id="input" type="text" autocomplete="off" autofocus disabled>
++    </div>
 +
-+  set("${OUTPUT_VAR}" "${TMP_STR}" PARENT_SCOPE)
-+endfunction(CANONICALIZE OUTPUT_VAR STR)
++    <script type="text/javascript">
++      var outputElement = document.getElementById('output');
++      var inputElement = document.getElementById('input');
 +
-+##
-+## basename <OUTPUT VARIABLE> <STR>
-+##
-+function(BASENAME OUTPUT_VAR STR)
-+  string(REGEX REPLACE ".*/" "" TMP_STR "${STR}")
-+  if(ARGN)
-+    string(REGEX REPLACE "\\${ARGN}\$" "" TMP_STR "${TMP_STR}")
-+  endif(ARGN)
++      function appendOutput(text) {
++        outputElement.textContent += text;
++        outputElement.scrollTop = outputElement.scrollHeight;
++      }
 +
-+  set("${OUTPUT_VAR}" "${TMP_STR}" PARENT_SCOPE)
-+endfunction(BASENAME OUTPUT_VAR FILE)
++      // Each line is a single, synchronous round trip into the wasm module
++      // (qjs_repl_eval() in cmake/emscripten/qjs-repl-wasm.c) rather than
++      // feeding a blocking terminal read, which the qjs.c REPL can't do in
++      // a browser (see the comment at the top of that file).
++      function evalLine(line) {
++        var resultPtr = Module.ccall('qjs_repl_eval', 'number', ['string'], [line]);
++        var result = Module.UTF8ToString(resultPtr);
++        Module.ccall('qjs_repl_free_result', null, ['number'], [resultPtr]);
++        return result;
++      }
 +
-+##
-+## dirname <OUTPUT VARIABLE> <STR>
-+##
-+function(DIRNAME OUTPUT_VAR STR)
-+  string(REGEX REPLACE "/[^/]+/*$" "" TMP_STR "${STR}")
-+  if(ARGN)
-+    string(REGEX REPLACE "\\${ARGN}\$" "" TMP_STR "${TMP_STR}")
-+  endif(ARGN)
++      inputElement.addEventListener('keydown', function(e) {
++        if (e.key === 'Enter' && !inputElement.disabled) {
++          var line = inputElement.value;
++          inputElement.value = '';
++          appendOutput('> ' + line + '\n');
++          var result = evalLine(line);
++          if (result) appendOutput(result + '\n');
++        }
++      });
 +
-+  set("${OUTPUT_VAR}" "${TMP_STR}" PARENT_SCOPE)
-+endfunction(DIRNAME OUTPUT_VAR FILE)
++      var Module = {
++        preRun: [],
++        postRun: [
++          function() {
++            inputElement.disabled = false;
++            inputElement.focus();
++            appendOutput('QuickJS WASM REPL ready. Type an expression and press Enter.\n');
++          }
++        ],
++        print: function(text) {
++          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
++          appendOutput(text + '\n');
++        },
++        printErr: function(text) {
++          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
++          appendOutput(text + '\n');
++        },
++        setStatus: function(text) {
++          if (text) appendOutput(text + '\n');
++        }
++      };
++    </script>
++    {{{ SCRIPT }}}
++  </body>
++</html>
+diff --git a/cmake/emscripten.toolchain.cmake b/cmake/emscripten.toolchain.cmake
+new file mode 100644
+index 0000000..89ed856
+--- /dev/null
++++ b/cmake/emscripten.toolchain.cmake
+@@ -0,0 +1,35 @@
++# Convenience toolchain file for building quickjs with Emscripten.
++#
++# It locates an installed Emscripten SDK (emsdk) and delegates to the
++# CMake toolchain file that ships with it, so the SDK's own compiler/
++# linker setup stays authoritative instead of being duplicated here.
++#
++# Usage (with the emsdk environment sourced, e.g. `source
++# <emsdk>/emsdk_env.sh`, so that the EMSDK environment variable is set):
++#
++#   cmake -B build-wasm -DCMAKE_TOOLCHAIN_FILE=cmake/emscripten.toolchain.cmake
++#   cmake --build build-wasm
++#
++# or, without sourcing emsdk_env.sh first:
++#
++#   emcmake cmake -B build-wasm
++#   emmake cmake --build build-wasm
 +
-+##
-+## addprefix <OUTPUT VARIABLE> <PREFIX>
-+##
-+function(ADDPREFIX OUTPUT_VAR PREFIX)
-+  set(OUTPUT "")
-+  foreach(ARG ${ARGN})
-+    list(APPEND OUTPUT "${PREFIX}${ARG}")
-+  endforeach(ARG ${ARGN})
-+  set("${OUTPUT_VAR}" "${OUTPUT}" PARENT_SCOPE)
-+endfunction(ADDPREFIX OUTPUT_VAR PREFIX)
-+
-+##
-+## addsuffix <OUTPUT VARIABLE> <PREFIX>
-+##
-+function(ADDSUFFIX OUTPUT_VAR SUFFIX)
-+  set(OUTPUT "")
-+  foreach(ARG ${ARGN})
-+    list(APPEND OUTPUT "${ARG}${SUFFIX}")
-+  endforeach(ARG ${ARGN})
-+  set("${OUTPUT_VAR}" "${OUTPUT}" PARENT_SCOPE)
-+endfunction(ADDSUFFIX OUTPUT_VAR SUFFIX)
-+
-+##
-+## relative_path <OUTPUT VARIABLE> <RELATIVE_TO>
-+##
-+function(RELATIVE_PATH OUT_VAR RELATIVE_TO)
-+  set(LIST "")
-+
-+  foreach(ARG ${ARGN})
-+    file(RELATIVE_PATH ARG "${RELATIVE_TO}" "${ARG}")
-+    list(APPEND LIST "${ARG}")
-+  endforeach(ARG ${ARGN})
-+
-+  set("${OUT_VAR}" "${LIST}" PARENT_SCOPE)
-+endfunction(RELATIVE_PATH RELATIVE_TO OUT_VAR)
-+
-+##
-+## check_function_def <FUNCTION NAME> [RESULT VARIABLE] [PREPROC_DEF]
-+##
-+macro(CHECK_FUNCTION_DEF FUNC)
-+  if(${ARGC} GREATER 1)
-+    set(RESULT_VAR "${ARGV1}")
-+  else(${ARGC} GREATER 1)
-+    string(TOUPPER "HAVE_${FUNC}" RESULT_VAR)
-+  endif(${ARGC} GREATER 1)
-+
-+  if(${ARGC} GREATER 2)
-+    set(PREPROC_DEF "${ARGV2}")
-+  else(${ARGC} GREATER 2)
-+    string(TOUPPER "HAVE_${FUNC}" PREPROC_DEF)
-+  endif(${ARGC} GREATER 2)
-+
-+  if(NOT DEFINED ${RESULT_VAR})
-+    check_function_exists("${FUNC}" "_${RESULT_VAR}")
-+
-+    if(${_${RESULT_VAR}})
-+      set("${RESULT_VAR}" TRUE
-+          CACHE INTERNAL "Define this if you have the '${FUNC}' function")
-+    else(${_${RESULT_VAR}})
-+      set("${RESULT_VAR}" FALSE
-+          CACHE INTERNAL "Define this if you have the '${FUNC}' function")
-+    endif(${_${RESULT_VAR}})
-+  endif(NOT DEFINED ${RESULT_VAR})
-+
-+  set(DEFINE FALSE)
-+
-+  if(${${RESULT_VAR}})
-+    if(NOT "${PREPROC_DEF}" STREQUAL "")
-+      set("${PREPROC_DEF}" "1")
-+      var2define("${PREPROC_DEF}" 1)
-+    endif(NOT "${PREPROC_DEF}" STREQUAL "")
-+  endif(${${RESULT_VAR}})
-+
-+  #message("${RESULT_VAR}: ${${RESULT_VAR}}")
-+
-+  list(APPEND CHECKED_FUNCTIONS "${FUNC}")
-+endmacro(CHECK_FUNCTION_DEF FUNC)
-+
-+##
-+## check_functions <FUNCTION NAMES...>
-+##
-+macro(CHECK_FUNCTIONS)
-+  foreach(FUNC ${ARGN})
-+    string(TOUPPER "HAVE_${FUNC}" RESULT_VAR)
-+    check_function_def("${FUNC}" "${RESULT_VAR}")
-+  endforeach(FUNC ${ARGN})
-+endmacro(CHECK_FUNCTIONS)
-+
-+##
-+## check_functions_def <FUNCTION NAMES...>
-+##
-+macro(CHECK_FUNCTIONS_DEF)
-+  foreach(FUNC ${ARGN})
-+    check_function_def("${FUNC}")
-+  endforeach(FUNC ${ARGN})
-+endmacro(CHECK_FUNCTIONS_DEF)
-+
-+##
-+## clean_name <STRING> <OUTPUT VAR>
-+##
-+function(CLEAN_NAME STR OUTPUT_VAR)
-+  string(TOUPPER "${STR}" STR)
-+  string(REGEX REPLACE "[^A-Za-z0-9_]" "_" STR "${STR}")
-+  set("${OUTPUT_VAR}" "${STR}" PARENT_SCOPE)
-+endfunction(CLEAN_NAME STR OUTPUT_VAR)
-+
-+##
-+## check_include_def <INCLUDE> [RESULT VARIABLE] [PREPROC_DEF]
-+##
-+macro(CHECK_INCLUDE_DEF INC)
-+  if(ARGC GREATER_EQUAL 2)
-+    set(RESULT_VAR "${ARGV1}")
-+    set(PREPROC_DEF "${ARGV2}")
-+  else(ARGC GREATER_EQUAL 2)
-+    clean_name("${INC}" INC_D)
-+    string(TOUPPER "HAVE_${INC_D}" RESULT_VAR)
-+    string(TOUPPER "HAVE_${INC_D}" PREPROC_DEF)
-+  endif(ARGC GREATER_EQUAL 2)
-+
-+  check_include_file("${INC}" "${RESULT_VAR}")
-+
-+  if(${${RESULT_VAR}})
-+    set("${RESULT_VAR}" TRUE
-+        CACHE INTERNAL "Define this if you have the '${INC}' header file")
-+
-+    if(NOT "${PREPROC_DEF}" STREQUAL "")
-+      var2define("${PREPROC_DEF}" 1)
-+    endif(NOT "${PREPROC_DEF}" STREQUAL "")
-+  endif(${${RESULT_VAR}})
-+
-+  list(APPEND CHECKED_INCLUDES "${INC}")
-+endmacro(CHECK_INCLUDE_DEF INC)
-+
-+##
-+## check_includes <INCLUDE FILES...>
-+##
-+macro(CHECK_INCLUDES)
-+  foreach(INC ${ARGN})
-+    clean_name("HAVE_${INC}" RESULT_VAR)
-+    check_include_def("${INC}" "${RESULT_VAR}")
-+  endforeach(INC ${ARGN})
-+endmacro(CHECK_INCLUDES)
-+
-+##
-+## check_includes_def <INCLUDE FILES...>
-+##
-+macro(CHECK_INCLUDES_DEF)
-+  foreach(INC ${ARGN})
-+    check_include_def("${INC}")
-+  endforeach(INC ${ARGN})
-+endmacro(CHECK_INCLUDES_DEF)
-+
-+##
-+## check_function_and_include <FUNCTION> <INCLUDE>
-+##
-+macro(CHECK_FUNCTION_AND_INCLUDE FUNC INC)
-+  clean_name("HAVE_${INC}" INC_RESULT)
-+  clean_name("HAVE_${FUNC}" FUNC_RESULT)
-+
-+  check_include_def("${INC}" "${INC_RESULT}" "${INC_RESULT}")
-+
-+  if(${${INC_RESULT}})
-+    check_function_def("${FUNC}" "${FUNC_RESULT}" "${FUNC_RESULT}")
-+  endif(${${INC_RESULT}})
-+endmacro(CHECK_FUNCTION_AND_INCLUDE FUNC INC)
-+
-+##
-+## check_include_cxx_def <INCLUDE> [RESULT VARIABLE] [PREPROC_DEF]
-+##
-+macro(CHECK_INCLUDE_CXX_DEF INC)
-+  if(ARGC GREATER_EQUAL 2)
-+    set(RESULT_VAR "${ARGV1}")
-+    set(PREPROC_DEF "${ARGV2}")
-+  else(ARGC GREATER_EQUAL 2)
-+    clean_name("${INC}" INC_D)
-+    string(TOUPPER "HAVE_${INC_D}" RESULT_VAR)
-+    string(TOUPPER "HAVE_${INC_D}" PREPROC_DEF)
-+  endif(ARGC GREATER_EQUAL 2)
-+
-+  check_include_file_cxx("${INC}" "${RESULT_VAR}")
-+
-+  if(${${RESULT_VAR}})
-+    set("${RESULT_VAR}" TRUE
-+        CACHE INTERNAL "Define this if you have the '${INC}' header file")
-+
-+    if(NOT "${PREPROC_DEF}" STREQUAL "")
-+      var2define("${PREPROC_DEF}" 1)
-+    endif(NOT "${PREPROC_DEF}" STREQUAL "")
-+  endif(${${RESULT_VAR}})
-+endmacro(CHECK_INCLUDE_CXX_DEF INC)
-+
-+##
-+## append_parent <VARIABLE NAME>
-+##
-+macro(APPEND_PARENT VAR)
-+  set(LIST "${${VAR}}")
-+  list(APPEND LIST ${ARGN})
-+  set("${VAR}" "${LIST}" PARENT_SCOPE)
-+endmacro(APPEND_PARENT VAR)
-+
-+##
-+## contains <LIST NAME> <VALUE> <OUTPUT VARIABE>
-+##
-+function(CONTAINS LIST VALUE OUTPUT)
-+  list(FIND "${LIST}" "${VALUE}" INDEX)
-+
-+  if(${INDEX} GREATER -1)
-+    set(RESULT TRUE)
-+  else(${INDEX} GREATER -1)
-+    set(RESULT FALSE)
-+  endif(${INDEX} GREATER -1)
-+
-+  if(NOT RESULT)
-+    foreach(ITEM ${${LIST}})
-+      if("${ITEM}" STREQUAL "${VALUE}")
-+        set(RESULT TRUE)
-+      endif("${ITEM}" STREQUAL "${VALUE}")
-+    endforeach(ITEM ${${LIST}})
-+  endif(NOT RESULT)
-+
-+  set("${OUTPUT}" "${RESULT}" PARENT_SCOPE)
-+endfunction(CONTAINS LIST VALUE OUTPUT)
-+
-+##
-+## add_unique <LIST NAME> <VALUES...>
-+##
-+function(ADD_UNIQUE LIST)
-+  set(RESULT "${${LIST}}")
-+
-+  foreach(ITEM ${ARGN})
-+    contains(RESULT "${ITEM}" FOUND)
-+
-+    if(NOT FOUND)
-+      list(APPEND RESULT "${ITEM}")
-+    endif(NOT FOUND)
-+  endforeach(ITEM ${ARGN})
-+
-+  set("${LIST}" "${RESULT}" PARENT_SCOPE)
-+endfunction(ADD_UNIQUE LIST)
-+
-+##
-+## symlink <TARGET> <SYMLINK PATH>
-+##
-+macro(SYMLINK TARGET LINK_NAME)
-+  install(
-+    CODE "message(\"Create symlink '$ENV{DESTDIR}${LINK_NAME}' to '${TARGET}'\")\nexecute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${TARGET} $ENV{DESTDIR}${LINK_NAME})"
++if(NOT DEFINED ENV{EMSDK})
++  message(
++    FATAL_ERROR
++      "EMSDK environment variable is not set. Run 'source <emsdk>/emsdk_env.sh' first, or configure with emcmake instead of this toolchain file."
 +  )
-+endmacro(SYMLINK TARGET LINK_NAME)
++endif()
 +
-+##
-+## rpath_append <VARIABLE NAME>
-+##
-+macro(RPATH_APPEND VAR)
-+  foreach(VALUE ${ARGN})
-+    if("${${VAR}}" STREQUAL "")
-+      set(${VAR} "${VALUE}")
-+    else("${${VAR}}" STREQUAL "")
-+      set(${VAR} "${CMAKE_INSTALL_RPATH}:${VALUE}")
-+    endif("${${VAR}}" STREQUAL "")
-+  endforeach(VALUE ${ARGN})
-+endmacro(RPATH_APPEND VAR)
++set(EMSCRIPTEN_SDK_TOOLCHAIN
++    "$ENV{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
 +
-+##
-+## try_code <FILENAME> <CODE> <RESULT VARIABLE> <OUTPUT VARIABLE> <LIBS> <LINKER FLAGS>
-+##
-+function(TRY_CODE FILE CODE RESULT_VAR OUTPUT_VAR LIBS LDFLAGS)
-+  if(NOT DEFINED "${RESULT_VAR}" OR NOT DEFINED "${OUTPUT_VAR}")
-+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${FILE}" "${CODE}")
++if(NOT EXISTS "${EMSCRIPTEN_SDK_TOOLCHAIN}")
++  message(
++    FATAL_ERROR
++      "Could not find Emscripten's own CMake toolchain file at ${EMSCRIPTEN_SDK_TOOLCHAIN}"
++  )
++endif()
 +
-+    try_compile(
-+      RESULT "${CMAKE_CURRENT_BINARY_DIR}"
-+      "${CMAKE_CURRENT_BINARY_DIR}/${FILE}"
-+      CMAKE_FLAGS "${CMAKE_REQUIRED_FLAGS}"
-+      COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}"
-+      LINK_OPTIONS "${LDFLAGS}"
-+      LINK_LIBRARIES "${LIBS}"
-+      OUTPUT_VARIABLE OUTPUT)
-+
-+    set(${RESULT_VAR} "${RESULT}" PARENT_SCOPE)
-+    set(${OUTPUT_VAR} "${OUTPUT}" PARENT_SCOPE)
-+  endif(NOT DEFINED "${RESULT_VAR}" OR NOT DEFINED "${OUTPUT_VAR}")
-+endfunction()
-+
-+##
-+## check_external <NAME> <LIBS> <LINKER FLAGS> <OUTPUT VARIABLE>
-+##
-+function(CHECK_EXTERNAL NAME LIBS LDFLAGS OUTPUT_VAR)
-+  try_code(
-+    "test-${NAME}.c"
-+    "\n  extern int ${NAME}(void);\n  int main() {\n    ${NAME}();\n    return 0;\n  }\n  "
-+    "${OUTPUT_VAR}"
-+    OUT
-+    "${LIBS}"
-+    "${LDFLAGS}")
-+  #dump(OUTPUT_VAR OUT)
-+endfunction(CHECK_EXTERNAL NAME LIBS LDFLAGS OUTPUT_VAR)
-+
-+##
-+## run_code <FILENAME> <CODE> <RESULT VARIABLE> <OUTPUT VARIABLE> <LIBS> <LINKER FLAGS>
-+##
-+function(RUN_CODE FILE CODE RESULT_VAR OUTPUT_VAR LIBS LDFLAGS)
-+  string(RANDOM LENGTH 8 RND)
-+  set(FN "${CMAKE_CURRENT_BINARY_DIR}/${RND}-${FILE}")
-+  file(WRITE "${FN}" "${CODE}")
-+  string(REGEX REPLACE "\.[^./]+$" ".log" LOG "${FN}")
-+
-+  try_run(
-+    RUN_RESULT COMPILE_RESULT SOURCES "${FN}"
-+    COMPILE_OUTPUT_VARIABLE COMPILE_OUTPUT
-+    RUN_OUTPUT_VARIABLE RUN_OUTPUT
-+    CMAKE_FLAGS "${CMAKE_REQUIRED_FLAGS}"
-+    COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}" LINK_OPTIONS
-+                        "${LDFLAGS}" LINK_LIBRARIES "${LIBS}")
-+
-+  file(WRITE "${LOG}"
-+       "Compile output:\n${COMPILE_OUTPUT}\n\nRun output:\n${RUN_OUTPUT}\n")
-+  unset(LOG)
-+
-+  set(${RESULT_VAR} "${COMPILE_RESULT}" PARENT_SCOPE)
-+  set(${OUTPUT_VAR} "${COMPILE_OUTPUT}" PARENT_SCOPE)
-+
-+  file(REMOVE "${FN}")
-+
-+  if(COMPILE_RESULT)
-+    if(NOT "${RUN_RESULT}" STREQUAL "")
-+      set(${RESULT_VAR} "${RUN_RESULT}" PARENT_SCOPE)
-+    endif(NOT "${RUN_RESULT}" STREQUAL "")
-+    if(NOT "${RUN_OUTPUT}" STREQUAL "")
-+      set(${OUTPUT_VAR} "${RUN_OUTPUT}" PARENT_SCOPE)
-+    endif(NOT "${RUN_OUTPUT}" STREQUAL "")
-+  endif(COMPILE_RESULT)
-+
-+  file(REMOVE "${FN}")
-+  unset(FN)
-+  unset(RND)
-+endfunction()
-+
-+##
-+## libname <OUTPUT VARIABLE> <FILENAME>
-+##
-+function(LIBNAME OUT_VAR FILENAME)
-+  string(REGEX REPLACE ".*/(lib|)" "" LIBNAME "${FILENAME}")
-+  string(REGEX REPLACE "\.[^/.]+$" "" LIBNAME "${LIBNAME}")
-+
-+  set(${OUT_VAR} "${LIBNAME}" PARENT_SCOPE)
-+endfunction(LIBNAME OUT_VAR FILENAME)
-+
-+##
-+## check_flag <FLAG> <VARIABLE>
-+##
-+function(CHECK_FLAG FLAG VAR)
-+  if(NOT VAR OR VAR STREQUAL "")
-+    string(TOUPPER "${FLAG}" TMP)
-+    string(REGEX REPLACE "[^0-9A-Za-z]" _ VAR "${TMP}")
-+  endif(NOT VAR OR VAR STREQUAL "")
-+
-+  set(CMAKE_REQUIRED_QUIET ON)
-+  check_c_compiler_flag("${FLAG}" "${VAR}")
-+  set(CMAKE_REQUIRED_QUIET OFF)
-+
-+  set(RESULT "${${VAR}}")
-+
-+  if(RESULT)
-+    if(ARGN)
-+      append_vars(${FLAG} ${ARGN})
-+    endif(ARGN)
-+    message(STATUS "Compiler flag ${FLAG} ... supported")
-+  endif(RESULT)
-+endfunction(CHECK_FLAG FLAG VAR)
++include("${EMSCRIPTEN_SDK_TOOLCHAIN}")
 diff --git a/cmake/try-compiler.cmake b/cmake/try-compiler.cmake
 new file mode 100644
-index 0000000..418f5ec
+index 0000000..79fb597
 --- /dev/null
 +++ b/cmake/try-compiler.cmake
-@@ -0,0 +1,160 @@
-+# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying file Copyright.txt or
-+# https://cmake.org/licensing for details.
+@@ -0,0 +1,172 @@
++# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
++# file Copyright.txt or https://cmake.org/licensing for details.
 +
 +#[=[
 +
@@ -3232,16 +3461,20 @@ index 0000000..418f5ec
 +  string(REPLACE ";" " " comment "${comment}")
 +
 +  if(NOT lang MATCHES "^(C|CXX|Fortran|ASM)$")
-+    # other possible languages are not supported log message to keep trace of this problem...
++    # other possible languages are not supported log message to keep trace of
++    # this problem...
 +    file(
 +      APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
 +      "Function 'CMAKE_CHECK_COMPILER_FLAG' called with unsupported language: ${lang}\n"
 +    )
-+    set(${result} FALSE CACHE INTERNAL ${comment})
++    set(${result}
++        FALSE
++        CACHE INTERNAL ${comment})
 +    return()
 +  endif()
 +  if(lang STREQUAL "ASM")
-+    # assume ASM compiler is a multi-language compiler, so supports C language as well
++    # assume ASM compiler is a multi-language compiler, so supports C language
++    # as well
 +    set(check_lang C)
 +  else()
 +    set(check_lang ${lang})
@@ -3322,11 +3555,15 @@ index 0000000..418f5ec
 +
 +  # Record result in the cache so we can avoid re-testing every CMake run
 +  if(COMPILER_FLAG_RESULT)
-+    set(${result} FALSE CACHE INTERNAL ${comment})
++    set(${result}
++        FALSE
++        CACHE INTERNAL ${comment})
 +  else()
 +    foreach(regex IN LISTS CCCF_FAIL_REGEX)
 +      if(COMPILER_FLAG_OUTPUT MATCHES "${regex}")
-+        set(${result} FALSE CACHE INTERNAL ${comment})
++        set(${result}
++            FALSE
++            CACHE INTERNAL ${comment})
 +      endif()
 +    endforeach()
 +  endif()
@@ -3337,16 +3574,20 @@ index 0000000..418f5ec
 +      "is supported for ${lang} language failed with the following output:\n"
 +      "${COMPILER_FLAG_OUTPUT}\n")
 +    if(CCCF_OUTPUT_VARIABLE)
-+      set(${CCCF_OUTPUT_VARIABLE} "${COMPILER_FLAG_OUTPUT}" PARENT_SCOPE)
++      set(${CCCF_OUTPUT_VARIABLE}
++          "${COMPILER_FLAG_OUTPUT}"
++          PARENT_SCOPE)
 +    endif()
 +    return()
 +  endif()
 +
-+  set(${result} TRUE CACHE INTERNAL ${comment})
++  set(${result}
++      TRUE
++      CACHE INTERNAL ${comment})
 +endfunction()
 diff --git a/cmake/wasi.toolchain.cmake b/cmake/wasi.toolchain.cmake
 new file mode 100644
-index 0000000..296a3b6
+index 0000000..32a6ec5
 --- /dev/null
 +++ b/cmake/wasi.toolchain.cmake
 @@ -0,0 +1,41 @@
@@ -3378,8 +3619,8 @@ index 0000000..296a3b6
 +set(CMAKE_PREFIX_PATH /opt/wasienv)
 +set(CMAKE_SYSTEM_PREFIX_PATH /opt/wasienv)
 +
-+# adjust the default behaviour of the FIND_XXX() commands: search headers and libraries in the
-+# target environment, search programs in the host environment
++# adjust the default behaviour of the FIND_XXX() commands: search headers and
++# libraries in the target environment, search programs in the host environment
 +set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 +set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 +set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
@@ -3393,10 +3634,10 @@ index 0000000..296a3b6
 +set(WASI 1)
 diff --git a/defs.cmake b/defs.cmake
 new file mode 100644
-index 0000000..7383540
+index 0000000..dce26fe
 --- /dev/null
 +++ b/defs.cmake
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,127 @@
 +if(WIN32 OR MINGW)
 +  set(TRANSPORT_PLATFORM win)
 +  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
@@ -3412,47 +3653,59 @@ index 0000000..7383540
 +string(STRIP "${version}" QUICKJS_VERSION)
 +
 +if(NOT QUICKJS_VERSION)
-+  set(QUICKJS_VERSION "2024-01-13")
++  set(QUICKJS_VERSION "2026-06-04")
 +endif(NOT QUICKJS_VERSION)
 +
 +if(NOT QUICKJS_PREFIX)
 +  set(QUICKJS_PREFIX "${CMAKE_INSTALL_PREFIX}")
 +endif(NOT QUICKJS_PREFIX)
-+set(QUICKJS_SOVERSION 1.1)
++set(QUICKJS_SOVERSION 1.4)
 +set(QUICKJS_URL https://bellard.org/quickjs/quickjs-${QUICKJS_VERSION}.tar.xz)
 +set(QUICKJS_SHA1 371eae0896cc9e9f50864cb34f37d9481d843ce1)
-+set(QUICKJS_EXTRAS_URL https://bellard.org/quickjs/quickjs-extras-${QUICKJS_VERSION}.tar.xz)
++set(QUICKJS_EXTRAS_URL
++    https://bellard.org/quickjs/quickjs-extras-${QUICKJS_VERSION}.tar.xz)
 +set(QUICKJS_EXTRAS_SHA1 211e43a5638668c80c8d438a3065660ab3af96df)
 +set(QUICKJS_EXTRACT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sources)
 +if(NOT QUICKJS_SOURCES_ROOT)
 +  set(QUICKJS_SOURCES_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 +endif(NOT QUICKJS_SOURCES_ROOT)
-+if(EXISTS ${QUICKJS_SOURCES_ROOT}/libbf.h)
-+  set(QUICKJS_BIGNUM_INCLUDE libbf.h)
-+  set(QUICKJS_BIGNUM_SOURCE ${QUICKJS_SOURCES_ROOT}/libbf.c)
-+else(EXISTS ${QUICKJS_SOURCES_ROOT}/libbf.h)
-+  set(QUICKJS_BIGNUM_INCLUDE dtoa.h)
-+  set(QUICKJS_BIGNUM_SOURCE ${QUICKJS_SOURCES_ROOT}/dtoa.c)
-+endif(EXISTS ${QUICKJS_SOURCES_ROOT}/libbf.h)
-+
-+set(QUICKJS_INCLUDES cutils.h ${QUICKJS_BIGNUM_INCLUDE} libregexp-opcode.h libregexp.h libunicode-table.h libunicode.h list.h quickjs-atom.h quickjs-libc.h quickjs-opcode.h quickjs-debugger.h
-+                     quickjs.h unicode_gen_def.h)
++set(QUICKJS_INCLUDES
++    cutils.h
++    dtoa.h
++    libregexp-opcode.h
++    libregexp.h
++    libunicode-table.h
++    libunicode.h
++    list.h
++    quickjs-atom.h
++    quickjs-libc.h
++    quickjs-opcode.h
++    quickjs.h
++    unicode_gen_def.h)
 +
 +set(QUICKJS_SOURCES
-+    ${QUICKJS_SOURCES_ROOT}/cutils.c ${QUICKJS_BIGNUM_SOURCE} ${QUICKJS_SOURCES_ROOT}/libregexp.c ${QUICKJS_SOURCES_ROOT}/libunicode.c ${QUICKJS_SOURCES_ROOT}/quickjs.c
-+    ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c ${QUICKJS_INCLUDES})
-+if(EXISTS ${QUICKJS_SOURCES_ROOT}/win32-poll.c)
-+  set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/win32-poll.c)
-+endif(EXISTS ${QUICKJS_SOURCES_ROOT}/win32-poll.c)
++    ${QUICKJS_SOURCES_ROOT}/cutils.c
++    ${QUICKJS_SOURCES_ROOT}/dtoa.c
++    ${QUICKJS_SOURCES_ROOT}/libregexp.c
++    ${QUICKJS_SOURCES_ROOT}/libunicode.c
++    ${QUICKJS_SOURCES_ROOT}/quickjs.c
++    ${QUICKJS_SOURCES_ROOT}/quickjs-libc.c
++    ${QUICKJS_INCLUDES})
 +
-+#message("CONFIG_DEBUGGER = ${CONFIG_DEBUGGER}")
-+if(CONFIG_DEBUGGER)
-+  set(QUICKJS_SOURCES ${QUICKJS_SOURCES}
-+    ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
-+    ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
-+  #set(QUICKJS_SOURCES ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
-+  message(STATUS "Enabling quickjs-debugger")
-+endif(CONFIG_DEBUGGER)
++if(CONFIG_FIND_MODULE)
++  list(APPEND QUICKJS_SOURCES ${QUICKJS_SOURCES_ROOT}/quickjs-find-module.c)
++endif(CONFIG_FIND_MODULE)
++
++if(QUICKJS_DEBUGGER)
++  list(APPEND QUICKJS_INCLUDES ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.h)
++  set(QUICKJS_SOURCES
++      ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
++      ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c
++  )
++  # set(QUICKJS_SOURCES ${QUICKJS_SOURCES}
++  # ${QUICKJS_SOURCES_ROOT}/quickjs-debugger.c
++  # ${QUICKJS_SOURCES_ROOT}/quickjs-debugger-transport-${TRANSPORT_PLATFORM}.c)
++endif(QUICKJS_DEBUGGER)
 +
 +if(WIN32)
 +  set(QUICKJS_SOURCES ${QUICKJS_SOURCES} quickjs.def)
@@ -3460,8 +3713,7 @@ index 0000000..7383540
 +
 +string(REPLACE ";" "\n" sources "${QUICKJS_SOURCES}")
 +
-+#message("QUICKJS_SOURCES = ${QUICKJS_SOURCES}")
-+# dump(QUICKJS_SOURCES)
++# message("QUICKJS_SOURCES = ${QUICKJS_SOURCES}") dump(QUICKJS_SOURCES)
 +
 +include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseMultiArch.cmake)
 +
@@ -3474,7 +3726,8 @@ index 0000000..7383540
 +  set(QUICKJS_CROSS_ARCH "")
 +endif(NOT "${HOST_SYSTEM_NAME}" STREQUAL "${QUICKJS_HOST_ARCH}")
 +
-+# message("HOST_SYSTEM_NAME = ${HOST_SYSTEM_NAME}") message("SYSTEM_NAME = ${SYSTEM_NAME}") message("QUICKJS_CROSS_ARCH = ${QUICKJS_CROSS_ARCH}")
++# message("HOST_SYSTEM_NAME = ${HOST_SYSTEM_NAME}") message("SYSTEM_NAME =
++# ${SYSTEM_NAME}") message("QUICKJS_CROSS_ARCH = ${QUICKJS_CROSS_ARCH}")
 +
 +set(QUICKJS_BINARY_DIR ${QUICKJS_PREFIX}/bin)
 +set(QUICKJS_INCLUDE_DIR ${QUICKJS_PREFIX}/include)
@@ -3484,24 +3737,29 @@ index 0000000..7383540
 +else(CMAKE_ARCH_LIBDIR)
 +  if(QUICKJS_CROSS_ARCH)
 +    set(QUICKJS_LIBRARY_DIR ${QUICKJS_PREFIX}/lib/${QUICKJS_CROSS_ARCH})
-+    #set(QUICKJS_BINARY_DIR ${QUICKJS_PREFIX}/bin/${QUICKJS_CROSS_ARCH})
-+    #set(QUICKJS_INCLUDE_DIR ${QUICKJS_PREFIX}/include/${QUICKJS_CROSS_ARCH})
++    # set(QUICKJS_BINARY_DIR ${QUICKJS_PREFIX}/bin/${QUICKJS_CROSS_ARCH})
++    # set(QUICKJS_INCLUDE_DIR ${QUICKJS_PREFIX}/include/${QUICKJS_CROSS_ARCH})
 +  else(QUICKJS_CROSS_ARCH)
 +    set(QUICKJS_LIBRARY_DIR ${QUICKJS_PREFIX}/lib)
 +  endif(QUICKJS_CROSS_ARCH)
 +endif(CMAKE_ARCH_LIBDIR)
 +
-+# message("libdir = ${QUICKJS_LIBRARY_DIR}") message("bindir = ${QUICKJS_BINARY_DIR}") message("includedir = ${QUICKJS_INCLUDE_DIR}")
++# message("libdir = ${QUICKJS_LIBRARY_DIR}") message("bindir =
++# ${QUICKJS_BINARY_DIR}") message("includedir = ${QUICKJS_INCLUDE_DIR}")
 +
-+#option(USE_WORKER "Enable worker support" ON)
++# option(USE_WORKER "Enable worker support" ON)
 +
-+set(CONFIG_VERSION "${QUICKJS_VERSION}" CACHE STRING "QuickJS version")
++set(CONFIG_VERSION
++    "${QUICKJS_VERSION}"
++    CACHE STRING "QuickJS version")
 +
-+#add_definitions(-DCONFIG_PREFIX=\"${CONFIG_PREFIX}\")
-+#add_definitions(-DCONFIG_VERSION=\"${CONFIG_VERSION}\")
++# add_definitions(-DCONFIG_PREFIX=\"${CONFIG_PREFIX}\")
++# add_definitions(-DCONFIG_VERSION=\"${CONFIG_VERSION}\")
 +add_definitions(-Dasm=__asm__)
 +
-+set(CONFIG_SHEXT "${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "Shared module extension")
++set(CONFIG_SHEXT
++    "${CMAKE_SHARED_LIBRARY_SUFFIX}"
++    CACHE STRING "Shared module extension")
 +
 +file(
 +  WRITE "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc"
@@ -3567,7 +3825,7 @@ index 0000000..560f9b4
 +	)
 +endif()
 diff --git a/qjs.c b/qjs.c
-index 77b29fd..1ebd689 100644
+index 6caf49e..999337e 100644
 --- a/qjs.c
 +++ b/qjs.c
 @@ -43,6 +43,10 @@
@@ -3578,9 +3836,9 @@ index 77b29fd..1ebd689 100644
 +#include "quickjs-config.h"
 +#endif
 +
+ #ifdef CONFIG_FIND_MODULE
  JSModuleDef *js_module_loader_path(JSContext *ctx, const char *module_name, void *opaque, JSValueConst attributes);
- 
- extern const uint8_t qjsc_repl[];
+ #define QJS_MODULE_LOADER js_module_loader_path
 diff --git a/qjsc.c b/qjsc.c
 index e55ca61..ff7d5aa 100644
 --- a/qjsc.c
@@ -3598,7 +3856,7 @@ index e55ca61..ff7d5aa 100644
      char *short_name;
 diff --git a/quickjs-config.cmake.in b/quickjs-config.cmake.in
 new file mode 100644
-index 0000000..0d840f1
+index 0000000..0a906f4
 --- /dev/null
 +++ b/quickjs-config.cmake.in
 @@ -0,0 +1,100 @@
@@ -3611,9 +3869,6 @@ index 0000000..0d840f1
 +/* CONFIG_ALL_UNICODE - Define this if you want all-Unicode support */
 +#cmakedefine CONFIG_ALL_UNICODE 1
 +
-+/* CONFIG_BIGNUM - Define this if you want BigNum support */
-+#cmakedefine CONFIG_BIGNUM 1
-+
 +/* CONFIG_PRINTF_RNDN - define it if printf uses the RNDN rounding mode instead of RNDNA */
 +#cmakedefine CONFIG_PRINTF_RNDN 1
 +
@@ -3623,11 +3878,14 @@ index 0000000..0d840f1
 +/* CONFIG_LTO - define it if your compiler supports -flto */
 +#cmakedefine CONFIG_LTO 1
 +
-+/* CONFIG_DEBUGGER - define it if you want debug protocol support */
-+#cmakedefine CONFIG_DEBUGGER 1
++/* QUICKJS_DEBUGGER - define it if you want debug protocol support */
++#cmakedefine QUICKJS_DEBUGGER 1
 +
 +/* CONFIG_DLFCN - Enable dlfcn module loader*/
 +#cmakedefine CONFIG_DLFCN 1
++
++/* CONFIG_FIND_MODULE - Resolve bare module names on the module search path */
++#cmakedefine CONFIG_FIND_MODULE 1
 +
 +/* QUICKJS_C_MODULE_DIR - Native C module directory */
 +#cmakedefine QUICKJS_C_MODULE_DIR "@QUICKJS_C_MODULE_DIR@"
@@ -3703,10 +3961,10 @@ index 0000000..0d840f1
 +
 +@DUMP_DEFINE@
 diff --git a/quickjs.c b/quickjs.c
-index 78ec2fb..f7af88c 100644
+index 409883d..3d252bb 100644
 --- a/quickjs.c
 +++ b/quickjs.c
-@@ -48,6 +48,10 @@
+@@ -47,6 +47,10 @@
  #include "libunicode.h"
  #include "dtoa.h"
  
@@ -3714,6 +3972,6 @@ index 78ec2fb..f7af88c 100644
 +#include "quickjs-config.h"
 +#endif
 +
- #define OPTIMIZE         1
- #define SHORT_OPCODES    1
- #if defined(__EMSCRIPTEN__)
+ #ifdef QUICKJS_DEBUGGER
+ #include "quickjs-debugger.h"
+ #endif

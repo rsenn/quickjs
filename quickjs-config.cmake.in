@@ -16,11 +16,14 @@
 /* CONFIG_LTO - define it if your compiler supports -flto */
 #cmakedefine CONFIG_LTO 1
 
-/* CONFIG_DEBUGGER - define it if you want debug protocol support */
-#cmakedefine CONFIG_DEBUGGER 1
+/* QUICKJS_DEBUGGER - define it if you want debug protocol support */
+#cmakedefine QUICKJS_DEBUGGER 1
 
 /* CONFIG_DLFCN - Enable dlfcn module loader*/
 #cmakedefine CONFIG_DLFCN 1
+
+/* CONFIG_FIND_MODULE - Resolve bare module names on the module search path */
+#cmakedefine CONFIG_FIND_MODULE 1
 
 /* QUICKJS_C_MODULE_DIR - Native C module directory */
 #cmakedefine QUICKJS_C_MODULE_DIR "@QUICKJS_C_MODULE_DIR@"
