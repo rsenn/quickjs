@@ -121,6 +121,8 @@ set(CONFIG_SHEXT
     "${CMAKE_SHARED_LIBRARY_SUFFIX}"
     CACHE STRING "Shared module extension")
 
+mark_as_advanced(CONFIG_VERSION CONFIG_SHEXT)
+
 file(
   WRITE "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc"
   "prefix=${QUICKJS_PREFIX}\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: quickjs\nDescription: QuickJS\nVersion: ${QUICKJS_VERSION}\nLibs: -L\${libdir} -lquickjs\nCflags: -I\${includedir}\n"

@@ -967,6 +967,18 @@ void JS_SetModuleLoaderFunc2(JSRuntime *rt,
 JSValue JS_GetImportMeta(JSContext *ctx, JSModuleDef *m);
 JSAtom JS_GetModuleName(JSContext *ctx, JSModuleDef *m);
 JSValue JS_GetModuleNamespace(JSContext *ctx, JSModuleDef *m);
+/* module status (JS_MODULE_STATUS_*) and whether the module has top-level await */
+#define JS_HAVE_MODULE_STATUS 1
+typedef enum {
+    JS_MODULE_STATUS_UNLINKED,
+    JS_MODULE_STATUS_LINKING,
+    JS_MODULE_STATUS_LINKED,
+    JS_MODULE_STATUS_EVALUATING,
+    JS_MODULE_STATUS_EVALUATING_ASYNC,
+    JS_MODULE_STATUS_EVALUATED,
+} JSModuleStatus;
+int JS_GetModuleStatus(JSContext *ctx, JSModuleDef *m);
+JS_BOOL JS_IsModuleAsync(JSContext *ctx, JSModuleDef *m);
 
 /* JS Job support */
 

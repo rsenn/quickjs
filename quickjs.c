@@ -891,15 +891,6 @@ typedef struct JSImportEntry {
     int req_module_idx; /* in req_module_entries */
 } JSImportEntry;
 
-typedef enum {
-    JS_MODULE_STATUS_UNLINKED,
-    JS_MODULE_STATUS_LINKING,
-    JS_MODULE_STATUS_LINKED,
-    JS_MODULE_STATUS_EVALUATING,
-    JS_MODULE_STATUS_EVALUATING_ASYNC,
-    JS_MODULE_STATUS_EVALUATED,
-} JSModuleStatus;
-
 struct JSModuleDef {
     JSGCObjectHeader header; /* must come first */
     JSAtom module_name;
@@ -30465,6 +30456,16 @@ static JSValue js_build_module_ns(JSContext *ctx, JSModuleDef *m)
     js_free(ctx, s->exported_names);
     JS_FreeValue(ctx, obj);
     return JS_EXCEPTION;
+}
+
+int JS_GetModuleStatus(JSContext *ctx, JSModuleDef *m)
+{
+    return m->status;
+}
+
+JS_BOOL JS_IsModuleAsync(JSContext *ctx, JSModuleDef *m)
+{
+    return m->has_tla;
 }
 
 JSValue JS_GetModuleNamespace(JSContext *ctx, JSModuleDef *m)
