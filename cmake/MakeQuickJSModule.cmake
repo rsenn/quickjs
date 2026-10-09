@@ -228,13 +228,13 @@ function(make_module FNAME)
   if(ARGN)
     set(SOURCES ${ARGN} # ${${VNAME}_SOURCES}
                 ${COMMON_SOURCES})
-    add_unique(DEPS ${${VNAME}_DEPS})
+    set_add(DEPS ${${VNAME}_DEPS})
   else(ARGN)
     set(SOURCES quickjs-${NAME}.c # ${${VNAME}_SOURCES}
                 ${COMMON_SOURCES})
-    add_unique(LIBS ${${VNAME}_LIBRARIES})
+    set_add(LIBS ${${VNAME}_LIBRARIES})
   endif(ARGN)
-  add_unique(LIBS ${COMMON_LIBRARIES})
+  set_add(LIBS ${COMMON_LIBRARIES})
 
   message(
     STATUS
@@ -244,7 +244,7 @@ function(make_module FNAME)
   if(WASI
      OR EMSCRIPTEN
      OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
-    set(BUILD_SHARED_MODULES OFF)
+    set(BUILD_SHARED OFF)
   endif(
     WASI
     OR EMSCRIPTEN
@@ -258,7 +258,7 @@ function(make_module FNAME)
 
   # dump(VNAME ${VNAME}_SOURCES SOURCES)
 
-  if(BUILD_SHARED_MODULES)
+  if(BUILD_SHARED)
     # add_library(${TARGET_NAME} MODULE ${SOURCES})
     add_library(${TARGET_NAME} SHARED ${SOURCES})
 
@@ -301,7 +301,7 @@ function(make_module FNAME)
       add_dependencies(${TARGET_NAME} ${DEPS})
     endif(DEPS)
 
-  endif(BUILD_SHARED_MODULES)
+  endif(BUILD_SHARED)
 
   add_library(${TARGET_NAME}-static STATIC ${SOURCES})
 
@@ -328,9 +328,9 @@ endfunction()
 
 if(WASI OR EMSCRIPTEN)
   set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
-  option(BUILD_SHARED_MODULES "Build shared modules" OFF)
+  option(BUILD_SHARED "Build shared modules" OFF)
 else(WASI OR EMSCRIPTEN)
-  option(BUILD_SHARED_MODULES "Build shared modules" ON)
+  option(BUILD_SHARED "Build shared modules" ON)
 endif(WASI OR EMSCRIPTEN)
 
 if(WIN32 OR MINGW)
