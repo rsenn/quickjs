@@ -237,3 +237,12 @@ EXPORTS
   unicode_to_utf8
   JS_PromiseState
   JS_PromiseResult
+  dbuf_claim
+  __dbuf_putc
+  JS_AtomToCStringLen
+  JS_GetClassID
+  JS_HasException
+  JS_LoadModule
+  lre_compile
+  lre_exec
+  lre_get_capture_count
