@@ -1,0 +1,113 @@
+# Fixes two bugs in the embedded debugger of patch 001 (apply after it):
+#
+# 1. Breakpoints only fired on the first line of a function.
+#    js_debugger_check_breakpoint() decodes pc2line, whose entries each end
+#    in a column delta (sleb128) since the (line, column) format change; the
+#    loop never consumed it, desynchronised after the first entry and so
+#    marked no pc for any later line. It now skips the column delta.
+#
+# 2. `print EXPR` / `evaluate` crashed the debuggee (SIGSEGV).
+#    Evaluating an identifier closes over the frame's locals/arguments, but
+#    get_var_ref() only has a var_ref slot for variables the compiler marked
+#    captured, so it indexed past sf->var_refs. With QUICKJS_DEBUGGER an
+#    uncaptured variable now gets a detached copy of its current value, and
+#    js_debugger_eval() stores the copies back into the frame afterwards, so
+#    `print b=100` still assigns. js_debugger_evaluate() also passes the
+#    innermost variable as scope index (its scope_next chain reaches all
+#    enclosing scopes) and js_debugger_eval() hands it to
+#    add_closure_variables() unchanged, as JS_EvalInternal does.
+#
+diff --git a/quickjs.c b/quickjs.c
+index fd20aee..940bf90 100644
+--- a/quickjs.c
++++ b/quickjs.c
+@@ -17064,6 +17064,17 @@ static JSVarRef *get_var_ref(JSContext *ctx, JSStackFrame *sf, int var_idx,
+         vd = &b->vardefs[b->arg_count + var_idx];
+         pvalue = &sf->var_buf[var_idx];
+     }
++#ifdef QUICKJS_DEBUGGER
++    if (!vd->is_captured) {
++        /* debugger eval of a variable the compiler did not capture: the
++           frame has no var_ref slot for it, so hand out a detached copy;
++           js_debugger_eval() writes changes back */
++        var_ref = js_create_var_ref(ctx, FALSE);
++        if (var_ref)
++            var_ref->value = JS_DupValue(ctx, *pvalue);
++        return var_ref;
++    }
++#endif
+     assert(vd->is_captured);
+     var_ref_idx = vd->var_ref_idx;
+     assert(var_ref_idx < b->var_ref_count);
+@@ -61473,6 +61484,11 @@ js_debugger_check_breakpoint(JSContext* ctx, uint32_t current_dirty, const uint8
+           pc += (op / PC2LINE_RANGE);
+           new_line_num = line_num + (op % PC2LINE_RANGE) + PC2LINE_BASE;
+         }
++        // every entry ends in a column delta; skipping it keeps the decoder in sync
++        ret = get_sleb128(&v, p, p_end);
++        if(ret < 0)
++          goto fail;
++        p += ret;
+         line_num = new_line_num;
+       }
+ 
+@@ -61653,13 +61669,7 @@ js_debugger_eval(JSContext* ctx,
+   fd->js_mode = js_mode;
+   fd->func_name = JS_DupAtom(ctx, JS_ATOM__eval_);
+   if(b) {
+-    int idx;
+-    if(!b->var_count)
+-      idx = -1;
+-    else
+-      idx =
+-          (b->vardefs && b->vardefs[b->arg_count + scope_idx].scope_next != scope_idx) ? 0 : -1;
+-    if(add_closure_variables(ctx, fd, b, idx))
++    if(add_closure_variables(ctx, fd, b, scope_idx))
+       goto fail;
+   }
+   fd->module = NULL;
+@@ -61683,7 +61693,32 @@ js_debugger_eval(JSContext* ctx,
+   if(flags & JS_EVAL_FLAG_COMPILE_ONLY) {
+     ret_val = fun_obj;
+   } else {
+-    ret_val = JS_EvalFunctionInternal(ctx, fun_obj, this_obj, var_refs, sf);
++    JSObject* fp;
++    JSFunctionBytecode* fb;
++    JSValue func;
++
++    func = js_closure(ctx, fun_obj, var_refs, sf, TRUE);
++    if(JS_IsException(func))
++      goto fail1;
++    fp = JS_VALUE_GET_OBJ(func);
++    fb = fp->u.func.function_bytecode;
++    JS_DupValue(ctx, func);
++    ret_val = JS_CallFree(ctx, func, this_obj, 0, NULL);
++
++    // variables without a var_ref slot were evaluated on detached copies:
++    // store the (possibly assigned) values back into the frame
++    for(int i = 0; i < fb->closure_var_count; i++) {
++      JSClosureVar* cv = &fb->closure_var[i];
++      JSVarRef* r = fp->u.func.var_refs[i];
++      JSValue* dst;
++
++      if((cv->closure_type != JS_CLOSURE_LOCAL && cv->closure_type != JS_CLOSURE_ARG) || !r || !r->is_detached || cv->is_const)
++        continue;
++      dst = cv->closure_type == JS_CLOSURE_ARG ? &sf->arg_buf[cv->var_idx] : &sf->var_buf[cv->var_idx];
++      JS_FreeValue(ctx, *dst);
++      *dst = JS_DupValue(ctx, r->value);
++    }
++    JS_FreeValue(ctx, func);
+   }
+   return ret_val;
+ fail1:
+@@ -61706,7 +61741,9 @@ js_debugger_evaluate(JSContext* ctx, int stack_index, JSValue expression) {
+       return JS_UNDEFINED;
+     JSFunctionBytecode* b = f->u.func.function_bytecode;
+ 
+-    int scope_idx = b->vardefs ? 0 : -1;
++    // innermost declared variable: its scope_next chain reaches every
++    // enclosing scope, so all of the function's locals are visible
++    int scope_idx = b->vardefs && b->var_count ? b->var_count - 1 : -1;
+     size_t len;
+     const char* str = JS_ToCStringLen(ctx, &len, expression);
+     JSValue ret = js_debugger_eval(ctx,
