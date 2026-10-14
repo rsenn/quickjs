@@ -8,7 +8,8 @@
 #    higher line, so a loop body (followed by the `i++` code of the header
 #    line) or any line the code returns to was never marked, and it scanned
 #    forward once per breakpoint. It now walks the entries once, skips the
-#    column delta, and marks every pc segment of every requested line.
+#    column delta, and marks the first pc of every run of a requested line:
+#    one stop per entry into the line, as in gdb.
 #
 # 2. `print EXPR` / `evaluate` crashed the debuggee (SIGSEGV).
 #    Evaluating an identifier closes over the frame's locals/arguments, but
@@ -22,7 +23,7 @@
 #    add_closure_variables() unchanged, as JS_EvalInternal does.
 #
 diff --git a/quickjs.c b/quickjs.c
-index fd20aee..7a27180 100644
+index fd20aee..32fa4cf 100644
 --- a/quickjs.c
 +++ b/quickjs.c
 @@ -17064,6 +17064,17 @@ static JSVarRef *get_var_ref(JSContext *ctx, JSStackFrame *sf, int var_idx,
@@ -48,7 +49,7 @@ index fd20aee..7a27180 100644
  
    const uint8_t *p_end, *p;
 -  int new_line_num, line_num, pc, v, ret;
-+  int new_line_num, line_num, pc, v, ret, seg_pc, seg_line;
++  int new_line_num, line_num, pc, v, ret, seg_pc, seg_line, prev_line;
    unsigned int op;
    uint32_t leb_val;
 +  uint32_t i, nlines = 0;
@@ -66,7 +67,7 @@ index fd20aee..7a27180 100644
  
    p = b->debug.pc2line_buf;
    p_end = p + b->debug.pc2line_len;
-@@ -61422,82 +61445,74 @@ js_debugger_check_breakpoint(JSContext* ctx, uint32_t current_dirty, const uint8
+@@ -61422,82 +61445,67 @@ js_debugger_check_breakpoint(JSContext* ctx, uint32_t current_dirty, const uint8
    // numbers (leb128-encoded); skip the column, we only track lines.
    ret = get_leb128(&leb_val, p, p_end);
    if(ret < 0)
@@ -95,21 +96,33 @@ index fd20aee..7a27180 100644
 -      continue;
 -    // breakpoint is after function end. can stop, as breakpoints are in sorted order.
 -    if(b->debugger.last_line_num && breakpoint_line > b->debugger.last_line_num)
--      break;
--
--    int last_line_num = line_num;
--    int line_pc = pc;
-+  // pc2line entries say "from this pc on, the code belongs to that line", so
-+  // the code of a line is the union of its segments (a loop revisits its
-+  // header line after the body); mark every segment of every requested line
++  // pc2line entry k says "from pc_k on, the code belongs to line_k". Like
++  // gdb, stop only where execution enters a requested line: mark the first pc
++  // of each run of that line (a loop body is entered once per iteration), not
++  // its remaining pcs, which a call returning into the middle of the
++  // statement would otherwise hit a second time.
 +  seg_pc = 0;
 +  seg_line = line_num;
++  prev_line = -1;
++
++  for(;;) {
++    if(seg_line != prev_line && seg_pc < b->byte_code_len)
++      for(i = 0; i < nlines; i++)
++        if(lines[i] == (uint32_t)seg_line) {
++          b->debugger.breakpoints[seg_pc] = 1;
++          break;
++        }
++    prev_line = seg_line;
++
++    if(p >= p_end)
+       break;
  
+-    int last_line_num = line_num;
+-    int line_pc = pc;
+-
 -    // scan until we find the start pc for the breakpoint
 -    while(p < p_end && line_num <= breakpoint_line) {
-+  for(;;) {
-+    int end_pc;
- 
+-
 -      // scan line by line
 -      while(p < p_end && line_num == last_line_num) {
 -        op = *p++;
@@ -131,59 +144,44 @@ index fd20aee..7a27180 100644
 -          new_line_num = line_num + (op % PC2LINE_RANGE) + PC2LINE_BASE;
 -        }
 -        line_num = new_line_num;
-+    if(p < p_end) {
-+      op = *p++;
-+      if(op == 0) {
-+        uint32_t val;
-+        ret = get_leb128(&val, p, p_end);
-+        if(ret < 0)
-+          goto fail_lines;
-+        pc += val;
-+        p += ret;
-+        ret = get_sleb128(&v, p, p_end);
-+        if(ret < 0)
-+          goto fail_lines;
-+        p += ret;
-+        new_line_num = seg_line + v;
-+      } else {
-+        op -= PC2LINE_OP_FIRST;
-+        pc += (op / PC2LINE_RANGE);
-+        new_line_num = seg_line + (op % PC2LINE_RANGE) + PC2LINE_BASE;
-       }
-+      // every entry ends in a column delta; skipping it keeps the decoder in sync
-+      ret = get_sleb128(&v, p, p_end);
-+      if(ret < 0)
-+        goto fail_lines;
-+      p += ret;
-+      end_pc = pc;
-+    } else {
-+      end_pc = b->byte_code_len;
-+      new_line_num = -1;
-+    }
- 
+-      }
+-
 -      if(line_num != last_line_num) {
 -        // new line found, check if it is the one with breakpoint.
 -        if(last_line_num == breakpoint_line && line_num > last_line_num)
 -          memset(b->debugger.breakpoints + line_pc, 1, pc - line_pc);
-+    if(end_pc > b->byte_code_len)
-+      end_pc = b->byte_code_len;
- 
+-
 -        // update the line trackers
 -        line_pc = pc;
 -        last_line_num = line_num;
 -      }
 -    }
-+    if(end_pc > seg_pc)
-+      for(i = 0; i < nlines; i++)
-+        if(lines[i] == (uint32_t)seg_line) {
-+          memset(b->debugger.breakpoints + seg_pc, 1, end_pc - seg_pc);
-+          break;
-+        }
- 
+-
 -    if(p >= p_end) {
 -      b->debugger.last_line_num = line_num;
-+    if(new_line_num < 0)
-+      break;
++    op = *p++;
++    if(op == 0) {
++      uint32_t val;
++      ret = get_leb128(&val, p, p_end);
++      if(ret < 0)
++        goto fail_lines;
++      pc += val;
++      p += ret;
++      ret = get_sleb128(&v, p, p_end);
++      if(ret < 0)
++        goto fail_lines;
++      p += ret;
++      new_line_num = seg_line + v;
++    } else {
++      op -= PC2LINE_OP_FIRST;
++      pc += (op / PC2LINE_RANGE);
++      new_line_num = seg_line + (op % PC2LINE_RANGE) + PC2LINE_BASE;
++    }
++    // every entry ends in a column delta; skipping it keeps the decoder in sync
++    ret = get_sleb128(&v, p, p_end);
++    if(ret < 0)
++      goto fail_lines;
++    p += ret;
  
 -      // the breakpoint line is the function's last mapped line (e.g. a
 -      // final explicit return): no higher line follows in pc2line, so the
@@ -191,7 +189,7 @@ index fd20aee..7a27180 100644
 -      if(last_line_num == breakpoint_line && line_pc < b->byte_code_len)
 -        memset(b->debugger.breakpoints + line_pc, 1, b->byte_code_len - line_pc);
 -    }
-+    seg_pc = end_pc;
++    seg_pc = pc;
 +    seg_line = new_line_num;
    }
  
@@ -202,7 +200,7 @@ index fd20aee..7a27180 100644
  fail:
    JS_FreeValue(ctx, breakpoints);
  
-@@ -61653,13 +61668,7 @@ js_debugger_eval(JSContext* ctx,
+@@ -61653,13 +61661,7 @@ js_debugger_eval(JSContext* ctx,
    fd->js_mode = js_mode;
    fd->func_name = JS_DupAtom(ctx, JS_ATOM__eval_);
    if(b) {
@@ -217,7 +215,7 @@ index fd20aee..7a27180 100644
        goto fail;
    }
    fd->module = NULL;
-@@ -61683,7 +61692,32 @@ js_debugger_eval(JSContext* ctx,
+@@ -61683,7 +61685,32 @@ js_debugger_eval(JSContext* ctx,
    if(flags & JS_EVAL_FLAG_COMPILE_ONLY) {
      ret_val = fun_obj;
    } else {
@@ -251,7 +249,7 @@ index fd20aee..7a27180 100644
    }
    return ret_val;
  fail1:
-@@ -61706,7 +61740,9 @@ js_debugger_evaluate(JSContext* ctx, int stack_index, JSValue expression) {
+@@ -61706,7 +61733,9 @@ js_debugger_evaluate(JSContext* ctx, int stack_index, JSValue expression) {
        return JS_UNDEFINED;
      JSFunctionBytecode* b = f->u.func.function_bytecode;
  

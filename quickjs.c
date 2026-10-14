@@ -61421,7 +61421,7 @@ js_debugger_check_breakpoint(JSContext* ctx, uint32_t current_dirty, const uint8
   JS_FreeValue(ctx, breakpoints_length_property);
 
   const uint8_t *p_end, *p;
-  int new_line_num, line_num, pc, v, ret, seg_pc, seg_line;
+  int new_line_num, line_num, pc, v, ret, seg_pc, seg_line, prev_line;
   unsigned int op;
   uint32_t leb_val;
   uint32_t i, nlines = 0;
@@ -61453,59 +61453,52 @@ js_debugger_check_breakpoint(JSContext* ctx, uint32_t current_dirty, const uint8
     goto fail_lines;
   p += ret;
 
-  // pc2line entries say "from this pc on, the code belongs to that line", so
-  // the code of a line is the union of its segments (a loop revisits its
-  // header line after the body); mark every segment of every requested line
+  // pc2line entry k says "from pc_k on, the code belongs to line_k". Like
+  // gdb, stop only where execution enters a requested line: mark the first pc
+  // of each run of that line (a loop body is entered once per iteration), not
+  // its remaining pcs, which a call returning into the middle of the
+  // statement would otherwise hit a second time.
   seg_pc = 0;
   seg_line = line_num;
+  prev_line = -1;
 
   for(;;) {
-    int end_pc;
+    if(seg_line != prev_line && seg_pc < b->byte_code_len)
+      for(i = 0; i < nlines; i++)
+        if(lines[i] == (uint32_t)seg_line) {
+          b->debugger.breakpoints[seg_pc] = 1;
+          break;
+        }
+    prev_line = seg_line;
 
-    if(p < p_end) {
-      op = *p++;
-      if(op == 0) {
-        uint32_t val;
-        ret = get_leb128(&val, p, p_end);
-        if(ret < 0)
-          goto fail_lines;
-        pc += val;
-        p += ret;
-        ret = get_sleb128(&v, p, p_end);
-        if(ret < 0)
-          goto fail_lines;
-        p += ret;
-        new_line_num = seg_line + v;
-      } else {
-        op -= PC2LINE_OP_FIRST;
-        pc += (op / PC2LINE_RANGE);
-        new_line_num = seg_line + (op % PC2LINE_RANGE) + PC2LINE_BASE;
-      }
-      // every entry ends in a column delta; skipping it keeps the decoder in sync
+    if(p >= p_end)
+      break;
+
+    op = *p++;
+    if(op == 0) {
+      uint32_t val;
+      ret = get_leb128(&val, p, p_end);
+      if(ret < 0)
+        goto fail_lines;
+      pc += val;
+      p += ret;
       ret = get_sleb128(&v, p, p_end);
       if(ret < 0)
         goto fail_lines;
       p += ret;
-      end_pc = pc;
+      new_line_num = seg_line + v;
     } else {
-      end_pc = b->byte_code_len;
-      new_line_num = -1;
+      op -= PC2LINE_OP_FIRST;
+      pc += (op / PC2LINE_RANGE);
+      new_line_num = seg_line + (op % PC2LINE_RANGE) + PC2LINE_BASE;
     }
+    // every entry ends in a column delta; skipping it keeps the decoder in sync
+    ret = get_sleb128(&v, p, p_end);
+    if(ret < 0)
+      goto fail_lines;
+    p += ret;
 
-    if(end_pc > b->byte_code_len)
-      end_pc = b->byte_code_len;
-
-    if(end_pc > seg_pc)
-      for(i = 0; i < nlines; i++)
-        if(lines[i] == (uint32_t)seg_line) {
-          memset(b->debugger.breakpoints + seg_pc, 1, end_pc - seg_pc);
-          break;
-        }
-
-    if(new_line_num < 0)
-      break;
-
-    seg_pc = end_pc;
+    seg_pc = pc;
     seg_line = new_line_num;
   }
 
