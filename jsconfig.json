@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "checkJs": false
+  },
+  "exclude": ["build", "node_modules"]
+}

@@ -1,4 +1,4 @@
-# Fixes two bugs in the embedded debugger of patch 001 (apply after it):
+# Fixes three bugs in the embedded debugger of patch 001 (apply after it):
 #
 # 1. Line breakpoints rarely fired. js_debugger_check_breakpoint() decodes
 #    pc2line, whose entries each end in a column delta (sleb128) since the
@@ -21,6 +21,17 @@
 #    innermost variable as scope index (its scope_next chain reaches all
 #    enclosing scopes) and js_debugger_eval() hands it to
 #    add_closure_variables() unchanged, as JS_EvalInternal does.
+#
+# 3. Stepping over an `await` never stopped again. `next`/`stepIn` on a line
+#    that awaits suspends the async function, which resumes later from the
+#    job queue (at another stack depth, after unrelated code ran); the step
+#    check compared depth and location, so it either stopped in the caller
+#    or ran on to the next breakpoint, and only Pause helped. A step now
+#    remembers its JSStackFrame (an async function keeps the same frame
+#    across awaits), OP_await records the suspending frame, and the step is
+#    put on hold until that frame runs again; it then continues from where it
+#    resumed, so the next line stops as usual. Breakpoints still fire while
+#    the step is on hold.
 #
 diff --git a/quickjs.c b/quickjs.c
 index fd20aee..32fa4cf 100644
@@ -260,3 +271,124 @@ index fd20aee..32fa4cf 100644
      size_t len;
      const char* str = JS_ToCStringLen(ctx, &len, expression);
      JSValue ret = js_debugger_eval(ctx,
+diff --git a/quickjs-debugger.c b/quickjs-debugger.c
+index e046c70..12d5444 100644
+--- a/quickjs-debugger.c
++++ b/quickjs-debugger.c
+@@ -270,12 +270,18 @@ js_process_request(JSDebuggerInfo* info, struct DebuggerSuspendedState* state, J
+     info->stepping = JS_DEBUGGER_STEP;
+     info->step_over = js_debugger_current_location(ctx, state->cur_pc);
+     info->step_depth = js_debugger_stack_depth(ctx);
++    info->step_frame = js_debugger_current_frame(ctx);
++    info->step_wait = 0;
++    info->awaiting_frame = NULL;
+     js_transport_send_response(info, request, JS_UNDEFINED);
+     info->is_paused = 0;
+   } else if(strcmp("stepIn", command) == 0) {
+     info->stepping = JS_DEBUGGER_STEP_IN;
+     info->step_over = js_debugger_current_location(ctx, state->cur_pc);
+     info->step_depth = js_debugger_stack_depth(ctx);
++    info->step_frame = js_debugger_current_frame(ctx);
++    info->step_wait = 0;
++    info->awaiting_frame = NULL;
+     js_transport_send_response(info, request, JS_UNDEFINED);
+     info->is_paused = 0;
+   } else if(strcmp("stepOut", command) == 0) {
+@@ -604,14 +610,33 @@ js_debugger_check(JSContext* ctx, const uint8_t* cur_pc) {
+   // perform stepping checks prior to the breakpoint check
+   // as those need to preempt breakpoint behavior to skip their last
+   // position, which may be a breakpoint.
++  int step_suspended = 0;
+   if(info->stepping) {
+-    // all step operations need to ignore their step location, as those
+-    // may be on a breakpoint.
++    void* frame = js_debugger_current_frame(ctx);
+     location = js_debugger_current_location(ctx, cur_pc);
+     depth = js_debugger_stack_depth(ctx);
+-    if(info->step_depth == depth && location.filename == info->step_over.filename && location.line == info->step_over.line && location.column == info->step_over.column)
++
++    // an `await` in the stepped frame suspends it: the program runs on in other frames (at any depth)
++    // and the async function resumes later from the job queue, so stepping is put on hold until the
++    // same frame runs again; it then continues from where it resumed (as if stepping from there)
++    if(info->awaiting_frame && info->awaiting_frame == info->step_frame && (info->stepping == JS_DEBUGGER_STEP || info->stepping == JS_DEBUGGER_STEP_IN))
++      info->step_wait = 1;
++    if(info->step_wait) {
++      if(frame == info->step_frame) {
++        info->step_wait = 0;
++        info->step_over = location;
++        info->step_depth = depth;
++      } else {
++        step_suspended = 1;
++      }
++    }
++
++    // all step operations need to ignore their step location, as those
++    // may be on a breakpoint.
++    if(!step_suspended && info->step_depth == depth && location.filename == info->step_over.filename && location.line == info->step_over.line && location.column == info->step_over.column)
+       goto done;
+   }
++  info->awaiting_frame = NULL;
+ 
+   int at_breakpoint = js_debugger_check_breakpoint(ctx, info->breakpoints_dirty_counter, cur_pc);
+   if(at_breakpoint) {
+@@ -619,7 +644,7 @@ js_debugger_check(JSContext* ctx, const uint8_t* cur_pc) {
+     info->stepping = 0;
+     info->is_paused = 1;
+     js_send_stopped_event(info, "breakpoint");
+-  } else if(info->stepping) {
++  } else if(info->stepping && !step_suspended) {
+     if(info->stepping == JS_DEBUGGER_STEP_CONTINUE) {
+       // continue needs to proceed over the existing statement (which may be multiple ops)
+       // once any change in location is detecting, turn off stepping.
+diff --git a/quickjs-debugger.h b/quickjs-debugger.h
+index eee3ca3..caf7008 100644
+--- a/quickjs-debugger.h
++++ b/quickjs-debugger.h
+@@ -54,6 +54,12 @@ typedef struct JSDebuggerInfo {
+   int stepping;
+   JSDebuggerLocation step_over;
+   int step_depth;
++  // frame (JSStackFrame*, an async function keeps the same one across awaits) a step started in
++  void* step_frame;
++  // set by OP_await: the frame that is suspending
++  void* awaiting_frame;
++  // the stepped frame awaited: ignore stepping until it is resumed
++  int step_wait;
+ } JSDebuggerInfo;
+ 
+ void js_debugger_new_context(JSContext* ctx);
+@@ -84,6 +90,7 @@ JSDebuggerInfo* js_debugger_info(JSRuntime* rt);
+ // this may be able to be done with an Error backtrace,
+ // but would be clunky and require stack string parsing.
+ uint32_t js_debugger_stack_depth(JSContext* ctx);
++void* js_debugger_current_frame(JSContext* ctx);
+ JSValue js_debugger_build_backtrace(JSContext* ctx, const uint8_t* cur_pc);
+ JSDebuggerLocation js_debugger_current_location(JSContext* ctx, const uint8_t* cur_pc);
+ 
+diff --git a/quickjs.c b/quickjs.c
+index 32fa4cf..4d540ed 100644
+--- a/quickjs.c
++++ b/quickjs.c
+@@ -20550,6 +20550,10 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
+             BREAK;
+ 
+         CASE(OP_await):
++#ifdef QUICKJS_DEBUGGER
++            /* the frame suspends: tell the stepping logic it will be resumed later */
++            rt->debugger_info.awaiting_frame = sf;
++#endif
+             ret_val = JS_NewInt32(ctx, FUNC_RET_AWAIT);
+             goto done_generator;
+         CASE(OP_yield):
+@@ -61317,6 +61321,11 @@ js_debugger_info(JSRuntime* rt) {
+   return &rt->debugger_info;
+ }
+ 
++void*
++js_debugger_current_frame(JSContext* ctx) {
++  return ctx->rt->current_stack_frame;
++}
++
+ uint32_t
+ js_debugger_stack_depth(JSContext* ctx) {
+   uint32_t stack_index = 0;

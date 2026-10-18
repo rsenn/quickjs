@@ -20550,6 +20550,10 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
             BREAK;
 
         CASE(OP_await):
+#ifdef QUICKJS_DEBUGGER
+            /* the frame suspends: tell the stepping logic it will be resumed later */
+            rt->debugger_info.awaiting_frame = sf;
+#endif
             ret_val = JS_NewInt32(ctx, FUNC_RET_AWAIT);
             goto done_generator;
         CASE(OP_yield):
@@ -61315,6 +61319,11 @@ js_debugger_current_location(JSContext* ctx, const uint8_t* cur_pc) {
 JSDebuggerInfo*
 js_debugger_info(JSRuntime* rt) {
   return &rt->debugger_info;
+}
+
+void*
+js_debugger_current_frame(JSContext* ctx) {
+  return ctx->rt->current_stack_frame;
 }
 
 uint32_t

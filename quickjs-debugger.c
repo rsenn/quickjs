@@ -270,12 +270,18 @@ js_process_request(JSDebuggerInfo* info, struct DebuggerSuspendedState* state, J
     info->stepping = JS_DEBUGGER_STEP;
     info->step_over = js_debugger_current_location(ctx, state->cur_pc);
     info->step_depth = js_debugger_stack_depth(ctx);
+    info->step_frame = js_debugger_current_frame(ctx);
+    info->step_wait = 0;
+    info->awaiting_frame = NULL;
     js_transport_send_response(info, request, JS_UNDEFINED);
     info->is_paused = 0;
   } else if(strcmp("stepIn", command) == 0) {
     info->stepping = JS_DEBUGGER_STEP_IN;
     info->step_over = js_debugger_current_location(ctx, state->cur_pc);
     info->step_depth = js_debugger_stack_depth(ctx);
+    info->step_frame = js_debugger_current_frame(ctx);
+    info->step_wait = 0;
+    info->awaiting_frame = NULL;
     js_transport_send_response(info, request, JS_UNDEFINED);
     info->is_paused = 0;
   } else if(strcmp("stepOut", command) == 0) {
@@ -604,14 +610,33 @@ js_debugger_check(JSContext* ctx, const uint8_t* cur_pc) {
   // perform stepping checks prior to the breakpoint check
   // as those need to preempt breakpoint behavior to skip their last
   // position, which may be a breakpoint.
+  int step_suspended = 0;
   if(info->stepping) {
-    // all step operations need to ignore their step location, as those
-    // may be on a breakpoint.
+    void* frame = js_debugger_current_frame(ctx);
     location = js_debugger_current_location(ctx, cur_pc);
     depth = js_debugger_stack_depth(ctx);
-    if(info->step_depth == depth && location.filename == info->step_over.filename && location.line == info->step_over.line && location.column == info->step_over.column)
+
+    // an `await` in the stepped frame suspends it: the program runs on in other frames (at any depth)
+    // and the async function resumes later from the job queue, so stepping is put on hold until the
+    // same frame runs again; it then continues from where it resumed (as if stepping from there)
+    if(info->awaiting_frame && info->awaiting_frame == info->step_frame && (info->stepping == JS_DEBUGGER_STEP || info->stepping == JS_DEBUGGER_STEP_IN))
+      info->step_wait = 1;
+    if(info->step_wait) {
+      if(frame == info->step_frame) {
+        info->step_wait = 0;
+        info->step_over = location;
+        info->step_depth = depth;
+      } else {
+        step_suspended = 1;
+      }
+    }
+
+    // all step operations need to ignore their step location, as those
+    // may be on a breakpoint.
+    if(!step_suspended && info->step_depth == depth && location.filename == info->step_over.filename && location.line == info->step_over.line && location.column == info->step_over.column)
       goto done;
   }
+  info->awaiting_frame = NULL;
 
   int at_breakpoint = js_debugger_check_breakpoint(ctx, info->breakpoints_dirty_counter, cur_pc);
   if(at_breakpoint) {
@@ -619,7 +644,7 @@ js_debugger_check(JSContext* ctx, const uint8_t* cur_pc) {
     info->stepping = 0;
     info->is_paused = 1;
     js_send_stopped_event(info, "breakpoint");
-  } else if(info->stepping) {
+  } else if(info->stepping && !step_suspended) {
     if(info->stepping == JS_DEBUGGER_STEP_CONTINUE) {
       // continue needs to proceed over the existing statement (which may be multiple ops)
       // once any change in location is detecting, turn off stepping.

@@ -54,6 +54,12 @@ typedef struct JSDebuggerInfo {
   int stepping;
   JSDebuggerLocation step_over;
   int step_depth;
+  // frame (JSStackFrame*, an async function keeps the same one across awaits) a step started in
+  void* step_frame;
+  // set by OP_await: the frame that is suspending
+  void* awaiting_frame;
+  // the stepped frame awaited: ignore stepping until it is resumed
+  int step_wait;
 } JSDebuggerInfo;
 
 void js_debugger_new_context(JSContext* ctx);
@@ -84,6 +90,7 @@ JSDebuggerInfo* js_debugger_info(JSRuntime* rt);
 // this may be able to be done with an Error backtrace,
 // but would be clunky and require stack string parsing.
 uint32_t js_debugger_stack_depth(JSContext* ctx);
+void* js_debugger_current_frame(JSContext* ctx);
 JSValue js_debugger_build_backtrace(JSContext* ctx, const uint8_t* cur_pc);
 JSDebuggerLocation js_debugger_current_location(JSContext* ctx, const uint8_t* cur_pc);
 
