@@ -27,6 +27,8 @@ function(compile_module SOURCE)
     set(OUTPUT_FILE "${MODULES_DIR}/${BASE}.c")
   endif(ARGN)
 
+  dump(OUTPUT_FILE)
+
   list(APPEND COMPILED_MODULES "${OUTPUT_FILE}")
   list(APPEND COMPILED_TARGETS "${BASE}.c")
   set(COMPILED_MODULES
@@ -85,7 +87,7 @@ function(generate_module_header SOURCE)
       )
     endif(NOT DOES_CONTAIN)
   endforeach(NAME ${SYMBOLS})
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/modules/${BASE}.h" "${S}")
+  file(WRITE "${CMAKE_BINARY_DIR}/modules/${BASE}.h" "${S}")
   # string(REGEX REPLACE "[\\n;]" "\\\\n" SYMBOLS "${SYMBOLS}")
   # message("Symbols: ${SYMBOLS}")
 endfunction(generate_module_header SOURCE)
@@ -191,9 +193,9 @@ function(remake_module SOURCE)
 
   extract_definition("${SOURCE}" DEF "${NAME}")
 
-  file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules")
+  file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/modules")
 
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/modules/${BASE}.c"
+  file(WRITE "${CMAKE_BINARY_DIR}/modules/${BASE}.c"
        "#include \"${BASE}.h\"\n\n${DEF}")
   generate_module_header(${SOURCE} ${DEFLIST})
 
