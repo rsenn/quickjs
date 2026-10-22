@@ -8,11 +8,9 @@ macro(find_quickjs)
   endif(ARGN)
 
   if(NOT QUICKJS_PREFIX)
-    find_file(
-      QUICKJS_H quickjs.h
-      PATHS "${CMAKE_INSTALL_PREFIX}/include/quickjs"
-            "/usr/local/include/quickjs" "/usr/include/quickjs"
-            "${QUICKJS_ROOT}/include/quickjs" "${QuickJS_DIR}/include/quickjs")
+    find_file(QUICKJS_H quickjs.h
+              PATHS "${CMAKE_INSTALL_PREFIX}/include/quickjs" "/usr/local/include/quickjs" "/usr/include/quickjs"
+                    "${QUICKJS_ROOT}/include/quickjs" "${QuickJS_DIR}/include/quickjs")
 
     if(QUICKJS_H)
       string(REGEX REPLACE "/include.*" "" QUICKJS_PREFIX "${QUICKJS_H}")
@@ -26,8 +24,7 @@ macro(find_quickjs)
   endif(NOT QUICKJS_PREFIX)
 
   if(NOT "${CMAKE_SYSROOT}" STREQUAL "")
-    string(REPLACE "${CMAKE_SYSROOT}" "" QUICKJS_INSTALL_DIR
-                   "${QUICKJS_PREFIX}")
+    string(REPLACE "${CMAKE_SYSROOT}" "" QUICKJS_INSTALL_DIR "${QUICKJS_PREFIX}")
   endif(NOT "${CMAKE_SYSROOT}" STREQUAL "")
 
   if("${QUICKJS_INSTALL_DIR}" STREQUAL "")
@@ -39,8 +36,7 @@ macro(find_quickjs)
       CACHE PATH "QuickJS installation prefix")
 
   if(CACHE{CMAKE_BUILD_TYPE})
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release
-                                                 MinSizeRel RelWithDebInfo)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel RelWithDebInfo)
   endif(CACHE{CMAKE_BUILD_TYPE})
 
   set(CMAKE_REQUIRED_QUIET TRUE)
@@ -65,15 +61,13 @@ macro(find_quickjs)
 
   if(NOT QUICKJS_INCLUDE_DIR)
     if(QUICKJS_LIBRARY_DIR)
-      string(REGEX REPLACE "/lib.*" "/include/quickjs" QUICKJS_INCLUDE_DIR
-                           "${QUICKJS_LIBRARY_DIR}")
+      string(REGEX REPLACE "/lib.*" "/include/quickjs" QUICKJS_INCLUDE_DIR "${QUICKJS_LIBRARY_DIR}")
     endif(QUICKJS_LIBRARY_DIR)
   endif(NOT QUICKJS_INCLUDE_DIR)
 
   if(NOT QUICKJS_INCLUDE_DIR)
     if(QUICKJS_H)
-      string(REGEX REPLACE "/include.*" "/include/quickjs" QUICKJS_INCLUDE_DIR
-                           "${QUICKJS_H}")
+      string(REGEX REPLACE "/include.*" "/include/quickjs" QUICKJS_INCLUDE_DIR "${QUICKJS_H}")
     endif(QUICKJS_H)
   endif(NOT QUICKJS_INCLUDE_DIR)
 
@@ -94,8 +88,7 @@ macro(find_quickjs)
 
   if(NOT QUICKJS_LIBRARY_DIR)
     if(QUICKJS_H)
-      string(REGEX REPLACE "/include.*" "/${CMAKE_INSTALL_LIBDIR}"
-                           QUICKJS_LIBRARY_DIR "${QUICKJS_H}")
+      string(REGEX REPLACE "/include.*" "/${CMAKE_INSTALL_LIBDIR}" QUICKJS_LIBRARY_DIR "${QUICKJS_H}")
     endif(QUICKJS_H)
   endif(NOT QUICKJS_LIBRARY_DIR)
 
@@ -195,8 +188,7 @@ macro(configure_quickjs)
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   if(NOT QUICKJS_C_MODULE_DIR)
-    set(QUICKJS_C_MODULE_DIR
-        "${QUICKJS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/quickjs")
+    set(QUICKJS_C_MODULE_DIR "${QUICKJS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/quickjs")
   endif(NOT QUICKJS_C_MODULE_DIR)
 
   if(NOT QUICKJS_JS_MODULE_DIR)
@@ -215,15 +207,24 @@ macro(configure_quickjs)
   if(NOT QUICKJS_CONFIGURATION_SHOWN)
     message_table(
       "QuickJS"
-      "interpreter" "${QJS}"
-      "compiler" "${QJSC}"
-      "library" "${QUICKJS_LIBRARY}"
-      "prefix" "${QUICKJS_PREFIX}"
-      "library dir" "${QUICKJS_LIBRARY_DIR}"
-      "include dir" "${QUICKJS_INCLUDE_DIR}"
-      "C modules" "${QUICKJS_C_MODULE_DIR}"
-      "JS modules" "${QUICKJS_JS_MODULE_DIR}"
-      "module path" "${QUICKJS_MODULE_PATH}")
+      "interpreter"
+      "${QJS}"
+      "compiler"
+      "${QJSC}"
+      "library"
+      "${QUICKJS_LIBRARY}"
+      "prefix"
+      "${QUICKJS_PREFIX}"
+      "library dir"
+      "${QUICKJS_LIBRARY_DIR}"
+      "include dir"
+      "${QUICKJS_INCLUDE_DIR}"
+      "C modules"
+      "${QUICKJS_C_MODULE_DIR}"
+      "JS modules"
+      "${QUICKJS_JS_MODULE_DIR}"
+      "module path"
+      "${QUICKJS_MODULE_PATH}")
     set(QUICKJS_CONFIGURATION_SHOWN TRUE)
   endif(NOT QUICKJS_CONFIGURATION_SHOWN)
 
@@ -233,8 +234,7 @@ endmacro(configure_quickjs)
 macro(configure_quickjs_module_path)
   set(MODULE_PATH "")
 
-  # if(NOT "${SYSTEM_NAME}" STREQUAL "") set_add(MODULE_PATH
-  # "${QUICKJS_LIBRARY_DIR}/${SYSTEM_NAME}quickjs") endif()
+  # if(NOT "${SYSTEM_NAME}" STREQUAL "") set_add(MODULE_PATH "${QUICKJS_LIBRARY_DIR}/${SYSTEM_NAME}quickjs") endif()
 
   # dump(QUICKJS_C_MODULE_DIR) dump(QUICKJS_JS_MODULE_DIR)
 

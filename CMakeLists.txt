@@ -12,8 +12,7 @@ set(CMAKE_REQUIRED_QUIET ON)
 set(DISABLE_WERROR TRUE)
 
 if(CACHE{CMAKE_BUILD_TYPE})
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel
-                                               RelWithDebInfo)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release MinSizeRel RelWithDebInfo)
 endif(CACHE{CMAKE_BUILD_TYPE})
 
 option(BUILD_STATIC_LIBS "Build libquickjs.a" ON)
@@ -22,11 +21,10 @@ option(CONFIG_ATOMICS "Enable atomics" ON)
 
 if(WASI OR EMSCRIPTEN)
   if(WASI)
-    # WASI builds have no JS glue, so the build product is the raw .wasm module.
-    # Emscripten instead ships its own JS/Node runtime alongside the .wasm (the
-    # default CMAKE_EXECUTABLE_SUFFIX of .js), which supplies the syscall shims
-    # that quickjs-libc.c needs (fork, dlopen, popen, socket calls, ...) and
-    # that a bare .wasm module has no way to satisfy on its own.
+    # WASI builds have no JS glue, so the build product is the raw .wasm module. Emscripten instead ships its own
+    # JS/Node runtime alongside the .wasm (the default CMAKE_EXECUTABLE_SUFFIX of .js), which supplies the syscall shims
+    # that quickjs-libc.c needs (fork, dlopen, popen, socket calls, ...) and that a bare .wasm module has no way to
+    # satisfy on its own.
     set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
   endif(WASI)
   option(CONFIG_WORKER "Enable Worker" OFF)
@@ -36,45 +34,35 @@ else(WASI OR EMSCRIPTEN)
   option(CONFIG_DLFCN "Enable dlfcn module loader" ON)
 endif(WASI OR EMSCRIPTEN)
 
-option(QUICKJS_DEBUGGER
-       "Enable the debugger (quickjs-debugger*.c and its hooks in quickjs.c)" ON)
+option(QUICKJS_DEBUGGER "Enable the debugger (quickjs-debugger*.c and its hooks in quickjs.c)" ON)
 
 if(CONFIG_WORKER)
   set(USE_WORKER "${CONFIG_WORKER}")
 endif(CONFIG_WORKER)
 
 if(EMSCRIPTEN)
-  option(EMSCRIPTEN_ALLOW_MEMORY_GROWTH
-         "Allow the wasm heap to grow at runtime" ON)
+  option(EMSCRIPTEN_ALLOW_MEMORY_GROWTH "Allow the wasm heap to grow at runtime" ON)
   if(EMSCRIPTEN_ALLOW_MEMORY_GROWTH)
-    set(CMAKE_EXE_LINKER_FLAGS
-        "${CMAKE_EXE_LINKER_FLAGS} -sALLOW_MEMORY_GROWTH=1")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -sALLOW_MEMORY_GROWTH=1")
   endif(EMSCRIPTEN_ALLOW_MEMORY_GROWTH)
-  # quickjs-libc.c calls popen()/pclose() (used by std.popen()), which the wasm
-  # sandbox has no equivalent for. Leave the symbol unresolved at link time
-  # instead of failing the build; std.popen() will simply be unavailable at
-  # runtime.
-  set(CMAKE_EXE_LINKER_FLAGS
-      "${CMAKE_EXE_LINKER_FLAGS} -sERROR_ON_UNDEFINED_SYMBOLS=0")
+  # quickjs-libc.c calls popen()/pclose() (used by std.popen()), which the wasm sandbox has no equivalent for. Leave the
+  # symbol unresolved at link time instead of failing the build; std.popen() will simply be unavailable at runtime.
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -sERROR_ON_UNDEFINED_SYMBOLS=0")
 
-  option(EMSCRIPTEN_BUILD_REPL_HTML
-         "Also emit qjs.html: a browser demo page driving the qjs REPL" ON)
+  option(EMSCRIPTEN_BUILD_REPL_HTML "Also emit qjs.html: a browser demo page driving the qjs REPL" ON)
   if(EMSCRIPTEN_BUILD_REPL_HTML)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
-    # qjs.c's normal interactive REPL blocks mid-interpreter waiting for the
-    # next byte of stdin, which in the browser would require Asyncify - and
-    # Asyncify can't unwind/rewind through JS_CallInternal()'s use of alloca().
-    # So qjs.html is instead built from a small eval-one-line driver (see
-    # cmake/emscripten/qjs-repl-wasm.c) that the page calls synchronously per
-    # Enter key press: no blocking read, no Asyncify.
+    # qjs.c's normal interactive REPL blocks mid-interpreter waiting for the next byte of stdin, which in the browser
+    # would require Asyncify - and Asyncify can't unwind/rewind through JS_CallInternal()'s use of alloca(). So qjs.html
+    # is instead built from a small eval-one-line driver (see cmake/emscripten/qjs-repl-wasm.c) that the page calls
+    # synchronously per Enter key press: no blocking read, no Asyncify.
     set(CMAKE_EXE_LINKER_FLAGS
         "${CMAKE_EXE_LINKER_FLAGS} -sEXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"UTF8ToString\"] --shell-file \"${CMAKE_CURRENT_SOURCE_DIR}/cmake/emscripten/shell-repl.html\""
     )
   endif(EMSCRIPTEN_BUILD_REPL_HTML)
 endif(EMSCRIPTEN)
 
-option(CONFIG_FIND_MODULE
-       "Resolve bare module names on the module search path (quickjs-find-module.c)" ON)
+option(CONFIG_FIND_MODULE "Resolve bare module names on the module search path (quickjs-find-module.c)" ON)
 option(CONFIG_ALL_UNICODE "Enable all-Unicode support" OFF)
 option(CONFIG_CHECK_JSVALUE "JSValue consistency mode" OFF)
 
@@ -105,12 +93,10 @@ execute_process(
 string(REGEX REPLACE "-unknown-" "-" SYSTEM_NAME "${SYSTEM_NAME}")
 string(REGEX REPLACE "android[0-9]*" "android" SYSTEM_NAME "${SYSTEM_NAME}")
 string(REGEX REPLACE "-unknown-" "-" HOST_SYSTEM_NAME "${HOST_SYSTEM_NAME}")
-string(REGEX REPLACE "android[0-9]*" "android" HOST_SYSTEM_NAME
-                     "${HOST_SYSTEM_NAME}")
+string(REGEX REPLACE "android[0-9]*" "android" HOST_SYSTEM_NAME "${HOST_SYSTEM_NAME}")
 
 set(HOST_SYSTEM "${HOST_SYSTEM_NAME}")
 set(TARGET_SYSTEM "${HOST_SYSTEM_NAME}")
-
 
 set(MSYS
     FALSE
@@ -120,9 +106,9 @@ if(HOST_SYSTEM_NAME MATCHES msys)
 endif(HOST_SYSTEM_NAME MATCHES msys)
 check_c_standard_flag(c99)
 
-if(MSYS)
-  list(APPEND CMAKE_C_FLAGS -include alloca.h)
-endif(MSYS)
+if(MSYS OR CYGWIN)
+  list(APPEND CMAKE_C_FLAGS -D_GNU_SOURCE=1 -D_FORTIFY_SOURCE=1 -D_XOPEN_SOURCE=600 -D__OPTIMIZE__=1 -include alloca.h)
+endif()
 
 if(C_STANDARD_FLAG)
   set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${C_STANDARD_FLAG})
@@ -133,19 +119,24 @@ endif(C_STANDARD_FLAG)
 configure_quickjs()
 configure_quickjs_module_path()
 
-
 if(NOT QUICKJS_BUILD_ROOT)
   set(QUICKJS_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}")
 endif(NOT QUICKJS_BUILD_ROOT)
 
 message_table(
   "Platform"
-  "host" "${HOST_SYSTEM}"
-  "target" "${SYSTEM_NAME}"
-  "compiler" "${CMAKE_C_COMPILER}"
-  "build type" "${CMAKE_BUILD_TYPE}"
-  "C standard" "${C_STANDARD_VALUE}"
-  "arch libdir" "${CMAKE_ARCH_LIBDIR}")
+  "host"
+  "${HOST_SYSTEM}"
+  "target"
+  "${SYSTEM_NAME}"
+  "compiler"
+  "${CMAKE_C_COMPILER}"
+  "build type"
+  "${CMAKE_BUILD_TYPE}"
+  "C standard"
+  "${C_STANDARD_VALUE}"
+  "arch libdir"
+  "${CMAKE_ARCH_LIBDIR}")
 
 #[[if(NOT DEFINED BUILD_SHARED_LIBS)
   set(BUILD_SHARED_LIBS "${SUPPORT_SHARED_LIBS}" CACHE BOOL "Build quickjs as shared library")
@@ -388,8 +379,8 @@ if(NOT HAVE_INFINITY)
   add_definitions("-DINFINITY=\"__builtin_inf()\"")
 endif(NOT HAVE_INFINITY)
 
-# check_function_exists(trunc HAVE_TRUNC) if(NOT HAVE_TRUNC)
-# add_definitions("-D\"trunc(x)=__builtin_trunc(x)\"") endif(NOT HAVE_TRUNC)
+# check_function_exists(trunc HAVE_TRUNC) if(NOT HAVE_TRUNC) add_definitions("-D\"trunc(x)=__builtin_trunc(x)\"")
+# endif(NOT HAVE_TRUNC)
 
 set(HAVE_VARIABLES)
 
@@ -517,7 +508,6 @@ endif(NOT HAVE_STDATOMIC_H)
 # list(JOIN CMAKE_EXTRA_INCLUDE_FILES " " EXTRA_INCLUDE_FILES)
 string(REPLACE ";" " " EXTRA_INCLUDE_FILES "${CMAKE_EXTRA_INCLUDE_FILES}")
 
-
 if(HAVE_SIGNAL_H)
   list(APPEND CMAKE_EXTRA_INCLUDE_FILES "signal.h")
 endif(HAVE_SIGNAL_H)
@@ -559,18 +549,15 @@ if(MSYS OR CYGWIN)
   add_definitions(-DDONT_HAVE_MALLOC_USABLE_SIZE=1)
 endif()
 
-probe_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings"
-            CMAKE_C_FLAGS)
+probe_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings" CMAKE_C_FLAGS)
 
 probe_flags(
   "-Wall;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation"
   CMAKE_C_FLAGS_DEBUG)
 
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL
-                                             "RelWithDebInfo")
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
   probe_flag("-ggdb" HAVE_DEBUG_GDB_FLAG CMAKE_C_FLAGS_DEBUG)
-endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL
-                                                "RelWithDebInfo")
+endif("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   if(ANDROID)
@@ -607,6 +594,7 @@ endif(WASI OR WASM)
 if(NOT HAVE_SIZEOF_SIGHANDLER_T)
   check_type_size(sighandler_t SIZEOF_SIGHANDLER_T)
   if(HAVE_SIZEOF_SIGHANDLER_T)
+
   else(HAVE_SIZEOF_SIGHANDLER_T)
     check_type_size(__sighandler_t SIZEOF___SIGHANDLER_T)
     if(HAVE_SIZEOF___SIGHANDLER_T)
@@ -631,15 +619,9 @@ if(HAVE_LIBPTHREAD)
       CACHE STRING "threading library")
 endif(HAVE_LIBPTHREAD)
 
-try_code(
-  test-alloca.c
-  "#include <alloca.h>
+try_code(test-alloca.c "#include <alloca.h>
 #include <stdio.h>
-int main() { void* p; if((p = alloca(1024)))  printf(\"OK\"); fflush(stdout); }"
-  ALLOCA_EXISTS
-  TEST_ALLOCA_OUT
-  ""
-  "")
+int main() { void* p; if((p = alloca(1024)))  printf(\"OK\"); fflush(stdout); }" ALLOCA_EXISTS TEST_ALLOCA_OUT "" "")
 try_code(
   test-stdatomic.c
   "#include <stdio.h>\n#include <threads.h>\n#include <stdatomic.h>\n \natomic_int acnt;\nint cnt;\n \nint f(void* thr_data)\n{\n    for(int n = 0; n < 1000; ++n) {\n        atomic_fetch_add_explicit(&acnt, 1, memory_order_relaxed); // atomic\n        ++cnt; // undefined behavior, in practice some updates missed\n    }\n    return 0;\n}\n \nint main(void)\n{\n    thrd_t thr[10];\n    for(int n = 0; n < 10; ++n)\n        thrd_create(&thr[n], f, NULL);\n    for(int n = 0; n < 10; ++n)\n        thrd_join(thr[n], NULL);\n \n    printf(\"The atomic counter is %u\\n\", acnt);\n    printf(\"The non-atomic counter is %u\\n\", cnt);\n}"
@@ -708,10 +690,8 @@ else(HAVE_EFENCE)
 endif(HAVE_EFENCE)
 
 string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
-string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELWITHDEBINFO
-               "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-string(REPLACE "-O3" "-Os" CMAKE_C_FLAGS_MINSIZEREL
-               "${CMAKE_C_FLAGS_MINSIZEREL}")
+string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+string(REPLACE "-O3" "-Os" CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if(NOT WIN32)
   if(NOT MINGW)
@@ -765,24 +745,20 @@ add_custom_command(
   COMMAND "${QJSC}" -c -o ./repl.c -m ${CMAKE_CURRENT_SOURCE_DIR}/repl.js
   DEPENDS ${QJSC_DEPS}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT "Generate from repl.js using qjs compiler" SOURCES
-          ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
+  COMMENT "Generate from repl.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/repl.js)
 
 if(EXISTS qjscalc.js)
   add_custom_command(
     OUTPUT qjscalc.c
-    COMMAND "${QJSC}" -fbignum -c -o ./qjscalc.c -m
-            ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
+    COMMAND "${QJSC}" -fbignum -c -o ./qjscalc.c -m ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js
     DEPENDS ${QJSC_DEPS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES
-            ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
+    COMMENT "Generate from qjscalc.js using qjs compiler" SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/qjscalc.js)
 endif(EXISTS qjscalc.js)
 
 add_custom_target(
   hello.c
-  COMMAND "${QJSC}" -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m
-          ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js
+  COMMAND "${QJSC}" -e -o ${CMAKE_CURRENT_BINARY_DIR}/hello.c -m ${CMAKE_CURRENT_SOURCE_DIR}/examples/hello.js
   DEPENDS ${QJSC_DEPS}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Generate from hello.js using qjs compiler"
@@ -795,36 +771,29 @@ set(QUICKJS_PREFIX
     "${QUICKJS_PREFIX}"
     CACHE PATH "QuickJS installation prefix")
 
-configure_file(quickjs-config.cmake.in
-               ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
+configure_file(quickjs-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/quickjs-config.h)
 
 if(BUILD_STATIC_LIBS)
   add_library(${A_NAME} STATIC ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER})
   set(LIB_TARGETS ${A_NAME})
   target_compile_definitions(
-    ${A_NAME}
-    PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
-            QUICKJS_PREFIX="${QUICKJS_PREFIX}"
-            HOST_SYSTEM_NAME="${HOST_SYSTEM_NAME}")
+    ${A_NAME} PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1 QUICKJS_PREFIX="${QUICKJS_PREFIX}"
+                      HOST_SYSTEM_NAME="${HOST_SYSTEM_NAME}")
   target_include_directories(${A_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
   set_target_properties(${A_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
   if(NOT BUILD_SHARED_LIBS)
     set_target_properties(${A_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
   endif(NOT BUILD_SHARED_LIBS)
-  target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD}
-                                         ${SOCKET_LIBRARIES})
+  target_link_libraries(${A_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${SOCKET_LIBRARIES})
 endif(BUILD_STATIC_LIBS)
 
 # message("target_link_libraries ${A_NAME} PRIVATE ${LIBM} ${LIBPTHREAD}")
 
 if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
-  add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_INCLUDES}
-                                ${QUICKJS_SOURCES_DEBUGGER})
+  add_library(${SO_NAME} SHARED ${QUICKJS_SOURCES} ${QUICKJS_INCLUDES} ${QUICKJS_SOURCES_DEBUGGER})
   set(LIB_TARGETS ${LIB_TARGETS} ${SO_NAME})
-  target_compile_definitions(
-    ${SO_NAME}
-    PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
-            QUICKJS_PREFIX="${QUICKJS_PREFIX}" SYSTEM_NAME="${SYSTEM_NAME}")
+  target_compile_definitions(${SO_NAME} PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
+                                                QUICKJS_PREFIX="${QUICKJS_PREFIX}" SYSTEM_NAME="${SYSTEM_NAME}")
   target_include_directories(${SO_NAME} PUBLIC ${QUICKJS_SOURCES_ROOT})
   if(MSYS)
     set(SO_PREFIX "msys-")
@@ -847,10 +816,10 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   endif("${CMAKE_SHARED_LIBRARY_SUFFIX}" MATCHES ".so")
   # set_target_properties(${SO_NAME} PROPERTIES SUFFIX "${SOSUFFIX}")
 
-  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD}
-                                          ${SOCKET_LIBRARIES})
+  target_link_libraries(${SO_NAME} PUBLIC ${LIBDL} ${LIBM} ${LIBPTHREAD} ${SOCKET_LIBRARIES})
 
 else(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
+
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 
 # dump(LIB_TARGETS) dump(SYSTEM_NAME) dump(HOST_SYSTEM_NAME) dump(DIET)
@@ -868,16 +837,13 @@ if(DLL_TARGETS)
   set(STATIC_LIBRARY_NAME "lib${SO_OUTPUT}.a")
 
   if("${CONFIG_SHEXT}" STREQUAL ".dll")
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SHARED_LIBRARY_NAME}
-            DESTINATION bin)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${STATIC_LIBRARY_NAME}
-            DESTINATION lib)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SHARED_LIBRARY_NAME} DESTINATION bin)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${STATIC_LIBRARY_NAME} DESTINATION lib)
 
     if(NOT "${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL "")
       set(IMPORT_LIBRARY_NAME "lib${SO_OUTPUT}${CMAKE_IMPORT_LIBRARY_SUFFIX}")
 
-      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${IMPORT_LIBRARY_NAME}
-              DESTINATION lib)
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${IMPORT_LIBRARY_NAME} DESTINATION lib)
     endif(NOT "${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL "")
 
   elseif("${CONFIG_SHEXT}" STREQUAL ".dll")
@@ -921,18 +887,15 @@ else(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
   add_executable(qjs ${QJS_SOURCES})
 endif(EMSCRIPTEN AND EMSCRIPTEN_BUILD_REPL_HTML)
 
-target_link_libraries(qjs ${QUICKJS_LIBRARY} ${LIBPTHREAD} ${LIBM}
-                      ${SOCKET_LIBRARIES})
+target_link_libraries(qjs ${QUICKJS_LIBRARY} ${LIBPTHREAD} ${LIBM} ${SOCKET_LIBRARIES})
 set_target_properties(qjs PROPERTIES LINK_OPTIONS "${LINK_EXPORT}")
 if(BUILD_SHARED_LIBS)
-  set_target_properties(
-    qjs PROPERTIES RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}"
-                   INSTALL_RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}")
+  set_target_properties(qjs PROPERTIES RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}"
+                                       INSTALL_RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}")
 endif(BUILD_SHARED_LIBS)
 
-target_compile_definitions(
-  qjs PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
-              QUICKJS_PREFIX="${QUICKJS_PREFIX}")
+target_compile_definitions(qjs PRIVATE _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1
+                                       QUICKJS_PREFIX="${QUICKJS_PREFIX}")
 
 if(WASI OR EMSCRIPTEN)
   set(BUILD_QJSC
@@ -945,27 +908,21 @@ endif(WASI OR EMSCRIPTEN)
 if(BUILD_QJSC)
   add_executable(qjsc qjsc.c # ${QUICKJS_SOURCES} ${QUICKJS_SOURCES_DEBUGGER}
   )
-  target_link_libraries(qjsc ${QUICKJS_LIBRARY} ${LIBM} ${LIBPTHREAD}
-                        ${SOCKET_LIBRARIES})
+  target_link_libraries(qjsc ${QUICKJS_LIBRARY} ${LIBM} ${LIBPTHREAD} ${SOCKET_LIBRARIES})
   if(BUILD_SHARED_LIBS)
-    set_target_properties(
-      qjsc PROPERTIES RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}"
-                      INSTALL_RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}")
+    set_target_properties(qjsc PROPERTIES RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}"
+                                          INSTALL_RPATH "${QUICKJS_PREFIX}/${QUICKJS_LIBRARY_DIR}")
   endif(BUILD_SHARED_LIBS)
 
-  target_compile_definitions(
-    qjsc
-    PRIVATE QUICKJS_PREFIX="${QUICKJS_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}"
-            _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1)
+  target_compile_definitions(qjsc PRIVATE QUICKJS_PREFIX="${QUICKJS_PREFIX}" CONFIG_CC="${CMAKE_C_COMPILER}"
+                                          _GNU_SOURCE=1 BUILD_QUICKJS=1 HAVE_QUICKJS_CONFIG_H=1)
   install(TARGETS qjsc DESTINATION ${QUICKJS_PREFIX}/bin)
 endif(BUILD_QJSC)
 
 install(TARGETS qjs DESTINATION ${QUICKJS_BINARY_DIR})
 
 if(EXISTS qjscalc.js)
-  install(
-    CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)"
-  )
+  install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink qjs ${CMAKE_INSTALL_PREFIX}/bin/qjscalc)")
 endif(EXISTS qjscalc.js)
 
 add_custom_target(.ctags COMMAND ctags -R ${CMAKE_CURRENT_SOURCE_DIR})
@@ -985,8 +942,7 @@ add_quickjs_modules_subdirs(
   Modules
   OpenCV:OFF
   Sound:OFF
-  Debugger:${QUICKJS_DEBUGGER}
-)
+  Debugger:${QUICKJS_DEBUGGER})
 
 get_property(FLAGS_OK GLOBAL PROPERTY QJS_FLAGS_OK)
 get_property(FLAGS_FAIL GLOBAL PROPERTY QJS_FLAGS_FAIL)
@@ -1015,14 +971,22 @@ endif()
 
 message_table(
   "Build"
-  "library" "${LIBRARY_KIND}"
-  "debugger" "${DEBUGGER_STATE}"
-  "find-module" "${FIND_MODULE_STATE}"
-  "LTO" "${LTO_STATE}"
-  "libdl" "${LIBDL}"
-  "headers" "${EXTRA_INCLUDE_FILES}"
-  "C flags" "${SUMMARY_C_FLAGS}"
-  "unsupported" "${FLAGS_FAIL}")
+  "library"
+  "${LIBRARY_KIND}"
+  "debugger"
+  "${DEBUGGER_STATE}"
+  "find-module"
+  "${FIND_MODULE_STATE}"
+  "LTO"
+  "${LTO_STATE}"
+  "libdl"
+  "${LIBDL}"
+  "headers"
+  "${EXTRA_INCLUDE_FILES}"
+  "C flags"
+  "${SUMMARY_C_FLAGS}"
+  "unsupported"
+  "${FLAGS_FAIL}")
 
 set(QUICKJS_PREFIX
     "${CMAKE_INSTALL_PREFIX}"
@@ -1053,5 +1017,4 @@ file(
   "prefix=${QUICKJS_PREFIX}\nexec_prefix=\${prefix}\nlibdir=\${exec_prefix}/lib\nincludedir=\${prefix}/include\n\nName: quickjs\nDescription: QuickJS\nVersion: ${QUICKJS_VERSION}\nLibs: -L\${libdir} -lquickjs\nCflags: -I\${includedir}\n"
 )
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc"
-        DESTINATION "${QUICKJS_PREFIX}/lib/pkgconfig")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/quickjs.pc" DESTINATION "${QUICKJS_PREFIX}/lib/pkgconfig")
