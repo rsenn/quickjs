@@ -108,7 +108,23 @@ js_find_module(JSContext* ctx, const char* module_name) {
 static JSModuleDef*
 js_find_module_path(JSContext* ctx, const char* module_name, void* opaque, JSValueConst attributes) {
   JSModuleDef* ret = NULL;
-  char* filename = module_name[strchrs(module_name, "." PATHSEP_STR)] ? js_strdup(ctx, module_name) : js_find_module(ctx, module_name);
+  char* filename = NULL;
+
+  if(!module_name[strchrs(module_name, "." PATHSEP_STR)])
+    filename = js_find_module(ctx, module_name);
+  else {
+    /* explicit paths are taken literally, anything else (e.g. 'lws.so')
+       is searched in the module path first and used as-is as fallback */
+    BOOL explicit_path = module_name[0] == PATHSEP_CHAR || module_name[0] == '/' ||
+                         (module_name[0] == '.' && (module_name[1] == '/' || module_name[1] == PATHSEP_CHAR ||
+                                                    (module_name[1] == '.' && (module_name[2] == '/' || module_name[2] == PATHSEP_CHAR)))) ||
+                         (module_name[0] && module_name[1] == ':');
+
+    if(!explicit_path)
+      filename = js_find_module(ctx, module_name);
+    if(!filename)
+      filename = js_strdup(ctx, module_name);
+  }
 
   if(filename) {
     ret = js_module_loader(ctx, filename, opaque, attributes);
