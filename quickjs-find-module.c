@@ -134,6 +134,47 @@ js_find_module_path(JSContext* ctx, const char* module_name, void* opaque, JSVal
   return ret;
 }
 
+/* canonical module names: relative specifiers are joined with the importer's
+   directory, bare names with a '.' or path separator are searched in the
+   module path, and whatever exists is returned as realpath, so the module
+   cache sees one key per file */
+char*
+js_module_normalize_path(JSContext* ctx, const char* base_name, const char* name, void* opaque) {
+  char *tmp = NULL, *res = NULL, rp[PATH_MAX];
+  size_t n;
+
+  if(!name[strchrs(name, "." PATHSEP_STR)])
+    return js_strdup(ctx, name);
+
+  if(name[0] == '.' && (name[1] == '/' || name[1] == PATHSEP_CHAR || (name[1] == '.' && (name[2] == '/' || name[2] == PATHSEP_CHAR)))) {
+    const char* p = strrchr(base_name, '/');
+#ifdef PATHSEP_CHAR
+    const char* q = strrchr(base_name, PATHSEP_CHAR);
+    if(q > p)
+      p = q;
+#endif
+    n = p ? (size_t)(p - base_name) + 1 : 0;
+    if((tmp = js_malloc(ctx, n + strlen(name) + 1))) {
+      memcpy(tmp, base_name, n);
+      strcpy(tmp + n, name);
+    }
+  } else if(name[0] != PATHSEP_CHAR && name[0] != '/' && !(name[0] && name[1] == ':')) {
+    tmp = js_find_module(ctx, name);
+  }
+
+  if(!tmp)
+    return js_strdup(ctx, name);
+
+#if !defined(_WIN32) || defined(__MSYS__)
+  if(realpath(tmp, rp)) {
+    res = js_strdup(ctx, rp);
+    js_free(ctx, tmp);
+    return res;
+  }
+#endif
+  return tmp;
+}
+
 JSModuleDef*
 js_module_loader_path(JSContext* ctx, const char* module_name, void* opaque, JSValueConst attributes) {
   return js_find_module_path(ctx, module_name, opaque, attributes);

@@ -48,10 +48,13 @@
 #endif
 
 #ifdef CONFIG_FIND_MODULE
+char *js_module_normalize_path(JSContext *ctx, const char *base_name, const char *name, void *opaque);
 JSModuleDef *js_module_loader_path(JSContext *ctx, const char *module_name, void *opaque, JSValueConst attributes);
 #define QJS_MODULE_LOADER js_module_loader_path
+#define QJS_MODULE_NORMALIZE js_module_normalize_path
 #else
 #define QJS_MODULE_LOADER js_module_loader
+#define QJS_MODULE_NORMALIZE NULL
 #endif
 
 extern const uint8_t qjsc_repl[];
@@ -485,7 +488,7 @@ int main(int argc, char **argv)
     }
 
     /* loader for ES6 modules */
-    JS_SetModuleLoaderFunc2(rt, NULL, QJS_MODULE_LOADER, js_module_check_attributes, NULL);
+    JS_SetModuleLoaderFunc2(rt, QJS_MODULE_NORMALIZE, QJS_MODULE_LOADER, js_module_check_attributes, NULL);
 
     if (dump_unhandled_promise_rejection) {
         JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,
