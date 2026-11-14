@@ -1,12 +1,14 @@
 cfg() {
   ({
-    if type gcc 2>/dev/null >/dev/null && type g++ 2>/dev/null >/dev/null; then
+    if [ -n "$TOOLCHAIN" ]; then
+      : # the toolchain file picks the compilers
+    elif type gcc 2>/dev/null >/dev/null && type g++ 2>/dev/null >/dev/null; then
       : ${CC:=gcc} ${CXX:=g++}
     elif type clang 2>/dev/null >/dev/null && type clang++ 2>/dev/null >/dev/null; then
       : ${CC:=clang} ${CXX:=clang++}
     fi
 
-    : ${build:=$($CC -dumpmachine | sed 's|-pc-|-|g')}
+    : ${build:=$(${CC:-gcc} -dumpmachine | sed 's|-pc-|-|g')}
 
     if [ -z "$host" -a -z "$builddir" ]; then
       host=$build
@@ -216,8 +218,9 @@ cfg-mingw() {
     esac
 
     : ${PKG_CONFIG_PATH=/usr/${host}/sys-root/mingw/lib/pkgconfig}
+    : ${PKG_CONFIG=${host}-pkg-config}
 
-    export TOOLCHAIN PKG_CONFIG_PATH
+    export TOOLCHAIN PKG_CONFIG PKG_CONFIG_PATH
 
     : ${builddir=build/$host}
 
@@ -272,53 +275,80 @@ cfg-tcc() {
   )
 }
 
+# musl: static-capable build with the distro musl-gcc wrapper. Library
+# directories come from /etc/ld-musl-<arch>.path, pkg-config directories
+# are the pkgconfig dirs found below them. PKG_CONFIG_LIBDIR replaces the
+# host's glibc search path so no foreign .pc files leak in.
 cfg-musl() {
- (: ${build=$(${CC:-gcc} -dumpmachine)}
-  : ${host=${build/-gnu/-musl}}
-  : ${host=${host/-pc-/-}}
-  : ${builddir=build/$host}
-  : ${prefix=/opt/musl}
-  : ${includedir=$prefix/include}
-  : ${libdir=$prefix/lib}
-  : ${bindir=$prefix/bin}
-  : ${PKG_CONFIG=musl-pkg-config}
-  : ${PKG_CONFIG_PATH=$prefix/lib/pkgconfig}
-  : ${CC=musl-gcc}
-  : ${AR=ar}
-  : ${RANLIB=ranlib}
- 
-   export PKG_CONFIG PKG_CNOFIG_PATH CC AR RANLIB
-  
-   cfg \
-    "$@")
+  (
+    : ${arch:=$(uname -m)}
+    : ${build:=$(${CC:-gcc} -dumpmachine | sed 's|-pc-|-|g')}
+    : ${host:=${arch}-linux-musl}
+    : ${builddir:=build/$host}
+    : ${prefix:=/opt/musl}
+    : ${includedir:=$prefix/include}
+    : ${libdir:=$prefix/lib}
+    : ${bindir:=$prefix/bin}
+    : ${CC:=musl-gcc}
+    : ${AR:=ar}
+    : ${RANLIB:=ranlib}
+
+    # library directories (existing ones only), space separated
+    libdirs=
+    pathfile=/etc/ld-musl-${ldarch:-$arch}.path
+    if [ -r "$pathfile" ]; then
+      while read -r d || [ -n "$d" ]; do
+        [ -d "$d" ] && libdirs=${libdirs:+$libdirs }$d
+      done <"$pathfile"
+    else
+      echo "cfg-musl: $pathfile not found, using $libdir" 1>&2
+      libdirs=$libdir
+    fi
+
+    # pkgconfig directories below the library directories
+    pcdirs=$(find $libdirs -name pkgconfig -type d 2>/dev/null | sort -u | tr '\n' ':')
+    pcdirs=${pcdirs%:}
+
+    # cmake list of the library directories
+    syslibs=$(echo $libdirs | tr ' ' ';')
+
+    : ${PKG_CONFIG:=pkg-config}
+    PKG_CONFIG_LIBDIR=$pcdirs
+    PKG_CONFIG_PATH=
+    export CC AR RANLIB PKG_CONFIG PKG_CONFIG_LIBDIR
+    unset PKG_CONFIG_PATH PKG_CONFIG_SYSROOT_DIR
+
+    echo "PKG_CONFIG_LIBDIR=$PKG_CONFIG_LIBDIR" 1>&2
+
+    export build host builddir prefix libdir
+    cfg \
+      -DCMAKE_INSTALL_INCLUDEDIR="$includedir" \
+      -DCMAKE_INSTALL_BINDIR="$bindir" \
+      -DCMAKE_PREFIX_PATH="$prefix" \
+      -DCMAKE_SYSTEM_LIBRARY_PATH="$syslibs" \
+      -DCMAKE_FIND_ROOT_PATH="$prefix" \
+      "$@"
+  )
 }
 
 cfg-musl64() {
   (
-    build=$(gcc -dumpmachine | sed 's|-pc-|-|g')
-    host=${build%%-*}-linux-musl
-    host=x86_64-${host#*-}
-
-    : ${builddir=build/$host}
-
-    CFLAGS="-m64" \
-      cfg-musl \
-      -DCMAKE_C_COMPILER="musl-gcc" \
-      "$@"
+    arch=x86_64
+    host=x86_64-linux-musl
+    CFLAGS="${CFLAGS:+$CFLAGS }-m64"
+    export arch host CFLAGS
+    cfg-musl "$@"
   )
 }
 
 cfg-musl32() {
   (
-    build=$(gcc -dumpmachine | sed 's|-pc-|-|g')
-    host=$(echo "$build" | sed "s|x86_64|i686| ; s|-gnu|-musl|")
-
-    : ${builddir=build/$host}
-
-    CFLAGS="-m32" \
-      cfg-musl \
-      -DCMAKE_C_COMPILER="musl-gcc" \
-      "$@"
+    arch=i686
+    ldarch=i386
+    host=i686-linux-musl
+    CFLAGS="${CFLAGS:+$CFLAGS }-m32"
+    export arch ldarch host CFLAGS
+    cfg-musl "$@"
   )
 }
 
@@ -334,7 +364,8 @@ cfg-msys() {
     x86_64*) : ${TOOLCHAIN=/opt/cmake-toolchains/msys64.cmake} ;;
     *) : ${TOOLCHAIN=/opt/cmake-toolchains/msys32.cmake} ;;
     esac
-    export TOOLCHAIN
+    : ${PKG_CONFIG=${host}-pkg-config}
+    export TOOLCHAIN PKG_CONFIG
     echo "builddir: $builddir"
 
     : ${builddir=build/$host}
