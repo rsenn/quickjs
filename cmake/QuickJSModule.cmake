@@ -255,7 +255,7 @@ function(make_module FNAME)
     set_target_properties(
       ${TARGET_NAME}
       PROPERTIES RPATH "${MBEDTLS_LIBRARY_DIR}:${QUICKJS_C_MODULE_DIR}"
-                 INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}"
+                 INSTALL_RPATH "${QUICKJS_C_MODULE_DIR}:${QUICKJS_C_MODULE_DIR}/.."
                  PREFIX "${PREFIX}"
                  OUTPUT_NAME "${VNAME}"
                  COMPILE_FLAGS "${MODULE_COMPILE_FLAGS}")
