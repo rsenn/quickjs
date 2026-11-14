@@ -125,6 +125,7 @@ EXPORTS
   js_module_loader
   js_module_check_attributes
   js_module_loader_path
+  js_module_normalize_path
   js_module_set_import_meta
   js_module_test_json
   JS_NewArray
