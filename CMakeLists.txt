@@ -306,7 +306,7 @@ if(BUILD_STATIC_LIBS)
   if(NOT QUICKJS_LIBRARY)
     set(QUICKJS_LIBRARY
         "${A_NAME}"
-        CACHE PATH "QuickJS library")
+        CACHE PATH "QuickJS library" FORCE)
   endif(NOT QUICKJS_LIBRARY)
 endif(BUILD_STATIC_LIBS)
 
@@ -317,7 +317,7 @@ if(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
   if(NOT QUICKJS_LIBRARY)
     set(QUICKJS_LIBRARY
         "${SO_NAME}"
-        CACHE PATH "QuickJS library")
+        CACHE PATH "QuickJS library" FORCE)
   endif(NOT QUICKJS_LIBRARY)
 endif(BUILD_SHARED_LIBS AND SUPPORT_SHARED_LIBS)
 
