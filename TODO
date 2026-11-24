@@ -59,6 +59,19 @@ Optimization ideas:
 - optimize OP_apply
 - optimize f(...b)
 
+- cmake: with CMAKE_CROSSCOMPILING the build uses the bare name `qjsc` (CMakeLists.txt:727-732) and fails
+  with "qjsc: No such file or directory, Error 127" when no host qjsc is on PATH. A configure that is
+  not a real cross build can get there by a project passing -DCMAKE_SYSTEM_NAME=<same as host> (Termux:
+  Android), see the BUGS entry build-quickjs-forwards-cmake-system-name of the qjs-* projects. Wanted: a
+  QJSC_HOST/QJS_HOST_TOOLS option, and build qjsc natively (nested configure) when none is given, so a cross
+  build needs no preinstalled qjsc (docs/build-and-CI.md 4.4)
+- cmake: CMakeLists.txt:743-748 passes `SOURCES` to add_custom_command(); it is an add_custom_target
+  keyword, so CMake 4.5 warns (CMP0175: "COMMENT requires exactly one argument") on every configure and a
+  newer policy makes it an error. Same for the qjscalc.c and hello.c rules below it.
+- cmake_minimum_required(VERSION 3.5): CMake 4.x warns "Compatibility with CMake < 3.10 will be removed"
+  on every configure (seen on Termux, CMake 4.5.0); raise the minimum to the oldest version that has to
+  work (3.18, the Raspberry Pi 4 has 3.18.4)
+
 Test262o:   0/11262 errors, 463 excluded
 Test262o commit: 7da91bceb9ce7613f87db47ddd1292a2dda58b42 (es5-tests branch)
 
