@@ -376,7 +376,7 @@ endif(NOT HAVE_NAN)
 
 check_symbol_exists(INFINITY math.h HAVE_INFINITY)
 if(NOT HAVE_INFINITY)
-  add_definitions("-DINFINITY=\"__builtin_inf()\"")
+  add_definitions("-DINFINITY=__builtin_inf()")
 endif(NOT HAVE_INFINITY)
 
 # check_function_exists(trunc HAVE_TRUNC) if(NOT HAVE_TRUNC) add_definitions("-D\"trunc(x)=__builtin_trunc(x)\"")
@@ -938,11 +938,11 @@ add_quickjs_modules_subdirs(
   NanoVG
   ImGui:OFF
   FFI
-  Net:OFF
   LWS
   Modules
   OpenCV:OFF
   Sound:OFF
+  ORT:OFF
   Debugger:${QUICKJS_DEBUGGER})
 
 get_property(FLAGS_OK GLOBAL PROPERTY QJS_FLAGS_OK)

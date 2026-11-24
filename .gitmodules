@@ -37,3 +37,7 @@
 [submodule "qjs-opencv"]
 	path = qjs-opencv
 	url = git@github.com:rsenn/qjs-opencv.git
+[submodule "qjs-ort"]
+	path = qjs-ort
+	url = git@github.com:rsenn/qjs-ort.git
+	branch = main
