@@ -513,6 +513,27 @@ cfg-wasienv() {
   )
 }
  
+cfg-cosmo() {
+  (
+    : ${cosmo:=/opt/cosmopolitan/cosmocc}
+    PATH=$cosmo/bin:$PATH
+    : ${build:=$(gcc -dumpmachine | sed 's|-pc-|-|g')}
+    : ${host:=x86_64-unknown-cosmo}
+    : ${builddir:=build/cosmopolitan}
+    : ${prefix:=/opt/cosmopolitan/cosmos}
+    : ${CC:=x86_64-unknown-cosmo-cc}
+    : ${CXX:=x86_64-unknown-cosmo-c++}
+    : ${AR:=x86_64-unknown-cosmo-ar}
+    export PATH CC CXX AR build host builddir prefix
+    CFLAGS="${CFLAGS:+$CFLAGS }-mcosmo" CXXFLAGS="${CXXFLAGS:+$CXXFLAGS }-mcosmo" \
+    STATIC=yes cfg -DCMAKE_SYSTEM_NAME=Linux \
+      -DLINK_STATIC=ON -DBUILD_SHARED=OFF -DBUILD_SHARED_LIBS=OFF \
+      -DMODULE_{GLFW,IMGUI,NANOVG,FFI,LWS}=OFF \
+      -DMODULE_{ARCHIVE,MAGIC,MYSQL,PGSQL,SQLITE,SERIAL,GPIO,BCRYPT}=OFF \
+      "$@"
+  )
+}
+
 cfg-aarch64() {
  (: ${build=$(cc -dumpmachine | sed 's|-pc-|-|g')}
   : ${host=aarch64-${build#*-}}
