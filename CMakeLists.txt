@@ -367,6 +367,20 @@ if(HAVE_DIETLIBC)
     add_definitions("-D_REDIR_TIME64=0")
   endif(NOT HAVE__REDIR_TIME64)
 
+  # dietlibc's own headers trigger -Wundef (__GNUC, _XOPEN_SOURCE, _POSIX_C_SOURCE), -Wattributes
+  # (ctype.h, unistd.h) and macro redefinitions (math.h). A directory given as -isystem wins over
+  # the same one given as -I, which makes the compiler treat its headers as system headers.
+  # (the standard diet include dir comes first: /opt/diet/include also has a math.h, but without
+  # __fpclassifyl)
+  foreach(_diet_inc "/usr/include/diet" "${CMAKE_INSTALL_PREFIX}/include" "/opt/diet/include")
+    if(EXISTS "${_diet_inc}/stdio.h")
+      list(APPEND _diet_isystem "SHELL:-isystem ${_diet_inc}")
+    endif()
+  endforeach()
+  list(REMOVE_DUPLICATES _diet_isystem)
+  add_compile_options(${_diet_isystem})
+  add_compile_options(-Wno-undef -Wno-attributes)
+
 endif(HAVE_DIETLIBC)
 
 check_symbol_exists(NAN math.h HAVE_NAN)
