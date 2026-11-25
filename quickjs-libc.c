@@ -77,6 +77,10 @@ typedef sig_t sighandler_t;
 #include "list.h"
 #include "quickjs-libc.h"
 
+#ifdef HAVE_QUICKJS_CONFIG_H
+#include "quickjs-config.h"
+#endif
+
 #if !defined(PATH_MAX)
 #define PATH_MAX 4096
 #endif
@@ -487,7 +491,7 @@ typedef JSModuleDef *(JSInitModuleFunc)(JSContext *ctx,
                                         const char *module_name);
 
 
-#if defined(_WIN32)
+#if defined(_WIN32) || (defined(HAVE_QUICKJS_CONFIG_H) && !defined(CONFIG_DLFCN))
 static JSModuleDef *js_module_loader_so(JSContext *ctx,
                                         const char *module_name)
 {
