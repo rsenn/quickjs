@@ -95,6 +95,7 @@ typedef struct {
     struct list_head link;
     int fd;
     int poll_fd_index; /* temporary use in js_os_poll() */
+    int unref; /* set by os.unrefHandler(): does not keep the loop alive */
     JSValue rw_func[2];
 } JSOSRWHandler;
 
@@ -2007,6 +2008,18 @@ static JSOSRWHandler *find_rh(JSThreadState *ts, int fd)
     return NULL;
 }
 
+/* TRUE if a read or write handler keeps the event loop alive */
+static BOOL has_ref_rw_handler(JSThreadState *ts)
+{
+    struct list_head *el;
+
+    list_for_each(el, &ts->os_rw_handlers) {
+        if (!list_entry(el, JSOSRWHandler, link)->unref)
+            return TRUE;
+    }
+    return FALSE;
+}
+
 static void free_rw_handler(JSRuntime *rt, JSOSRWHandler *rh)
 {
     int i;
@@ -2057,6 +2070,25 @@ static JSValue js_os_setReadHandler(JSContext *ctx, JSValueConst this_val,
         rh->rw_func[magic] = JS_DupValue(ctx, func);
     }
     return JS_UNDEFINED;
+}
+
+/* os.unrefHandler(fd, unref = true): a handler set for fd no longer keeps the
+   loop alive, like Node's unref(). It is still called while the loop runs for
+   other reasons. Returns false if fd has no handler. */
+static JSValue js_os_unrefHandler(JSContext *ctx, JSValueConst this_val,
+                                  int argc, JSValueConst *argv)
+{
+    JSThreadState *ts = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+    JSOSRWHandler *rh;
+    int fd;
+
+    if (JS_ToInt32(ctx, &fd, argv[0]))
+        return JS_EXCEPTION;
+    rh = find_rh(ts, fd);
+    if (!rh)
+        return JS_FALSE;
+    rh->unref = argc < 2 || JS_ToBool(ctx, argv[1]);
+    return JS_TRUE;
 }
 
 static JSOSSignalHandler *find_sh(JSThreadState *ts, int sig_num)
@@ -2437,7 +2469,7 @@ static int js_os_poll(JSContext *ctx)
 
     /* XXX: handle signals if useful */
 
-    if (list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers) &&
+    if (!has_ref_rw_handler(ts) && list_empty(&ts->os_timers) &&
         list_empty(&ts->port_list)) {
         return -1; /* no more events */
     }
@@ -2576,7 +2608,7 @@ static int js_os_poll(JSContext *ctx)
         }
     }
 
-    if (list_empty(&ts->os_rw_handlers) && list_empty(&ts->os_timers) &&
+    if (!has_ref_rw_handler(ts) && list_empty(&ts->os_timers) &&
         list_empty(&ts->port_list))
         return -1; /* no more events */
 
@@ -3954,6 +3986,7 @@ static const JSCFunctionListEntry js_os_funcs[] = {
     JS_CFUNC_DEF("rename", 2, js_os_rename ),
     JS_CFUNC_MAGIC_DEF("setReadHandler", 2, js_os_setReadHandler, 0 ),
     JS_CFUNC_MAGIC_DEF("setWriteHandler", 2, js_os_setReadHandler, 1 ),
+    JS_CFUNC_DEF("unrefHandler", 2, js_os_unrefHandler ),
     JS_CFUNC_DEF("signal", 2, js_os_signal ),
     OS_FLAG(SIGINT),
     OS_FLAG(SIGABRT),
