@@ -551,6 +551,12 @@ endif()
 
 probe_flags("-Wchar-subscripts;-Wundef;-Wuninitialized;-Wwrite-strings" CMAKE_C_FLAGS)
 
+# dietlibc and musl: silence what the libc headers and the bundled third-party
+# code (libwebsockets, libffi) trigger, and qjsc's path buffers
+if(DIET OR HAVE_DIETLIBC OR SYSTEM_NAME MATCHES "musl" OR CMAKE_C_COMPILER MATCHES "musl")
+  probe_flags("-Wno-format-truncation;-Wno-discarded-qualifiers;-Wno-sign-conversion;-Wno-deprecated-declarations" CMAKE_C_FLAGS)
+endif()
+
 probe_flags(
   "-Wall;-Wno-array-bounds;-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-unused;-Wno-format-truncation"
   CMAKE_C_FLAGS_DEBUG)

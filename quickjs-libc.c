@@ -66,7 +66,9 @@ typedef sig_t sighandler_t;
 #endif
 
 /* enable the os.Worker API. It relies on POSIX threads */
-#define USE_WORKER
+#ifndef USE_WORKER
+#define USE_WORKER 1
+#endif
 
 #ifdef USE_WORKER
 #include <pthread.h>
