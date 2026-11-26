@@ -1102,6 +1102,22 @@ static int get_class_atom(REParseState *s, REStringList *cr,
             if (!inclass && s->is_unicode)
                 goto invalid_escape;
             break;
+        case '&':
+        case '!':
+        case '#':
+        case '%':
+        case ',':
+        case ':':
+        case ';':
+        case '<':
+        case '=':
+        case '>':
+        case '@':
+        case '`':
+        case '~':
+            if (s->unicode_sets && inclass)
+                break;
+            goto default_escape;
         case '^':
         case '$':
         case '\\':
@@ -1183,7 +1199,7 @@ static int get_class_atom(REParseState *s, REStringList *cr,
     case '^':
     case '`':
     case '~':
-        if (s->unicode_sets && p[1] == c) {
+        if (s->unicode_sets && inclass && p[1] == c) {
             /* forbidden double characters */
             return re_parse_error(s, "invalid class set operation in regular expression");
         }
@@ -1198,7 +1214,7 @@ static int get_class_atom(REParseState *s, REStringList *cr,
     case '/':
     case '-':
     case '|':
-        if (s->unicode_sets) {
+        if (s->unicode_sets && inclass) {
             /* invalid characters in unicode sets */
             return re_parse_error(s, "invalid character in class in regular expression");
         }
